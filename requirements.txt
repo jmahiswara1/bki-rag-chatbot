@@ -1,0 +1,8 @@
+pdfplumber>=0.11
+supabase>=2.7
+ollama>=0.3
+sympy>=1.13
+rich>=13.7
+prompt_toolkit>=3.0
+python-dotenv>=1.0
+langdetect>=1.0.9
