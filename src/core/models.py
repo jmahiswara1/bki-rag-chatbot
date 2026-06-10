@@ -12,6 +12,7 @@ class Chunk:
     content: str
     paragraph_id: Optional[str] = None
     table_no: Optional[str] = None
+    figure_no: Optional[str] = None
     embedding: Optional[list[float]] = None
 
 
@@ -22,6 +23,7 @@ class RetrievedChunk:
     paragraph_id: Optional[str]
     content_type: str
     table_no: Optional[str]
+    figure_no: Optional[str]
     page_start: int
     page_end: int
     content: str

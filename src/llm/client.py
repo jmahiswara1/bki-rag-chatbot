@@ -9,7 +9,10 @@ def chat_stream(model: str, messages: list[dict], temperature: float):
     stream = client.chat(
         model=model,
         messages=messages,
-        options={"temperature": temperature},
+        options={
+            "temperature": temperature,
+            "num_ctx": settings.num_ctx,
+        },
         stream=True,
     )
     for part in stream:
