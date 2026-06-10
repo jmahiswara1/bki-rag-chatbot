@@ -1,7 +1,32 @@
+import os
+os.environ['TF_USE_LEGACY_KERAS'] = '1'
+
+from FlagEmbedding import FlagReranker
 from src.core.models import RetrievedChunk
 
+_reranker = None
 
-def rerank(query: str, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
-    # Used in default mode. Phase 2: add a cross-encoder or LLM reranker.
-    # Identity passthrough for now.
-    return chunks
+def get_reranker() -> FlagReranker:
+    global _reranker
+    if _reranker is None:
+        # Lazy load BAAI/bge-reranker-v2-m3 globally on CPU
+        _reranker = FlagReranker('BAAI/bge-reranker-v2-m3', use_fp16=False)
+    return _reranker
+
+def rerank_chunks(query: str, chunks: list[RetrievedChunk], top_k: int = 8) -> list[RetrievedChunk]:
+    if not chunks:
+        return []
+    
+    reranker = get_reranker()
+    sentence_pairs = [[query, c.content] for c in chunks]
+    scores = reranker.compute_score(sentence_pairs)
+    
+    # FlagReranker computes scores which might be floats.
+    if isinstance(scores, float):
+        scores = [scores]
+        
+    for i, chunk in enumerate(chunks):
+        chunk.score = scores[i]
+        
+    chunks.sort(key=lambda x: x.score, reverse=True)
+    return chunks[:top_k]
