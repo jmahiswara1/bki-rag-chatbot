@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional
 
 
 @dataclass
@@ -50,3 +50,11 @@ class Formula:
     page_no: Optional[int] = None
     result_unit: Optional[str] = None
     notes: Optional[str] = None
+
+
+# Fase 3: intent classification result
+@dataclass(frozen=True)
+class Intent:
+    kind: Literal["rules_qa", "calculation"]
+    confidence: Literal["high", "low"]
+    source: Literal["heuristic", "llm"]

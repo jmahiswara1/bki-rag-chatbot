@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 .env
 data/*.pdf
+
+# Test / debug artifacts (created by scripts and ad-hoc shell invocations)
+*.log
+*.err
+phase3_*.xml
+phase3_*_proc.xml
