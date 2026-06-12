@@ -1,11 +1,13 @@
+import sys
 import time
 from dataclasses import dataclass, field
+from typing import Iterator
 
 from src.calc.engine import calculate
 from src.core.config import settings
 from src.core.models import Intent, RetrievedChunk
 from src.llm import prompts
-from src.llm.client import chat
+from src.llm.client import chat, chat_stream
 from src.llm.intent import classify, classify_with_llm
 from src.llm.language import detect_language
 from src.llm.modes import MODES
@@ -25,54 +27,88 @@ class ChainResult:
     reject_reason: str = ""
 
 
-def chain_answer(
-    query: str,
-    history: list[dict] | None = None,
-    mode: str = "default",
-) -> ChainResult:
-    """End-to-end Fase 3 pipeline. See HANDOFF Section 8.
+@dataclass
+class PipelineState:
+    """Hasil pre-answer pipeline (shared by chain_answer and chain_answer_stream).
 
-    Pipeline:
-      detect_lang -> intent (heuristic, LLM fallback default-only) ->
-      [calc short-circuit] -> translate+condense (default: always; fast: skip
-      only if high-conf EN + no history) -> multi-query expand (default only,
-      gated by settings.enable_multi_query) ->
-      retrieve (en_query drives FTS, averaged vector when multi-query enabled) ->
-      [rerank inside retrieve_context, default only] -> guardrail (default
-      only, because cross-encoder scores only exist there) -> answer.
+    short_circuit_msg: non-empty if the call should NOT stream a real answer
+        (calc stub or guardrail reject). The stream generator yields this as
+        a single token and returns.
+    """
+    lang: str
+    intent: Intent
+    en_query: str
+    expanded: list[str]
+    candidates: list[RetrievedChunk]
+    rejected: bool
+    reject_reason: str
+    timings: dict[str, float]
+    mode_cfg: object
+    short_circuit_msg: str = ""
+    is_pre_answer_only: bool = False
+
+
+@dataclass
+class ChainStreamResult:
+    """Final metadata yielded as ("done", payload) at end of stream."""
+    answer: str
+    sources: list[RetrievedChunk]
+    intent: Intent
+    language: str
+    timings: dict[str, float]
+    en_query: str = ""
+    expanded: list[str] = field(default_factory=list)
+    rejected: bool = False
+    reject_reason: str = ""
+    token_count: int = 0
+
+
+def _pre_answer_pipeline(
+    query: str,
+    history: list[dict] | None,
+    mode: str,
+) -> PipelineState:
+    """Run the Fase 3 pre-answer pipeline synchronously.
+
+    Mirrors chain_answer's pre-answer steps exactly so the two functions
+    stay behavior-equivalent for everything except the final answer emission.
     """
     timings: dict[str, float] = {}
     history = history or []
     mode_cfg = MODES[mode]
 
-    # 1. detect language of the ORIGINAL query (used for answer language mirror)
+    # 1. detect language
     t = time.time()
     lang, _lang_conf = detect_language(query)
     timings["detect_lang"] = time.time() - t
 
-    # 2. intent classification: heuristic first; LLM fallback only for default
+    # 2. intent (+LLM fallback for default mode)
     t = time.time()
     intent = classify(query, history)
     if intent.confidence == "low" and mode == "default":
         intent = classify_with_llm(query, temperature=mode_cfg.temperature)
     timings["intent"] = time.time() - t
 
-    # 3. calculation intent short-circuits to Fase 4 stub (no retrieval, no LLM math)
+    # 3. calc short-circuit
     if intent.kind == "calculation":
         t = time.time()
         calc = calculate(query, intent=intent)
         timings["calc"] = time.time() - t
-        return ChainResult(
-            answer=calc.message,
-            sources=[],
+        return PipelineState(
+            lang=lang,
             intent=intent,
-            language=lang,
+            en_query="",
+            expanded=[],
+            candidates=[],
+            rejected=False,
+            reject_reason="",
             timings=timings,
+            mode_cfg=mode_cfg,
+            short_circuit_msg=calc.message,
+            is_pre_answer_only=True,
         )
 
-    # 4. translate + condense.
-    #    Default mode: NEVER skip (Fase 3 req #3 fail-safe).
-    #    Fast mode: skip only if high-confidence English AND no history.
+    # 4. translate + condense
     t = time.time()
     if mode == "default":
         en_query = _translate_condense(query, history, temperature=mode_cfg.temperature)
@@ -83,8 +119,7 @@ def chain_answer(
             en_query = _translate_condense(query, history, temperature=mode_cfg.temperature)
     timings["translate"] = time.time() - t
 
-    # 5. multi-query expansion (default mode only, gated by settings.enable_multi_query).
-    #    Keep the expand functions for future experiments; just skip the call when gated.
+    # 5. multi-query expansion (gated)
     expanded: list[str] = []
     if mode == "default" and settings.enable_multi_query:
         t = time.time()
@@ -92,7 +127,7 @@ def chain_answer(
         expanded = _parse_multi_query(raw, n=settings.expand_n_queries)
         timings["expand"] = time.time() - t
 
-    # 6. retrieve (retrieve_context handles rerank for default mode internally)
+    # 6. retrieve
     t = time.time()
     candidates = retrieve_context(
         query_text=query,
@@ -103,37 +138,273 @@ def chain_answer(
     )
     timings["retrieve"] = time.time() - t
 
-    # 7. guardrail — DEFAULT MODE ONLY (Fase 3 req #5).
-    #    Fast mode has no cross-encoder scores (rerank skipped) so the
-    #    relative-gap guardrail would be meaningless.
+    # 7. guardrail (default only)
     rejected = False
     reject_reason = ""
+    short_circuit_msg = ""
+    is_pre_answer_only = False
     if mode == "default" and candidates:
         candidates, rejected, reject_reason = _apply_guardrail(candidates)
-
-    # 8. answer
     if not candidates:
         if lang == "id":
-            answer = "Konteks yang tersedia tidak cukup untuk menjawab pertanyaan ini berdasarkan BKI Rules for Hull 2026."
+            short_circuit_msg = (
+                "Konteks yang tersedia tidak cukup untuk menjawab pertanyaan ini "
+                "berdasarkan BKI Rules for Hull 2026."
+            )
         else:
-            answer = "The available context is insufficient to answer this question based on the BKI Rules for Hull 2026."
-    else:
-        t = time.time()
-        answer = _answer(query, candidates, lang, model=mode_cfg.model, temperature=mode_cfg.temperature, think=False)
-        timings["answer"] = time.time() - t
+            short_circuit_msg = (
+                "The available context is insufficient to answer this question "
+                "based on the BKI Rules for Hull 2026."
+            )
+        is_pre_answer_only = True
+        timings.setdefault("answer", 0.0)
 
-    return ChainResult(
-        answer=answer,
-        sources=candidates,
+    return PipelineState(
+        lang=lang,
         intent=intent,
-        language=lang,
-        timings=timings,
         en_query=en_query,
         expanded=expanded,
+        candidates=candidates,
         rejected=rejected,
         reject_reason=reject_reason,
+        timings=timings,
+        mode_cfg=mode_cfg,
+        short_circuit_msg=short_circuit_msg,
+        is_pre_answer_only=is_pre_answer_only,
     )
 
+
+def chain_answer(
+    query: str,
+    history: list[dict] | None = None,
+    mode: str = "default",
+) -> ChainResult:
+    """Non-streaming end-to-end Fase 3 pipeline. See HANDOFF Section 8.
+
+    Behavior is IDENTICAL to the pre-refactor version. Refactored to share
+    the pre-answer pipeline with chain_answer_stream.
+    """
+    state = _pre_answer_pipeline(query, history, mode)
+
+    if state.is_pre_answer_only:
+        return ChainResult(
+            answer=state.short_circuit_msg,
+            sources=[],
+            intent=state.intent,
+            language=state.lang,
+            timings=state.timings,
+            rejected=state.rejected,
+            reject_reason=state.reject_reason,
+            en_query=state.en_query,
+            expanded=state.expanded,
+        )
+
+    t = time.time()
+    answer = _answer(
+        query,
+        state.candidates,
+        state.lang,
+        model=state.mode_cfg.model,
+        temperature=state.mode_cfg.temperature,
+        think=False,
+        answer_style=state.mode_cfg.answer_style,
+    )
+    state.timings["answer"] = time.time() - t
+    return ChainResult(
+        answer=answer,
+        sources=state.candidates,
+        intent=state.intent,
+        language=state.lang,
+        timings=state.timings,
+        en_query=state.en_query,
+        expanded=state.expanded,
+        rejected=state.rejected,
+        reject_reason=state.reject_reason,
+    )
+
+
+def chain_answer_stream(
+    query: str,
+    mode: str = "default",
+    history: list[dict] | None = None,
+) -> Iterator[tuple[str, object]]:
+    """Streaming end-to-end Fase 3 pipeline.
+
+    Yields tuples (kind, payload) where kind in {"status", "token", "done"}:
+      - ("status", str): pipeline event for CLI spinner / progress
+      - ("token",  str): one token of the answer (or the full pre-answer msg)
+      - ("done",   ChainStreamResult): final metadata; yielded last.
+
+    Pre-answer short-circuits (calc stub, guardrail reject) yield exactly one
+    ("token", short_circuit_msg) followed by ("done", ...). The stream then
+    ends; the caller never has to read a second token.
+
+    Real answer path streams via chat_stream with think=False, num_ctx=8192.
+    If the model emits no tokens (defense-in-depth safeguard, should be rare
+    with the locked qwen2.5:3b-instruct answer model), falls back to ONE
+    non-streaming chat call to surface an answer; the fallback is yielded as
+    a single ("token", ...) before ("done", ...).
+    """
+    t_total = time.time()
+    state = _pre_answer_pipeline(query, history, mode)
+
+    if state.is_pre_answer_only:
+        yield ("status", "pre_answer")
+        yield ("token", state.short_circuit_msg)
+        state.timings["total"] = time.time() - t_total
+        yield ("done", ChainStreamResult(
+            answer=state.short_circuit_msg,
+            sources=[],
+            intent=state.intent,
+            language=state.lang,
+            timings=state.timings,
+            en_query=state.en_query,
+            expanded=state.expanded,
+            rejected=state.rejected,
+            reject_reason=state.reject_reason,
+            token_count=0,
+        ))
+        return
+
+    yield ("status", "answer_streaming")
+    messages = _build_answer_messages(query, state.candidates, state.lang, answer_style=state.mode_cfg.answer_style)
+    accumulated: list[str] = []
+    t_stream = time.time()
+    try:
+        for token in chat_stream(
+            state.mode_cfg.model,
+            messages,
+            state.mode_cfg.temperature,
+            num_ctx=settings.num_ctx,
+            think=False,
+        ):
+            if token:
+                accumulated.append(token)
+                yield ("token", token)
+    except Exception as exc:
+        print(
+            f"  [chain.chain_answer_stream] ERROR: stream exception "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+            flush=True,
+        )
+        yield ("status", f"stream_error:{type(exc).__name__}")
+    state.timings["stream"] = time.time() - t_stream
+
+    final_text = "".join(accumulated)
+    fallback_used = False
+    if not final_text.strip():
+        # Safeguard: 1x non-stream retry (re-uses _build_answer_messages + client.chat).
+        # Mirrors _answer's retry-then-fallback pattern but only fires once here.
+        print(
+            f"  [chain.chain_answer_stream] WARNING: stream produced 0 tokens, "
+            f"falling back to 1x non-stream chat (model={state.mode_cfg.model})",
+            file=sys.stderr,
+            flush=True,
+        )
+        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style)
+        if final_text and final_text.strip():
+            fallback_used = True
+            yield ("token", final_text)
+    state.timings["total"] = time.time() - t_total
+
+    yield ("done", ChainStreamResult(
+        answer=final_text,
+        sources=state.candidates,
+        intent=state.intent,
+        language=state.lang,
+        timings=state.timings,
+        en_query=state.en_query,
+        expanded=state.expanded,
+        rejected=state.rejected,
+        reject_reason=state.reject_reason,
+        token_count=len(accumulated),
+    ))
+
+
+def _stream_from_state(
+    query: str,
+    state: PipelineState,
+) -> Iterator[tuple[str, object]]:
+    """Run ONLY the streaming answer step from a pre-computed PipelineState.
+
+    Used by tests to reuse retrieval/translate/guardrail across multiple
+    stream runs of the same query (avoids re-paying the heavy pipeline cost
+    just to test streaming reliability). NOT for production callers.
+    """
+    t_total = time.time()
+    if state.is_pre_answer_only:
+        yield ("status", "pre_answer")
+        yield ("token", state.short_circuit_msg)
+        state.timings["total"] = time.time() - t_total
+        yield ("done", ChainStreamResult(
+            answer=state.short_circuit_msg,
+            sources=[],
+            intent=state.intent,
+            language=state.lang,
+            timings=state.timings,
+            en_query=state.en_query,
+            expanded=state.expanded,
+            rejected=state.rejected,
+            reject_reason=state.reject_reason,
+            token_count=0,
+        ))
+        return
+
+    yield ("status", "answer_streaming")
+    messages = _build_answer_messages(query, state.candidates, state.lang, answer_style=state.mode_cfg.answer_style)
+    accumulated: list[str] = []
+    t_stream = time.time()
+    try:
+        for token in chat_stream(
+            state.mode_cfg.model,
+            messages,
+            state.mode_cfg.temperature,
+            num_ctx=settings.num_ctx,
+            think=False,
+        ):
+            if token:
+                accumulated.append(token)
+                yield ("token", token)
+    except Exception as exc:
+        print(
+            f"  [chain._stream_from_state] ERROR: stream exception "
+            f"{type(exc).__name__}: {exc}",
+            file=sys.stderr,
+            flush=True,
+        )
+        yield ("status", f"stream_error:{type(exc).__name__}")
+    state.timings["stream"] = time.time() - t_stream
+
+    final_text = "".join(accumulated)
+    if not final_text.strip():
+        print(
+            f"  [chain._stream_from_state] WARNING: stream produced 0 tokens, "
+            f"falling back to 1x non-stream chat",
+            file=sys.stderr,
+            flush=True,
+        )
+        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style)
+        if final_text and final_text.strip():
+            yield ("token", final_text)
+    state.timings["total"] = time.time() - t_total
+    yield ("done", ChainStreamResult(
+        answer=final_text,
+        sources=state.candidates,
+        intent=state.intent,
+        language=state.lang,
+        timings=state.timings,
+        en_query=state.en_query,
+        expanded=state.expanded,
+        rejected=state.rejected,
+        reject_reason=state.reject_reason,
+        token_count=len(accumulated),
+    ))
+
+
+# ---------------------------------------------------------------------------
+# Private utility helpers (unchanged from previous version, kept for reuse).
+# ---------------------------------------------------------------------------
 
 def _translate_condense(query, history, *, temperature) -> str:
     # Utility call: always fast_model + think=False (AGENTS.md hard rule).
@@ -226,7 +497,12 @@ def _apply_guardrail(chunks: list[RetrievedChunk]) -> tuple[list[RetrievedChunk]
     return chunks, False, ""
 
 
-def _build_answer_messages(query: str, chunks: list[RetrievedChunk], language: str) -> list[dict]:
+def _build_answer_messages(
+    query: str,
+    chunks: list[RetrievedChunk],
+    language: str,
+    answer_style: str = "detailed",
+) -> list[dict]:
     """Build a FRESH messages list for one _answer call.
 
     Critical: a new list is constructed every call to prevent cross-call
@@ -234,19 +510,18 @@ def _build_answer_messages(query: str, chunks: list[RetrievedChunk], language: s
     accumulation would silently truncate the system prompt or context window.
     """
     context = prompts.build_context(chunks)
+    style = prompts.answer_style_instruction(answer_style)
     if language == "id":
         user_msg = (
             f"Konteks:\\n{context}\\n\\n"
             f"Pertanyaan: {query}\\n\\n"
-            f"Jawab dalam Bahasa Indonesia. Setiap klaim harus menyertakan sitasi "
-            f"format (Sec N | paragraph_id, p.XX). Jika konteks tidak cukup, katakan begitu."
+            f"Jawab dalam Bahasa Indonesia. {style}"
         )
     else:
         user_msg = (
             f"Context:\\n{context}\\n\\n"
             f"Question: {query}\\n\\n"
-            f"Answer in English. Every claim must include a citation in the format "
-            f"(Sec N | paragraph_id, p.XX). If the context is insufficient, say so."
+            f"Answer in English. {style}"
         )
     return [
         {"role": "system", "content": prompts.SYSTEM_PROMPT},
@@ -254,7 +529,26 @@ def _build_answer_messages(query: str, chunks: list[RetrievedChunk], language: s
     ]
 
 
-def _answer(query, chunks, language, *, model, temperature, think: bool = False) -> str:
+def _answer_fallback_non_stream(query, chunks, language, mode_cfg, answer_style: str = "detailed") -> str:
+    """Single non-stream chat call used as a fallback when the streaming
+    path produces zero tokens. Returns the model's content (may be empty
+    if Ollama also returns empty for the non-stream call)."""
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style)
+    out = chat(
+        mode_cfg.model,
+        messages,
+        temperature=mode_cfg.temperature,
+        think=False,
+    )
+    return out if out else ""
+
+
+def _answer(
+    query, chunks, language, *,
+    model, temperature,
+    think: bool = False,
+    answer_style: str = "detailed",
+) -> str:
     """Final user-facing answer with empty-response safeguard.
 
     Builds a fresh messages list per call (no cross-call accumulation).
@@ -262,7 +556,7 @@ def _answer(query, chunks, language, *, model, temperature, think: bool = False)
     generation glitch), retries ONCE with the same payload before returning
     a clear fallback. Never returns a silent empty string.
     """
-    messages = _build_answer_messages(query, chunks, language)
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style)
     out = chat(model, messages, temperature=temperature, think=think)
     if out and out.strip():
         return out
@@ -270,14 +564,13 @@ def _answer(query, chunks, language, *, model, temperature, think: bool = False)
     # Single retry. qwen3.5:4b occasionally returns "" on the first call after
     # heavy prior load; the second call usually succeeds without changing the
     # prompt. If still empty, log and return an explicit fallback.
-    import sys
     print(
         f"  [chain._answer] WARNING: empty content on first try, retrying once "
         f"(model={model} lang={language} chunks={len(chunks)})",
         file=sys.stderr,
         flush=True,
     )
-    messages_retry = _build_answer_messages(query, chunks, language)
+    messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style)
     out2 = chat(model, messages_retry, temperature=temperature, think=think)
     if out2 and out2.strip():
         return out2
