@@ -199,14 +199,14 @@ banner("Test G: citation format in chain answer, EN in-domain, 3x runs")
 # ---------------------------------------------------------------------------
 G_Q = "What is the minimum plate thickness for shell plating?"
 print(f"Query: {G_Q}", flush=True)
-citation_re = re.compile(r"\(Sec\s+\d+(?:\s*\|\s*[\w.\-]+)?,\s*p[p]?\.?\s*\d+(?:-\d+)?\)")
+from src.llm.prompts import CITATION_RE
 
 g_pass = True
 g_notes: list[str] = []
 for run_idx in range(1, 4):
     res_g = chain_answer(G_Q, mode="default")
     n_src = len(res_g.sources)
-    has_cit = bool(citation_re.search(res_g.answer))
+    has_cit = bool(CITATION_RE.search(res_g.answer))
     preview = res_g.answer[:200].replace("\n", " ")
     print(f"  run {run_idx}: sources={n_src} rejected={res_g.rejected} reason={res_g.reject_reason} cit={has_cit}", flush=True)
     print(f"           answer: {preview!r}", flush=True)
