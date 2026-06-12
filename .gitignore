@@ -7,5 +7,10 @@ data/*.pdf
 # Test / debug artifacts (created by scripts and ad-hoc shell invocations)
 *.log
 *.err
+*.xml
+out.txt
+# Throwaway benchmark / probe artifacts
+bench_resp_*.json
+probe_answer*.txt
 phase3_*.xml
 phase3_*_proc.xml
