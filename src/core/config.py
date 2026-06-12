@@ -12,7 +12,10 @@ class Settings:
     ollama_host: str = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     embed_model: str = os.getenv("EMBED_MODEL", "bge-m3")
     embed_dim: int = int(os.getenv("EMBED_DIM", "1024"))
-    default_model: str = os.getenv("DEFAULT_MODEL", "qwen3.5:4b")
+    # qwen3:4b & qwen3.5:4b rejected for 4GB VRAM (thinking models; Ollama ignores
+    # think=False -> empty content 33-55%; CPU offload ~400-600s/answer). See PRD.
+    # Locked to qwen2.5:3b-instruct for both modes (detailed/concise via modes.py).
+    default_model: str = os.getenv("DEFAULT_MODEL", "qwen2.5:3b-instruct")
     fast_model: str = os.getenv("FAST_MODEL", "qwen2.5:3b-instruct")
     num_ctx: int = int(os.getenv("NUM_CTX", "8192"))
     tesseract_cmd: str = os.getenv("TESSERACT_CMD", "")
