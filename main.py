@@ -1,4 +1,5 @@
 from src.cli.app import run
 
+import sys
 if __name__ == "__main__":
-    run()
+    run(sys.argv[1:])
