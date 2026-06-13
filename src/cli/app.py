@@ -1,15 +1,14 @@
-"""Fase 5c REPL CLI with slash-commands and history windowing.
+"""Fase 5d REPL CLI with slash-commands, history windowing, and error handling.
 
-Scope (5c):
+Scope (5d):
   - argparse launch arg --mode {default,fast}
   - prompt_toolkit PromptSession loop with completer
   - per-turn render via render.render_turn
   - slash-commands: /help, /mode, /source, /clear, /exit, /quit
   - history windowing: last 3 turns (6 messages) sent to chain
   - Ctrl-C inside a turn: print '(cancelled)' and stay in REPL
-  
-Deferred:
-  - full error handling             -> 5d
+  - service availability checks at startup (Ollama + Supabase)
+  - graceful error handling for service failures during turns
 """
 import argparse
 import sys
@@ -20,8 +19,11 @@ from rich.console import Console
 from rich.rule import Rule
 
 from src.cli.commands import HELP_TEXT, parse_command
+from src.cli.exceptions import OllamaUnavailable, RetrievalError, SupabaseUnavailable
 from src.cli.render import excerpt, render_turn
 from src.cli.state import AppState
+from src.core.db import ping_supabase
+from src.llm.client import check_ollama_available
 from src.llm.modes import MODES
 from src.llm.prompts import format_citation
 
@@ -83,6 +85,34 @@ def _handle_clear_command(state: AppState, console: Console) -> None:
     console.print("[dim](history cleared)[/dim]")
 
 
+def _check_services(console: Console) -> bool:
+    """Check Ollama and Supabase availability.
+    
+    Returns True if all services are available, False otherwise.
+    Prints status messages to console.
+    """
+    console.print("[dim]Checking services...[/dim]")
+    
+    # Check Ollama
+    try:
+        check_ollama_available()
+        console.print("[green]✓[/green] Ollama available")
+    except OllamaUnavailable as e:
+        console.print(f"[red]✗[/red] Ollama unavailable: {e}")
+        return False
+    
+    # Check Supabase
+    try:
+        ping_supabase()
+        console.print("[green]✓[/green] Supabase available")
+    except SupabaseUnavailable as e:
+        console.print(f"[red]✗[/red] Supabase unavailable: {e}")
+        return False
+    
+    console.print()
+    return True
+
+
 def run(argv: list[str] | None = None) -> None:
     """Entry point invoked by main.py with sys.argv[1:]."""
     # Force UTF-8 on stdio so model output containing ≥, σ, ·, √, etc.
@@ -94,6 +124,13 @@ def run(argv: list[str] | None = None) -> None:
     except Exception:
         pass
     console = Console()
+    
+    # Check service availability BEFORE creating interactive session
+    # This ensures we exit cleanly with code 2 if services are unavailable
+    if not _check_services(console):
+        console.print("[red]Service check failed. Please fix the issues above and try again.[/red]")
+        sys.exit(2)
+    
     mode = _parse_args(argv)
     if mode not in MODES:
         # argparse already rejects unknown choices; this is a defense-in-depth.
@@ -158,6 +195,21 @@ def run(argv: list[str] | None = None) -> None:
             console.print("[dim](cancelled)[/dim]")
             console.print()
             # Don't append anything to history on cancel.
+            continue
+        except OllamaUnavailable as e:
+            console.print(f"[red]Ollama error:[/red] {e}")
+            console.print("[dim]Please check that Ollama is running and try again.[/dim]")
+            console.print()
+            continue
+        except SupabaseUnavailable as e:
+            console.print(f"[red]Supabase error:[/red] {e}")
+            console.print("[dim]Please check your Supabase connection and try again.[/dim]")
+            console.print()
+            continue
+        except RetrievalError as e:
+            console.print(f"[red]Retrieval error:[/red] {e}")
+            console.print("[dim]Failed to retrieve context. Please try again.[/dim]")
+            console.print()
             continue
         
         # Only append to history if we got a successful result with answer and sources.

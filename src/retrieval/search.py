@@ -2,6 +2,7 @@ import time
 
 import httpx
 
+from src.cli.exceptions import RetrievalError
 from src.core.db import get_client
 from src.core.models import RetrievedChunk
 
@@ -54,4 +55,4 @@ def hybrid_search(
                 break
             print(f"  [hybrid_search] attempt {attempt} failed ({type(exc).__name__}), retrying in {delay}s")
             time.sleep(delay)
-    raise RuntimeError(f"hybrid_search failed after {len(_RETRY_DELAYS)+1} attempts") from last_exc
+    raise RetrievalError(f"hybrid_search failed after {len(_RETRY_DELAYS)+1} attempts") from last_exc
