@@ -50,6 +50,13 @@ def _excerpt(text: str) -> str:
     if len(one_line) > _EXCERPT_WIDTH:
         return one_line[:_EXCERPT_WIDTH] + "\u2026"
     return one_line
+
+
+def excerpt(text: str) -> str:
+    """Public API for _excerpt. Used by /source command."""
+    return _excerpt(text)
+
+
 def _truncate_title(title: str) -> str:
     if len(title) <= _TITLE_WIDTH:
         return title
@@ -110,13 +117,21 @@ def _render_footer(result: ChainStreamResult, mode: str, console: Console) -> No
     if result.rejected:
         parts.append(f"rejected: {result.reject_reason}")
     console.print(f"[dim]--- {' | '.join(parts)} ---[/dim]")
-def render_turn(query: str, state: AppState, console: Console) -> ChainStreamResult:
+def render_turn(query: str, state: AppState, console: Console, history: list | None = None) -> ChainStreamResult:
     """Execute one REPL turn: stream the chain, render live, finalize.
+
+    Args:
+        query: User's question
+        state: Application state (mode, etc.)
+        console: Rich console for output
+        history: Optional history to use (if None, uses state.history)
 
     Returns the final ChainStreamResult so the caller can update its
     history (well-formed user + assistant turn).
     """
-    gen: Iterator = chain_answer_stream(query, mode=state.mode, history=state.history)
+    if history is None:
+        history = state.history
+    gen: Iterator = chain_answer_stream(query, mode=state.mode, history=history)
     accumulated: list[str] = []
     in_stream = False
     final: ChainStreamResult | None = None
