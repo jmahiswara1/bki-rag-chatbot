@@ -22,6 +22,10 @@ _CALC_TERMS = (
     "jarak gading",
     "modulus penampang",
     "plate thickness of",   # "of" anchors it as a specific calc target
+    "threshold",            # "threshold" implies a calculated limit
+    "ambang",               # Indonesian for "threshold"
+    "kecepatan",            # Indonesian for "speed" (implies calculation)
+    "speed threshold",      # explicit speed calculation
 )
 
 # Number + engineering unit: strong calculation signal.
