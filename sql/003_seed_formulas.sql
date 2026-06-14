@@ -1,55 +1,27 @@
 -- 003_seed_formulas.sql
--- Template seed untuk tabel formulas (kalkulator terkurasi).
--- PENTING: baris di bawah hanya CONTOH STRUKTUR, bukan rumus BKI resmi.
---   - expression memakai sintaks yang dipahami sympy (operator: + - * / **, fungsi: sqrt(), dst).
---   - variables: objek JSON { simbol: { desc, unit } } untuk slot filling di CLI.
---   - result_unit: satuan hasil akhir.
---   - verified: set true HANYA setelah rumus dicek manual terhadap dokumen sumber.
--- Ganti setiap baris dengan rumus asli + nilai section/paragraph/page yang benar,
--- lalu set verified = true.
+-- Seed verified BKI Rules for Hull 2026 calculation formulas.
+-- Idempotent: re-running upserts on the unique "code" column.
 
-insert into formulas
-  (code, title, section_no, paragraph_id, page_no, expression, variables, result_unit, notes, verified)
-values
-  (
-    'EXAMPLE_PLATE_THICKNESS',
-    'Contoh: tebal pelat minimum (PLACEHOLDER)',
-    3,
-    '3.F.2',
-    null,
-    'c * sqrt(L)',
-    '{
-       "c": {"desc": "koefisien material", "unit": "-"},
-       "L": {"desc": "panjang kapal", "unit": "m"}
-     }'::jsonb,
-    'mm',
-    'PLACEHOLDER. Ganti expression dan variables dengan rumus asli dari Rules.',
-    false
-  ),
-  (
-    'EXAMPLE_SECTION_MODULUS',
-    'Contoh: section modulus (PLACEHOLDER)',
-    5,
-    '5.B.1',
-    null,
-    'k * L**2 * B * (Cb + 0.7)',
-    '{
-       "k": {"desc": "faktor material", "unit": "-"},
-       "L": {"desc": "panjang kapal", "unit": "m"},
-       "B": {"desc": "lebar kapal", "unit": "m"},
-       "Cb": {"desc": "koefisien blok", "unit": "-"}
-     }'::jsonb,
-    'cm3',
-    'PLACEHOLDER. Ganti dengan rumus asli dan verifikasi terhadap contoh perhitungan di Rules.',
-    false
-  )
-on conflict (code) do update set
-  title        = excluded.title,
-  section_no   = excluded.section_no,
-  paragraph_id = excluded.paragraph_id,
-  page_no      = excluded.page_no,
-  expression   = excluded.expression,
-  variables    = excluded.variables,
-  result_unit  = excluded.result_unit,
-  notes        = excluded.notes,
-  verified     = excluded.verified;
+INSERT INTO formulas
+    (code, title, section_no, paragraph_id, page_no, expression, variables, result_unit, notes, verified)
+VALUES
+('DECK_PLATING_CARGO', 'Lower deck plating thickness for cargo loads', 7, 'B.1.1', '7-7', '1.21*a*sqrt(pL*k) + tK', '[{"symbol": "a", "name": "Frame spacing", "unit": "m"}, {"symbol": "pL", "name": "Deck load", "unit": "kN/m2"}, {"symbol": "k", "name": "Material factor", "unit": "-"}, {"symbol": "tK", "name": "Corrosion addition", "unit": "mm"}]'::jsonb, 'mm', NULL, true),
+('DECK_PLATING_MIN', 'Minimum lower deck plating thickness (2nd deck)', 7, 'B.1.1', '7-7', '(5.5 + 0.02*L)*sqrt(k)', '[{"symbol": "L", "name": "Rule length", "unit": "m"}, {"symbol": "k", "name": "Material factor", "unit": "-"}]'::jsonb, 'mm', 'L need not be taken greater than 200 m.', true),
+('FLOOR_WEB_THICKNESS', 'Floor plate web thickness', 8, 'A.1.2', '8-2', 'h/100 + 3.0', '[{"symbol": "h", "name": "Web height", "unit": "mm"}]'::jsonb, 'mm', NULL, true),
+('FLOOR_PEAK_THICKNESS', 'Floor plate thickness in peaks', 8, 'A.1.2.3', '8-2', '0.035*L + 5.0', '[{"symbol": "L", "name": "Rule length", "unit": "m"}]'::jsonb, 'mm', NULL, true),
+('FLOOR_HEIGHT_FOREPEAK', 'Floor plate height in fore peak', 8, 'A.1.2.3', '8-2', '0.06*H + 0.7', '[{"symbol": "H", "name": "Moulded depth", "unit": "m"}]'::jsonb, 'm', NULL, true),
+('CENTRE_GIRDER_WEB', 'Centre girder web thickness', 8, 'A.2.2.1', '8-2', '0.07*L + 5.5', '[{"symbol": "L", "name": "Rule length", "unit": "m"}]'::jsonb, 'mm', NULL, true),
+('CENTRE_GIRDER_FACEPLATE', 'Centre girder face plate sectional area', 8, 'A.2.2.1', '8-2', '0.7*L + 12', '[{"symbol": "L", "name": "Rule length", "unit": "m"}]'::jsonb, 'cm2', NULL, true),
+('FRAME_SECTION_MODULUS', 'Tween deck / superstructure frame section modulus', 9, 'A.3.2', '9-3', '0.55*m*a*l**2*p*cr*k', '[{"symbol": "m", "name": "Moment coefficient", "unit": "-"}, {"symbol": "a", "name": "Frame spacing", "unit": "m"}, {"symbol": "l", "name": "Unsupported span", "unit": "m"}, {"symbol": "p", "name": "Load", "unit": "kN/m2"}, {"symbol": "cr", "name": "Curvature factor", "unit": "-"}, {"symbol": "k", "name": "Material factor", "unit": "-"}]'::jsonb, 'cm3', NULL, true),
+('WHEEL_LOAD', 'Wheel load on deck plate panel', 7, 'B.2.1', '7-7', '(Q/n)*(1 + av)', '[{"symbol": "Q", "name": "Axle load", "unit": "kN"}, {"symbol": "n", "name": "Number of wheels per axle", "unit": "-"}, {"symbol": "av", "name": "Acceleration factor", "unit": "-", "required": false, "default": 0}]'::jsonb, 'kN', NULL, true),
+('FORECASTLE_SPEED', 'Forecastle frame speed threshold', 9, 'A.3.1', '9-3', '1.6*sqrt(L)', '[{"symbol": "L", "name": "Rule length", "unit": "m"}]'::jsonb, 'kn', NULL, true)
+ON CONFLICT (code) DO UPDATE SET
+    title = EXCLUDED.title,
+    section_no = EXCLUDED.section_no,
+    paragraph_id = EXCLUDED.paragraph_id,
+    page_no = EXCLUDED.page_no,
+    expression = EXCLUDED.expression,
+    variables = EXCLUDED.variables,
+    result_unit = EXCLUDED.result_unit,
+    notes = EXCLUDED.notes,
+    verified = EXCLUDED.verified;
