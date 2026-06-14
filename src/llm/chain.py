@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Iterator
 
 from src.calc.engine import calculate
+from src.calc.registry import search_formulas
 from src.core.config import settings
 from src.core.models import Intent, RetrievedChunk
 from src.llm import prompts
@@ -92,7 +93,32 @@ def _pre_answer_pipeline(
     # 3. calc short-circuit
     if intent.kind == "calculation":
         t = time.time()
-        calc = calculate(query, intent=intent)
+        
+        # Search for matching formulas
+        candidate_formulas = search_formulas(query)
+        
+        if not candidate_formulas:
+            # No matching formulas
+            message = (
+                "I couldn't find a matching formula for your calculation request. "
+                "Please try rephrasing your question or check if the formula is available in the database."
+            )
+        elif len(candidate_formulas) > 1:
+            # Multiple matching formulas - list candidates by title
+            formula_list = "\n".join([
+                f"  - {f.title} (Sec {f.section_no})"
+                for f in candidate_formulas
+            ])
+            message = (
+                f"I found {len(candidate_formulas)} matching formulas:\n{formula_list}\n\n"
+                "Please specify which formula you'd like to use by providing its section number or title."
+            )
+        else:
+            # Single matching formula - calculate
+            formula = candidate_formulas[0]
+            calc_result = calculate(query, formula)
+            message = calc_result.message
+        
         timings["calc"] = time.time() - t
         return PipelineState(
             lang=lang,
@@ -104,7 +130,7 @@ def _pre_answer_pipeline(
             reject_reason="",
             timings=timings,
             mode_cfg=mode_cfg,
-            short_circuit_msg=calc.message,
+            short_circuit_msg=message,
             is_pre_answer_only=True,
         )
 
