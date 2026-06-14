@@ -40,7 +40,10 @@ def _parse_variables(
     # Regex: variable_name = value [unit]
     # Examples: "L=100", "L = 100 m", "L : 100.5", "panjang = 100"
     # Use negative lookahead to avoid matching a word as unit if followed by = or :
-    pattern = r"(\w+)\s*[=:]\s*([\d.,]+)(?:\s+(\w+)(?!\s*[=:]))?"
+    # Changed (?!\s*[=:]) to (?!\w*\s*[=:]) to prevent matching partial words as units
+    # Changed value group from [\d.,]+ to \d+(?:[.,]\d+)? to capture exactly one number
+    # with at most one decimal separator (prevents swallowing trailing comma)
+    pattern = r"(\w+)\s*[=:]\s*(\d+(?:[.,]\d+)?)(?:\s+(\w+)(?!\w*\s*[=:]))?"
     matches = re.findall(pattern, query, re.IGNORECASE)
     
     parsed_values: dict[str, float] = {}

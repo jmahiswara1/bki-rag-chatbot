@@ -94,8 +94,15 @@ def _pre_answer_pipeline(
     if intent.kind == "calculation":
         t = time.time()
         
-        # Search for matching formulas
-        candidate_formulas = search_formulas(query)
+        # Translate query to English for formula matching (lightweight, fast_model)
+        # Keep original query for variable parsing (preserves "a=0,6" format)
+        if lang != "en":
+            calc_query_en = _translate_condense(query, [], temperature=mode_cfg.temperature)
+        else:
+            calc_query_en = query
+        
+        # Search for matching formulas using English query
+        candidate_formulas = search_formulas(calc_query_en)
         
         if not candidate_formulas:
             # No matching formulas
@@ -114,7 +121,7 @@ def _pre_answer_pipeline(
                 "Please specify which formula you'd like to use by providing its section number or title."
             )
         else:
-            # Single matching formula - calculate
+            # Single matching formula - calculate using ORIGINAL query for variable parsing
             formula = candidate_formulas[0]
             calc_result = calculate(query, formula)
             message = calc_result.message
