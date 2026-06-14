@@ -1,5 +1,6 @@
 .venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 .env
 data/*.pdf
@@ -9,8 +10,12 @@ data/*.pdf
 *.err
 *.xml
 out.txt
+
 # Throwaway benchmark / probe artifacts
 bench_resp_*.json
 probe_answer*.txt
 phase3_*.xml
 phase3_*_proc.xml
+
+# Temporary files and folders
+temp/
