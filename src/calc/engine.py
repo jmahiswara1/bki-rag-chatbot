@@ -232,6 +232,10 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
             f"Source: {citation}"
         )
         
+        # Add formula notes if present (applicability limits, etc.)
+        if formula.notes:
+            message += f"\n\nNote: {formula.notes}"
+        
         if warnings:
             message += "\n\nPeringatan:\n" + "\n".join(f"  - {w}" for w in warnings)
         
