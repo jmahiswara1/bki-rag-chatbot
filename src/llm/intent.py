@@ -3,68 +3,78 @@ import re
 from src.core.config import settings
 from src.core.models import Intent
 
-# Explicit computation verbs: primary calculation signal.
-# Bare interrogatives (berapa, how much, what is, apa) are NOT signals alone.
-_CALC_VERBS = (
-    "calculate",
-    "compute",
-    "determine the value of",
-    "hitung",
-    "menghitung",
-    "hitunglah",
-)
+# Explicit computation imperatives (command form).
+COMPUTE_IMPERATIVE = {
+    "hitung", "kalkulasi", "kalkulasikan",
+    "calculate", "compute",
+}
+
+# Question cues (interrogatives that signal rules_qa, not calculation).
+QUESTION_CUES = {
+    "how", "what", "when", "why", "which", "where",
+    "define", "defined", "explain",
+    "bagaimana", "apa", "apakah", "kapan", "mengapa", "kenapa", "berapa",
+    "menentukan", "jelaskan", "dimana",
+}
+
+# Numeric assignment pattern: variable = number (e.g. L=100, a=0.6, n: 4)
+NUM_ASSIGN = re.compile(r"[A-Za-z_]\w*\s*[=:]\s*-?\d")
 
 # Domain-specific composite terms that imply numeric computation.
+# IMPORTANT: These only trigger calculation when combined with NUM_ASSIGN.
 _CALC_TERMS = (
     "section modulus",
     "moment of inertia",
     "frame spacing",
     "jarak gading",
     "modulus penampang",
-    "plate thickness of",   # "of" anchors it as a specific calc target
-    "threshold",            # "threshold" implies a calculated limit
-    "ambang",               # Indonesian for "threshold"
-    "kecepatan",            # Indonesian for "speed" (implies calculation)
-    "speed threshold",      # explicit speed calculation
-)
-
-# Number + engineering unit: strong calculation signal.
-_NUMBER_UNIT_RE = re.compile(
-    r"\d+(?:[.,]\d+)?\s*(?:mm|cm|m\b|MPa|kPa|GPa|N\b|kN|ton|kg|deg|degree)",
-    re.IGNORECASE,
+    "plate thickness of",
+    "threshold",
+    "ambang",
+    "kecepatan",
+    "speed threshold",
 )
 
 
 def classify(query: str, history: list[dict] | None = None) -> Intent:
     """Heuristic intent classification. Cheap and deterministic.
 
-    Returns high-confidence calculation only when an explicit computation verb
-    OR a numeric operand with engineering unit is present.  Bare interrogatives
-    (berapa / how much / what is) are ignored because they appear in plain
-    rules-QA questions too.
+    4-branch logic (first match wins):
+    1) has_num AND (has_imper OR topical_hit) -> Intent(calculation, high, heuristic)
+    2) has_imper AND NOT has_num AND NOT is_quest -> Intent(calculation, low, heuristic)
+    3) is_quest AND NOT has_num AND NOT has_imper -> Intent(rules_qa, high, heuristic)
+    4) else -> defer to LLM classifier (Intent(rules_qa, low, heuristic))
 
-    Returns Intent with low confidence for rules_qa so the caller can invoke
-    the LLM fallback for default mode.
+    Topical terms in _CALC_TERMS only trigger calculation when combined with NUM_ASSIGN.
+    Word boundaries (\\b) prevent substring matches (e.g. "perhitungan" won't match "hitung").
     """
     q = (query or "").lower().strip()
-    score = 0
-
-    # Explicit verbs: strong signal (+2 each).
-    for verb in _CALC_VERBS:
-        if verb in q:
-            score += 2
-
-    # Domain composite terms: context-specific, less conclusive alone (+1).
-    for term in _CALC_TERMS:
-        if term in q:
-            score += 1
-
-    # Number + engineering unit: operand present (+2).
-    if _NUMBER_UNIT_RE.search(q):
-        score += 2
-
-    if score >= 1:
+    
+    # Check for numeric assignment (e.g. L=100, a=0.6, n: 4)
+    has_num = NUM_ASSIGN.search(q) is not None
+    
+    # Check for compute imperative with WORD BOUNDARIES (not substring)
+    has_imper = any(re.search(rf"\b{v}\b", q) for v in COMPUTE_IMPERATIVE)
+    
+    # Check for question cues with WORD BOUNDARIES
+    is_quest = any(re.search(rf"\b{w}\b", q) for w in QUESTION_CUES)
+    
+    # Check for topical terms (only count with numeric assignment)
+    has_topical = any(term in q for term in _CALC_TERMS)
+    
+    # Branch 1: has_num AND (has_imper OR topical hit) -> calculation (high)
+    if has_num and (has_imper or has_topical):
         return Intent(kind="calculation", confidence="high", source="heuristic")
+    
+    # Branch 2: has_imper AND NOT has_num AND NOT is_quest -> calculation (low, ambiguous)
+    if has_imper and not has_num and not is_quest:
+        return Intent(kind="calculation", confidence="low", source="heuristic")
+    
+    # Branch 3: is_quest AND NOT has_num AND NOT has_imper -> rules_qa (high)
+    if is_quest and not has_num and not has_imper:
+        return Intent(kind="rules_qa", confidence="high", source="heuristic")
+    
+    # Branch 4: defer to LLM classifier
     return Intent(kind="rules_qa", confidence="low", source="heuristic")
 
 
