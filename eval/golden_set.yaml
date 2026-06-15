@@ -1,0 +1,247 @@
+# BKI RAG chatbot - golden evaluation set (38 entries)
+# Categories: calculation (13), rules_qa (18), guardrail (5), ambiguous (2)
+
+# ---------- A. Calculation (13) ----------
+- id: calc_deck_cargo_en
+  question: "Calculate lower deck cargo plating thickness with a=0.6, pL=10, k=1, tK=1"
+  lang: en
+  intent: calculation
+  expected_result: { value: 3.2958, unit: mm, tol: 0.01 }
+
+- id: calc_deck_cargo_comma_id
+  question: "Hitung tebal pelat dek kargo dengan a=0,6, pL=10, k=1, tK=1"
+  lang: id
+  intent: calculation
+  expected_result: { value: 3.2958, unit: mm, tol: 0.01 }
+
+- id: calc_deck_min_id
+  question: "Hitung tebal minimum pelat dek kedua dengan L=100, k=1"
+  lang: id
+  intent: calculation
+  expected_result: { value: 7.5, unit: mm, tol: 0.01 }
+
+- id: calc_wheel_default_en
+  question: "Calculate wheel load with Q=100, n=4"
+  lang: en
+  intent: calculation
+  expected_result: { value: 25.0, unit: kN, tol: 0.01 }
+
+- id: calc_wheel_av_id
+  question: "Hitung beban roda dengan Q=100, n=4, av=0.5"
+  lang: id
+  intent: calculation
+  expected_result: { value: 37.5, unit: kN, tol: 0.01 }
+
+- id: calc_floor_web_en
+  question: "Floor plate web thickness with h=800"
+  lang: en
+  intent: calculation
+  expected_result: { value: 11.0, unit: mm, tol: 0.01 }
+
+- id: calc_floor_peak_id
+  question: "Hitung tebal pelat alas di ceruk dengan L=1004444444444444444"
+  lang: id
+  intent: calculation
+  expected_result: { value: 8.5, unit: mm, tol: 0.01 }
+
+- id: calc_floor_height_en
+  question: "Floor plate height in fore peak with H=12"
+  lang: en
+  intent: calculation
+  expected_result: { value: 1.42, unit: m, tol: 0.01 }
+
+- id: calc_centre_web_id
+  question: "Hitung tebal web penumpu tengah dengan L=100"
+  lang: id
+  intent: calculation
+  expected_result: { value: 12.5, unit: mm, tol: 0.01 }
+
+- id: calc_centre_faceplate_en
+  question: "Centre girder face plate sectional area with L=100"
+  lang: en
+  intent: calculation
+  expected_result: { value: 82.0, unit: cm2, tol: 0.01 }
+
+- id: calc_frame_modulus_id
+  question: "Hitung modulus penampang gading dengan m=1, a=0.6, l=2, p=10, cr=1, k=1"
+  lang: id
+  intent: calculation
+  expected_result: { value: 13.2, unit: cm3, tol: 0.01 }
+
+- id: calc_forecastle_speed_en
+  question: "Forecastle frame speed threshold for L=100"
+  lang: en
+  intent: calculation
+  expected_result: { value: 16.0, unit: kn, tol: 0.01 }
+
+- id: calc_div_zero_id
+  question: "Hitung beban roda dengan Q=100, n=0"
+  lang: id
+  intent: calculation
+  expect_error: true
+
+# ---------- B. Rules Q&A (18) ----------
+- id: rules_deck_cargo_formula_en
+  question: "What formula gives the lower deck plating thickness for cargo loads?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 7 }]
+  must_include: ["1,21", "tK"]
+
+- id: rules_deck_min_id
+  question: "Berapa tebal minimum pelat dek kedua menurut aturan?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 7 }]
+  must_include: ["5,5"]
+
+- id: rules_shell_plating_en
+  question: "How is side shell plating thickness determined?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 6 }]
+  must_include: ["1,11"]
+
+- id: rules_corrosion_addition_id
+  question: "Apa itu corrosion addition tK dan bagaimana penerapannya?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 3 }]
+  must_include: ["tK"]
+
+- id: rules_material_factor_k_en
+  question: "What does the material factor k represent?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 2 }]
+  must_include: ["k"]
+
+- id: rules_rule_length_L_id
+  question: "Bagaimana definisi panjang kapal L dalam aturan ini?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 1 }]
+  must_include: ["L"]
+
+- id: rules_centre_girder_en
+  question: "What are the scantling requirements for the centre girder?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 8 }]
+  must_include: ["girder"]
+
+- id: rules_floor_plates_id
+  question: "Apa ketentuan tebal pelat alas (floor plates) di ceruk?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 8 }]
+  must_include: ["alas"]
+
+- id: rules_frame_modulus_en
+  question: "How is the section modulus of tween deck frames calculated?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 9 }]
+  must_include: ["section modulus"]
+
+- id: rules_forecastle_frames_id
+  question: "Kapan gading forecastle perlu diperkuat terhadap kecepatan kapal?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 9 }]
+  must_include: ["forecastle"]
+
+- id: rules_design_principles_en
+  question: "What permissible stresses are defined in the design principles?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 3 }]
+  must_include: ["stress"]
+
+- id: rules_bulk_carrier_id
+  question: "Apa persyaratan struktur untuk bulk carrier?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 23 }]
+  must_include: ["bulk"]
+
+- id: rules_superstructure_en
+  question: "What are the requirements for superstructures and deckhouses?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 16 }]
+  must_include: ["superstructure"]
+
+- id: rules_deck_load_pL_id
+  question: "Bagaimana menentukan beban dek pL untuk perhitungan pelat?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 4 }]
+  must_include: ["pL"]
+
+- id: rules_wheel_load_en
+  question: "How is the wheel load on a deck panel determined?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 7 }]
+  must_include: ["wheel"]
+
+- id: rules_min_thickness_general_id
+  question: "Apa tebal pelat minimum umum untuk pelat geladak?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 7 }]
+  must_include: ["minimum"]
+
+- id: rules_framing_spacing_en
+  question: "How is frame spacing 'a' defined in the framing rules?"
+  lang: en
+  intent: rules_qa
+  expected_sources: [{ section_no: 1 }, { section_no: 9 }]
+  must_include: ["spacing"]
+
+- id: rules_bottom_structure_id
+  question: "Apa saja komponen utama struktur alas (bottom structures)?"
+  lang: id
+  intent: rules_qa
+  expected_sources: [{ section_no: 8 }]
+  must_include: ["alas"]
+
+# ---------- C. Guardrail / out-of-scope (5) ----------
+- id: guard_weather_id
+  question: "Bagaimana cuaca besok di Jakarta?"
+  lang: id
+  should_reject: true
+
+- id: guard_recipe_en
+  question: "How do I cook beef rendang?"
+  lang: en
+  should_reject: true
+
+- id: guard_president_id
+  question: "Siapa presiden Indonesia saat ini?"
+  lang: id
+  should_reject: true
+
+- id: guard_code_en
+  question: "Write a Python script to sort a list of numbers"
+  lang: en
+  should_reject: true
+
+- id: guard_stock_id
+  question: "Berapa harga saham BBRI hari ini?"
+  lang: id
+  should_reject: true
+
+# ---------- D. Ambiguous calc (2) ----------
+- id: ambig_thickness_id
+  question: "Tolong hitung tebal pelat"
+  lang: id
+  intent: calculation
+  expect_clarification: true
+
+- id: ambig_calc_en
+  question: "Calculate the thickness for me"
+  lang: en
+  intent: calculation
+  expect_clarification: true

@@ -12,3 +12,4 @@ FlagEmbedding>=1.2
 transformers==4.57.6
 Pillow>=10.0
 tf-keras
+PyYAML>=6.0
