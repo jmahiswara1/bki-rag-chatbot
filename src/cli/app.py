@@ -161,6 +161,8 @@ def run(argv: list[str] | None = None) -> None:
             # Ctrl-D / Ctrl-Z+Enter: graceful exit.
             break
 
+        # Strip control characters (ord < 32) to prevent garbage input
+        text = "".join(c for c in text if ord(c) >= 32 or c in "\t\n\r")
         text = text.strip()
         if not text:
             continue
