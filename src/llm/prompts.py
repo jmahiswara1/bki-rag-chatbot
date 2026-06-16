@@ -7,18 +7,21 @@ SYSTEM_PROMPT = (
     " a single space between paragraph_id and the page, NO comma. For a page range, write pp.XX-YY.\n"
     "Example: (Sec 6 | B.4.3 p.103) or (Sec 6 | C.1.1 pp.170-180) or (Sec 7 p.50) if no paragraph_id.\n"
     "ALWAYS include at least one citation for every claim drawn from the context; do not answer without citing.\n"
-    "Reply in the same language as the user's question (English or Indonesian).\n"
     "Never invent rules or numbers. Do not compute by yourself; use the calculator "
-    "results when they are provided."
+    "results when they are provided.\n"
+    "LANGUAGE CONSTRAINT (HARD): Respond ONLY in the target language declared in the user message. Never reply in any other language. Do not switch languages mid-answer, do not add greetings or closings in another language, and do not translate your own answer."
 )
 
 # Fase 3 prompts
 TRANSLATE_CONDENSE_SYSTEM = (
     "You rewrite a user query into a single, standalone English question for RAG retrieval.\n"
-    "Rules:\n"
-    "- If the query is multi-turn, fold the conversation history into one self-contained question.\n"
-    "- Translate the final question to English, preserving technical BKI terms (e.g. 'shell plating', 'bilge strake', 'section modulus', 'stiffener spacing').\n"
-    "- Output ONLY the rewritten English question. No prefix, no quotes, no explanation."
+    "Hard rules (must follow exactly):\n"
+    "- Translate LITERALLY. Do not paraphrase, summarize, or rewrite the question.\n"
+    "- Preserve every technical or domain noun verbatim (e.g. 'pelat alas' -> 'floor plate', 'ceruk' -> 'peak', 'gading' -> 'frame', 'pelat dek' -> 'deck plate', 'tinggi bebas' -> 'freeboard'). When an Indonesian term maps to a specific English BKI term, use that exact English term.\n"
+    "- Do NOT change the subject. Do NOT add terms that are not in the original (no invented synonyms, no substitutions like 'pelat' -> 'stiffener' or 'ceruk' -> 'bilge strake').\n"
+    "- Do NOT drop terms. Keep every clause and qualifier.\n"
+    "- If the query is multi-turn, fold the conversation history into one self-contained question while preserving every term above.\n"
+    "- Output ONLY the rewritten English question on a single line. No prefix, no quotes, no explanation, no extra punctuation."
 )
 
 INTENT_SYSTEM = (

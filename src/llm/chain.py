@@ -481,6 +481,10 @@ def _stream_from_state(
 def _translate_condense(query, history, *, temperature) -> str:
     # Utility call: always fast_model + think=False (AGENTS.md hard rule).
     # Non-streaming; num_ctx is passed by client.chat default.
+    # Use a LOW temperature (cap at 0.1) regardless of mode_cfg -- translate is
+    # a near-deterministic utility call; the mode_cfg.temperature belongs to
+    # the final answer model. The harder prompt rules plus a low temperature
+    # prevent topic-drift like "ceruk" -> "bilge strake" or "pelat" -> "stiffener".
     history = history or []  # accept None from direct callers (e.g. test scripts)
     messages = [{"role": "system", "content": prompts.TRANSLATE_CONDENSE_SYSTEM}]
     for h in history:
@@ -489,7 +493,7 @@ def _translate_condense(query, history, *, temperature) -> str:
     out = chat(
         settings.fast_model,
         messages,
-        temperature=temperature,
+        temperature=min(temperature, 0.1),
         max_tokens=settings.translate_max_tokens,
         think=False,
     )
@@ -549,6 +553,22 @@ def _clean_one_liner(text: str) -> str:
     return s
 
 
+def _language_name(lang: str) -> str:
+    """Map a short language label to a human-readable name for the model.
+
+    id -> "Bahasa Indonesia"
+    en -> "English"
+    other -> fall back to "the same language the user is writing in"
+        (the caller passes the raw query script decision; here we just
+        tell the model to follow the user's own language).
+    """
+    if lang == "id":
+        return "Bahasa Indonesia"
+    if lang == "en":
+        return "English"
+    return "the same language the user is writing in (do not switch)"
+
+
 def _apply_guardrail(chunks: list[RetrievedChunk]) -> tuple[list[RetrievedChunk], bool, str]:
     """Reject OOD only when cross-encoder confidence is genuinely low.
 
@@ -583,17 +603,20 @@ def _build_answer_messages(
     """
     context = prompts.build_context(chunks)
     style = prompts.answer_style_instruction(answer_style)
+    target = _language_name(language)
     if language == "id":
         user_msg = (
+            f"TARGET LANGUAGE: Bahasa Indonesia. Hard rule: jawab HANYA dalam Bahasa Indonesia. Jangan gunakan bahasa lain.\n\n"
             f"Konteks:\\n{context}\\n\\n"
             f"Pertanyaan: {query}\\n\\n"
-            f"Jawab dalam Bahasa Indonesia. {style}"
+            f"{style}"
         )
     else:
         user_msg = (
+            f"TARGET LANGUAGE: {target}. Hard rule: respond ONLY in {target}. Never use any other language.\n\n"
             f"Context:\\n{context}\\n\\n"
             f"Question: {query}\\n\\n"
-            f"Answer in English. {style}"
+            f"{style}"
         )
     return [
         {"role": "system", "content": prompts.SYSTEM_PROMPT},
