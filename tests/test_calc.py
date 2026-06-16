@@ -10,6 +10,7 @@ from src.calc.engine import (
     _parse_variables,
     calculate,
 )
+from src.calc.registry import rank_formulas
 from src.core.models import Formula, Variable
 
 
@@ -599,3 +600,79 @@ class TestErrorMessageSeparation:
         assert "H" in result.error
         # Should NOT say "pembagian nol" because this is not a division issue
         assert "pembagian nol" not in result.error.lower()
+
+
+class TestRankFormulas:
+    """Tests for rank_formulas function (offline formula matching)."""
+
+    def test_centre_girder_web_selection(self):
+        """Test rank_formulas picks CENTRE_GIRDER_WEB for 'tebal web penumpu tengah'."""
+        # Create in-memory formula list with CENTRE_GIRDER_WEB and other formulas
+        formulas = [
+            Formula(
+                code="CENTRE_GIRDER_WEB",
+                title="Centre girder web thickness",
+                section_no=8,
+                expression="0.07*L + 5.5",
+                variables=[Variable(symbol="L", name="Rule length", unit="m")],
+                paragraph_id="A.2.2.1",
+                page_no=208,
+                result_unit="mm",
+                notes="Centre girder web plate thickness",
+            ),
+            Formula(
+                code="FLOOR_WEB_THICKNESS",
+                title="Floor plate web thickness",
+                section_no=8,
+                expression="h/100 + 3.0",
+                variables=[Variable(symbol="h", name="Web height", unit="mm")],
+                paragraph_id="A.1.2",
+                page_no=208,
+                result_unit="mm",
+                notes="Floor plate web plate thickness",
+            ),
+            Formula(
+                code="FLOOR_PEAK_THICKNESS",
+                title="Floor plate thickness in peaks",
+                section_no=8,
+                expression="0.035*L + 5.0",
+                variables=[Variable(symbol="L", name="Rule length", unit="m")],
+                paragraph_id="A.1.2.3",
+                page_no=208,
+                result_unit="mm",
+                notes="Floor plate thickness in fore peak and aft peak",
+            ),
+        ]
+        
+        query = "Hitung tebal web penumpu tengah dengan L=100"
+        ranked = rank_formulas(query, formulas)
+        
+        # CENTRE_GIRDER_WEB should be ranked first due to synonym match
+        # "penumpu tengah" -> "centre girder" synonym
+        assert len(ranked) > 0
+        assert ranked[0][0].code == "CENTRE_GIRDER_WEB"
+        # Should have high score due to synonym match
+        assert ranked[0][1] > 10  # Synonym bonus is 15
+        
+        # Second place should have lower score
+        if len(ranked) >= 2:
+            assert ranked[1][1] < ranked[0][1]
+
+    def test_empty_formula_list(self):
+        """Test rank_formulas with empty formula list."""
+        ranked = rank_formulas("test query", [])
+        assert ranked == []
+
+    def test_no_match(self):
+        """Test rank_formulas with no matching formulas."""
+        formulas = [
+            Formula(
+                code="TEST",
+                title="Test Formula",
+                section_no=1,
+                expression="L",
+                variables=[Variable(symbol="L", name="Length", unit="m")],
+            ),
+        ]
+        ranked = rank_formulas("completely unrelated query", formulas)
+        assert ranked == []

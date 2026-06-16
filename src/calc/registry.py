@@ -4,6 +4,18 @@ from src.core.db import get_client
 from src.core.models import Formula, Variable
 
 
+# Synonym map for Indonesian/English terms (case-insensitive)
+SYNONYM_MAP = {
+    "penumpu tengah": "centre girder",
+    "penumpu": "girder",
+    "tengah": "centre",
+    "tebal": "thickness",
+    "pelat": "plate",
+    "web": "web",
+    "web plate": "web plate",
+}
+
+
 def get_formula(code: str) -> Formula | None:
     """Load a curated, verified formula by code.
     
@@ -44,43 +56,48 @@ def list_verified_formulas() -> list[Formula]:
     return [_row_to_formula(row) for row in resp.data]
 
 
-def search_formulas(query: str) -> list[Formula]:
-    """Search formulas by keyword overlap on title and notes.
+def rank_formulas(query: str, formulas: list[Formula]) -> list[tuple[Formula, float]]:
+    """Rank formulas by weighted token overlap with query (pure, offline-testable).
     
     Args:
-        query: User query string (should be English for best results)
+        query: User query string
+        formulas: List of Formula objects to rank
         
     Returns:
-        List of Formula objects sorted by relevance (weighted keyword overlap + variable match).
-        If top candidate clearly dominates (score >= 1.1x second place), return only that one.
-        Otherwise return all candidates for user clarification.
+        List of (Formula, score) tuples sorted by score descending.
+        Score is weighted token overlap + synonym bonus + variable match bonus.
     """
-    # Get all verified formulas
-    formulas = list_verified_formulas()
-    
-    if not formulas:
-        return []
-    
     # Remove name=value patterns from query before matching
-    clean_query = re.sub(r"\w+\s*[=:]\s*[\d.,]+\s*\w*?", "", query, flags=re.IGNORECASE)
+    clean_query = re.sub(r"\w+\s*[=:]\s*[\d.,]+\s*\w*?", "", query, flags=re.IGNORECASE).lower()
     
-    # Extract keywords from cleaned query (lowercase, split on non-word chars)
-    query_keywords = set(re.findall(r"\w+", clean_query.lower()))
+    # Extract keywords from cleaned query
+    query_keywords = set(re.findall(r"\w+", clean_query))
     
     # Extract variable names from query (for variable matching bonus)
     var_pattern = r"(\w+)\s*[=:]\s*[\d.,]+\s*\w*?"
     query_var_names = set(re.findall(var_pattern, query, flags=re.IGNORECASE))
     
-    # Score each formula by weighted keyword overlap + variable match bonus
+    # Apply synonym expansion to query keywords
+    expanded_keywords = set(query_keywords)
+    for indo_term, eng_term in SYNONYM_MAP.items():
+        if indo_term in clean_query:
+            # Add English synonym keywords
+            expanded_keywords.update(eng_term.split())
+    
     scored_formulas = []
     for formula in formulas:
-        # Combine title and notes for matching
-        text_to_match = f"{formula.title} {formula.notes or ''}".lower()
+        # Combine title, code, and notes for matching
+        text_to_match = f"{formula.code} {formula.title} {formula.notes or ''}".lower()
         formula_keywords = set(re.findall(r"\w+", text_to_match))
         
-        # Calculate weighted overlap score
-        overlap = query_keywords & formula_keywords
+        # Calculate weighted overlap score (longer words = higher weight)
+        overlap = expanded_keywords & formula_keywords
         score = sum(len(word) for word in overlap)
+        
+        # Synonym bonus: if query contains Indonesian term that maps to formula's English term
+        for indo_term, eng_term in SYNONYM_MAP.items():
+            if indo_term in clean_query and eng_term in text_to_match:
+                score += 15  # Big bonus for synonym match
         
         # Variable match bonus: if query provides variables that match formula's variables
         formula_var_symbols = {var.symbol.lower() for var in formula.variables}
@@ -89,27 +106,49 @@ def search_formulas(query: str) -> list[Formula]:
         score += var_match_count * 10  # Big bonus for variable matches
         
         if score > 0:
-            scored_formulas.append((score, formula))
+            scored_formulas.append((formula, score))
+    
+    # Sort by score (descending)
+    scored_formulas.sort(key=lambda x: x[1], reverse=True)
+    return scored_formulas
+
+
+def search_formulas(query: str) -> list[Formula]:
+    """Search formulas by keyword overlap on title and notes.
+    
+    Args:
+        query: User query string (should be English for best results)
+        
+    Returns:
+        List of Formula objects sorted by relevance (weighted keyword overlap + variable match).
+        If top candidate clearly dominates (score >= 1.5x second place), return only that one.
+        Otherwise return all candidates for user clarification.
+    """
+    # Get all verified formulas
+    formulas = list_verified_formulas()
+    
+    if not formulas:
+        return []
+    
+    # Rank formulas using pure ranking function
+    scored_formulas = rank_formulas(query, formulas)
     
     if not scored_formulas:
         return []
     
-    # Sort by score (descending)
-    scored_formulas.sort(key=lambda x: x[0], reverse=True)
-    
-    # Auto-select if top candidate clearly dominates (score >= 1.1x second place)
+    # Auto-select if top candidate clearly dominates (score >= 1.5x second place)
     if len(scored_formulas) == 1:
-        return [scored_formulas[0][1]]
+        return [scored_formulas[0][0]]
     
-    top_score = scored_formulas[0][0]
-    second_score = scored_formulas[1][0]
+    top_score = scored_formulas[0][1]
+    second_score = scored_formulas[1][1]
     
-    if top_score >= 1.1 * second_score:
+    if top_score >= 1.5 * second_score:
         # Clear winner - return only top candidate
-        return [scored_formulas[0][1]]
+        return [scored_formulas[0][0]]
     
     # Multiple close candidates - return all for user clarification
-    return [formula for score, formula in scored_formulas]
+    return [formula for formula, score in scored_formulas]
 
 
 def _row_to_formula(row: dict) -> Formula:

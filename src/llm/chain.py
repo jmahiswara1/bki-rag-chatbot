@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Iterator
 
 from src.calc.engine import calculate
-from src.calc.registry import search_formulas
+from src.calc.registry import rank_formulas, search_formulas
 from src.core.config import settings
 from src.core.models import Intent, RetrievedChunk
 from src.llm import prompts
@@ -94,37 +94,76 @@ def _pre_answer_pipeline(
     if intent.kind == "calculation":
         t = time.time()
         
-        # Translate query to English for formula matching (lightweight, fast_model)
-        # Keep original query for variable parsing (preserves "a=0,6" format)
-        if lang != "en":
-            calc_query_en = _translate_condense(query, [], temperature=mode_cfg.temperature)
-        else:
-            calc_query_en = query
+        # Use the ORIGINAL query (in the user's language) for formula matching.
+        # SYNONYM_MAP in registry.py maps Indonesian terms ("penumpu tengah"
+        # -> "centre girder", "tebal" -> "thickness", etc.) to English
+        # equivalents used in formula titles. Translating first strips those
+        # terms and weakens the rank (e.g. ID query "Hitung tebal web
+        # penumpu tengah dengan L=100" scores 99 vs 57; translated to EN
+        # drops to 39 vs 27, failing the 1.5x margin). The original query
+        # is also passed to calculate() for variable parsing (preserves
+        # "L=100", "a=0,6" formats).
+        candidate_formulas = search_formulas(query)
         
-        # Search for matching formulas using English query
-        candidate_formulas = search_formulas(calc_query_en)
-        
-        if not candidate_formulas:
-            # No matching formulas
-            message = (
-                "I couldn't find a matching formula for your calculation request. "
-                "Please try rephrasing your question or check if the formula is available in the database."
-            )
-        elif len(candidate_formulas) > 1:
-            # Multiple matching formulas - list candidates by title
-            formula_list = "\n".join([
-                f"  - {f.title} (Sec {f.section_no})"
-                for f in candidate_formulas
-            ])
-            message = (
-                f"I found {len(candidate_formulas)} matching formulas:\n{formula_list}\n\n"
-                "Please specify which formula you'd like to use by providing its section number or title."
-            )
+        # Determine message based on confidence and candidates
+        if intent.confidence == "low":
+            # Ambiguous intent: ALWAYS show clarification list, even if 1 formula
+            if not candidate_formulas:
+                message = (
+                    "I couldn't find a matching formula for your calculation request. "
+                    "Please try rephrasing your question or check if the formula is available in the database."
+                )
+            else:
+                formula_list = "\n".join([
+                    f"  - {f.title} (Sec {f.section_no})"
+                    for f in candidate_formulas
+                ])
+                message = (
+                    f"I found {len(candidate_formulas)} matching formula(s):\n{formula_list}\n\n"
+                    "Please specify which formula you'd like to use by providing its section number or title."
+                )
         else:
-            # Single matching formula - calculate using ORIGINAL query for variable parsing
-            formula = candidate_formulas[0]
-            calc_result = calculate(query, formula)
-            message = calc_result.message
+            # High confidence: use rank_formulas for ranking and auto-select
+            if not candidate_formulas:
+                message = (
+                    "I couldn't find a matching formula for your calculation request. "
+                    "Please try rephrasing your question or check if the formula is available in the database."
+                )
+            else:
+                # Rank formulas using pure ranking function
+                ranked = rank_formulas(query, candidate_formulas)
+                
+                # Auto-select if one candidate OR top-second margin >= 1.5x
+                if len(ranked) == 1:
+                    # Single formula - calculate
+                    formula = ranked[0][0]
+                    calc_result = calculate(query, formula)
+                    message = calc_result.message
+                elif len(ranked) >= 2:
+                    top_score = ranked[0][1]
+                    second_score = ranked[1][1]
+                    
+                    if top_score >= 1.5 * second_score:
+                        # Clear winner - auto-select and calculate
+                        formula = ranked[0][0]
+                        calc_result = calculate(query, formula)
+                        message = calc_result.message
+                    else:
+                        # Multiple close candidates - show clarification
+                        formula_list = "\n".join([
+                            f"  - {f.title} (Sec {f.section_no})"
+                            for f, score in ranked
+                        ])
+                        message = (
+                            f"I found {len(ranked)} matching formulas:\n{formula_list}\n\n"
+                            "Please specify which formula you'd like to use by providing its section number or title."
+                        )
+                else:
+                    # Should not happen, but handle gracefully
+                    message = (
+                        "I couldn't find a matching formula for your calculation request. "
+                        "Please try rephrasing your question or check if the formula is available in the database."
+                    )
         
         timings["calc"] = time.time() - t
         return PipelineState(
