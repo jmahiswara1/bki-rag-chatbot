@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Iterator
 
 from src.calc.engine import calculate
-from src.calc.registry import rank_formulas, search_formulas
+from src.calc.registry import search_formulas, select_formula
 from src.core.config import settings
 from src.core.models import Intent, RetrievedChunk
 from src.llm import prompts
@@ -130,39 +130,23 @@ def _pre_answer_pipeline(
                     "Please try rephrasing your question or check if the formula is available in the database."
                 )
             else:
-                # Rank formulas using pure ranking function
-                ranked = rank_formulas(query, candidate_formulas)
-                
-                # Auto-select if one candidate OR top-second margin >= 1.5x
-                if len(ranked) == 1:
-                    # Single formula - calculate
-                    formula = ranked[0][0]
-                    calc_result = calculate(query, formula)
+                # Auto-select using VARIABLE COMPLETENESS as the primary
+                # disambiguator. The old 1.5x score-margin gate failed on
+                # exact ties (3 of 4 calc failures were exact score ties).
+                # select_formula filters by required-var satisfaction first,
+                # then picks the best by text-score + coverage tiebreak.
+                best, clarification_list = select_formula(query, candidate_formulas)
+                if best is not None:
+                    calc_result = calculate(query, best)
                     message = calc_result.message
-                elif len(ranked) >= 2:
-                    top_score = ranked[0][1]
-                    second_score = ranked[1][1]
-                    
-                    if top_score >= 1.5 * second_score:
-                        # Clear winner - auto-select and calculate
-                        formula = ranked[0][0]
-                        calc_result = calculate(query, formula)
-                        message = calc_result.message
-                    else:
-                        # Multiple close candidates - show clarification
-                        formula_list = "\n".join([
-                            f"  - {f.title} (Sec {f.section_no})"
-                            for f, score in ranked
-                        ])
-                        message = (
-                            f"I found {len(ranked)} matching formulas:\n{formula_list}\n\n"
-                            "Please specify which formula you'd like to use by providing its section number or title."
-                        )
                 else:
-                    # Should not happen, but handle gracefully
+                    formula_list = "\n".join([
+                        f"  - {f.title} (Sec {f.section_no})"
+                        for f, _score in clarification_list
+                    ])
                     message = (
-                        "I couldn't find a matching formula for your calculation request. "
-                        "Please try rephrasing your question or check if the formula is available in the database."
+                        f"I found {len(clarification_list)} matching formula(s):\n{formula_list}\n\n"
+                        "Please specify which formula you'd like to use by providing its section number or title."
                     )
         
         timings["calc"] = time.time() - t

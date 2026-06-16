@@ -14,6 +14,226 @@ from src.calc.registry import rank_formulas
 from src.core.models import Formula, Variable
 
 
+# ---------------------------------------------------------------------------
+_SEEDED_FORMULAS: list[Formula] = [
+    Formula(
+        code="DECK_PLATING_CARGO",
+        title="Lower deck plating thickness for cargo loads",
+        section_no=7,
+        expression="1.21*a*sqrt(pL*k) + tK",
+        result_unit="mm",
+        variables=[
+            Variable(symbol="a", name="Frame spacing", unit="m"),
+            Variable(symbol="pL", name="Deck load", unit="kN/m2"),
+            Variable(symbol="k", name="Material factor", unit="-"),
+            Variable(symbol="tK", name="Corrosion addition", unit="mm"),
+        ],
+    ),
+    Formula(
+        code="DECK_PLATING_MIN",
+        title="Minimum lower deck plating thickness (2nd deck)",
+        section_no=7,
+        expression="(5.5 + 0.02*L)*sqrt(k)",
+        result_unit="mm",
+        variables=[
+            Variable(symbol="L", name="Rule length", unit="m"),
+            Variable(symbol="k", name="Material factor", unit="-"),
+        ],
+    ),
+    Formula(
+        code="FLOOR_WEB_THICKNESS",
+        title="Floor plate web thickness",
+        section_no=8,
+        expression="h/100 + 3.0",
+        result_unit="mm",
+        variables=[Variable(symbol="h", name="Web height", unit="mm")],
+    ),
+    Formula(
+        code="FLOOR_PEAK_THICKNESS",
+        title="Floor plate thickness in peaks",
+        section_no=8,
+        expression="0.035*L + 5.0",
+        result_unit="mm",
+        variables=[Variable(symbol="L", name="Rule length", unit="m")],
+    ),
+    Formula(
+        code="FLOOR_HEIGHT_FOREPEAK",
+        title="Floor plate height in fore peak",
+        section_no=8,
+        expression="0.06*H + 0.7",
+        result_unit="m",
+        variables=[Variable(symbol="H", name="Moulded depth", unit="m")],
+    ),
+    Formula(
+        code="CENTRE_GIRDER_WEB",
+        title="Centre girder web thickness",
+        section_no=8,
+        expression="0.07*L + 5.5",
+        result_unit="mm",
+        variables=[Variable(symbol="L", name="Rule length", unit="m")],
+    ),
+    Formula(
+        code="CENTRE_GIRDER_FACEPLATE",
+        title="Centre girder face plate sectional area",
+        section_no=8,
+        expression="0.7*L + 12",
+        result_unit="cm2",
+        variables=[Variable(symbol="L", name="Rule length", unit="m")],
+    ),
+    Formula(
+        code="FRAME_SECTION_MODULUS",
+        title="Tween deck / superstructure frame section modulus",
+        section_no=9,
+        expression="0.55*m*a*l**2*p*cr*k",
+        result_unit="cm3",
+        variables=[
+            Variable(symbol="m", name="Moment coefficient", unit="-"),
+            Variable(symbol="a", name="Frame spacing", unit="m"),
+            Variable(symbol="l", name="Unsupported span", unit="m"),
+            Variable(symbol="p", name="Load", unit="kN/m2"),
+            Variable(symbol="cr", name="Curvature factor", unit="-"),
+            Variable(symbol="k", name="Material factor", unit="-"),
+        ],
+    ),
+    Formula(
+        code="WHEEL_LOAD",
+        title="Wheel load on deck plate panel",
+        section_no=7,
+        expression="(Q/n)*(1 + av)",
+        result_unit="kN",
+        variables=[
+            Variable(symbol="Q", name="Axle load", unit="kN"),
+            Variable(symbol="n", name="Number of wheels per axle", unit="-"),
+            Variable(symbol="av", name="Acceleration factor", unit="-", required=False, default=0),
+        ],
+    ),
+    Formula(
+        code="FORECASTLE_SPEED",
+        title="Forecastle frame speed threshold",
+        section_no=9,
+        expression="1.6*sqrt(L)",
+        result_unit="kn",
+        variables=[Variable(symbol="L", name="Rule length", unit="m")],
+    ),
+]
+
+
+class TestSelectFormula:
+    """Offline tests for select_formula (variable-completeness auto-select).
+
+    Replaces the previous 1.5x score-margin gate that failed on exact-tie
+    cases (e.g. 3 formulas tying at score 44 for a 'tebal/pelat' query).
+    """
+
+    def test_deck_cargo_en(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Calculate lower deck cargo plating thickness with a=0.6, pL=10, k=1, tK=1",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "DECK_PLATING_CARGO"
+
+    def test_deck_cargo_id_comma_decimals(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Hitung tebal pelat dek kargo dengan a=0,6, pL=10, k=1, tK=12,5, s=380, p=10",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "DECK_PLATING_CARGO"
+
+    def test_deck_minimum(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Hitung tebal minimum pelat dek kedua dengan L=100, k=1",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "DECK_PLATING_MIN"
+
+    def test_floor_peak(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Hitung tebal pelat alas di ceruk dengan L=100",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "FLOOR_PEAK_THICKNESS"
+
+    def test_centre_girder_web(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Hitung tebal web penumpu tengah dengan L=100",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "CENTRE_GIRDER_WEB"
+
+    def test_centre_girder_faceplate(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Calculate centre girder face plate sectional area with L=100",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "CENTRE_GIRDER_FACEPLATE"
+
+    def test_forecastle_speed(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Forecastle frame speed threshold for L=100",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "FORECASTLE_SPEED"
+
+    def test_frame_modulus(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Hitung modulus penampang gading dengan m=1, a=0.6, l=2, p=10, cr=1, k=1",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "FRAME_SECTION_MODULUS"
+
+    def test_wheel_load_no_av(self):
+        from src.calc.registry import select_formula
+        # av has default=0, so it is NOT required -> Q=100,n=4 is satisfiable.
+        best, _ = select_formula(
+            "Calculate wheel load with Q=100, n=4",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "WHEEL_LOAD"
+
+    def test_floor_web(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Calculate floor plate web thickness with h=800",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "FLOOR_WEB_THICKNESS"
+
+    def test_floor_height_forepeak(self):
+        from src.calc.registry import select_formula
+        best, _ = select_formula(
+            "Calculate floor plate height in fore peak with H=12",
+            _SEEDED_FORMULAS,
+        )
+        assert best is not None
+        assert best.code == "FLOOR_HEIGHT_FOREPEAK"
+
+    def test_ambiguous_no_variables_returns_none(self):
+        """No variables provided -> no formula is satisfiable -> clarify."""
+        from src.calc.registry import select_formula
+        best, ranked = select_formula("Tolong hitung tebal pelat", _SEEDED_FORMULAS)
+        assert best is None
+        # ranked list should still be non-empty (caller will show it).
+        assert len(ranked) > 0
+
+
 class TestParseVariables:
     """Tests for _parse_variables function."""
 
