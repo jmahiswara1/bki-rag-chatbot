@@ -20,10 +20,17 @@ def _options(
     # non-streaming callers. Utility calls must pass think=False (AGENTS.md).
     # keep_alive: keep model loaded for N duration so qwen3.5:4b does not
     # unload between calls on a 4GB-VRAM box (Fase 3 closeout: Test G robustness).
+    # seed=0 makes local Ollama inference near-deterministic when combined
+    # with temperature=0.0. Ollama's documented default is already 0; we
+    # pass it explicitly so a future Ollama default change cannot silently
+    # re-introduce nondeterminism. When temperature > 0 the seed has no
+    # effect on output (random sampling ignores seed), so adding it is
+    # zero-risk for the existing fast-mode (temp=0.3) calls.
     opt: dict = {"temperature": temperature, "num_ctx": num_ctx, "keep_alive": keep_alive}
     if max_tokens is not None:
         opt["num_predict"] = max_tokens
     opt["think"] = think
+    opt["seed"] = 0
     return opt
 
 

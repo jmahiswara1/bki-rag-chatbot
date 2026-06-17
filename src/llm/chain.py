@@ -465,10 +465,12 @@ def _stream_from_state(
 def _translate_condense(query, history, *, temperature) -> str:
     # Utility call: always fast_model + think=False (AGENTS.md hard rule).
     # Non-streaming; num_ctx is passed by client.chat default.
-    # Use a LOW temperature (cap at 0.1) regardless of mode_cfg -- translate is
-    # a near-deterministic utility call; the mode_cfg.temperature belongs to
-    # the final answer model. The harder prompt rules plus a low temperature
-    # prevent topic-drift like "ceruk" -> "bilge strake" or "pelat" -> "stiffener".
+    # Pin temperature to 0.0: translate is a deterministic utility call
+    # (the prompt itself does the work; sampling is not needed). The
+    # hard-coded 0.0 also stops en_query variance across runs (manual-QA
+    # showed 11/26 cases had en_query drift at temperature=0.1). The
+    # HARD prompt rules ("Preserve formula symbols verbatim", etc.) prevent
+    # topic-drift; low temperature is not the lever.
     history = history or []  # accept None from direct callers (e.g. test scripts)
     messages = [{"role": "system", "content": prompts.TRANSLATE_CONDENSE_SYSTEM}]
     for h in history:
@@ -477,7 +479,7 @@ def _translate_condense(query, history, *, temperature) -> str:
     out = chat(
         settings.fast_model,
         messages,
-        temperature=min(temperature, 0.1),
+        temperature=0.0,
         max_tokens=settings.translate_max_tokens,
         think=False,
     )

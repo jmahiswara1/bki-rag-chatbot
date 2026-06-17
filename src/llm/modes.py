@@ -14,10 +14,15 @@ class ModeConfig:
 
 
 MODES = {
-    # default: rerank ON, top_k=8, temp=0.2, detailed (multi-paragraph) answer
+    # default: rerank ON, top_k=8, temp=0.0 (deterministic), detailed answer.
+    # temp=0.0 for the final-answer LLM is intentional: manual QA over 26
+    # questions showed 25/26 NONDETERMINISTIC at temp=0.2. Retrieval is
+    # already deterministic post-embedding, and utility calls
+    # (classify_with_llm, _expand) also benefit from temp=0.0. _translate_condense
+    # is unaffected -- it caps its own temperature at 0.1 internally.
     "default": ModeConfig(
         "default", settings.default_model,
-        top_k=8, rerank=True, temperature=0.2, answer_style="detailed",
+        top_k=8, rerank=True, temperature=0.0, answer_style="detailed",
     ),
     # fast: no rerank, top_k=4, temp=0.3, concise answer
     "fast": ModeConfig(
