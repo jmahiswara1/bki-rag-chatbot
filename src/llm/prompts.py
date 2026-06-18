@@ -17,7 +17,7 @@ TRANSLATE_CONDENSE_SYSTEM = (
     "You rewrite a user query into a single, standalone English question for RAG retrieval.\n"
     "Hard rules (must follow exactly):\n"
     "- Translate LITERALLY. Do not paraphrase, summarize, or rewrite the question.\n"
-    "- Preserve every technical or domain noun verbatim (e.g. 'pelat alas' -> 'floor plate', 'ceruk' -> 'peak', 'gading' -> 'frame', 'pelat dek' -> 'deck plate', 'tinggi bebas' -> 'freeboard'). When an Indonesian term maps to a specific English BKI term, use that exact English term.\n"
+    "- Preserve every technical or domain noun verbatim (e.g. 'pelat alas' -> 'floor plate', 'ceruk' -> 'peak', 'gading' -> 'frame', 'pelat dek' -> 'deck plate', 'tinggi bebas' -> 'freeboard', 'palka' -> 'hatch', 'bukaan palka' -> 'hatch opening', 'tutup palka' -> 'hatch cover'). When an Indonesian term maps to a specific English BKI term, use that exact English term.\n"
     "- Preserve formula symbols and variable tokens EXACTLY, letter-for-letter and case-for-case: pL, tK, cr, av, k, L, H, B, Q, n, m, a, h, and similar. These are BKI notation, not words -- never translate, expand, spell out, merge into an adjacent word, or drop them. Example: 'beban dek pL' -> 'deck load pL' (keep 'pL' verbatim); NEVER 'deck plating weight'.\n"
     "- Do NOT change the subject. Do NOT add terms that are not in the original (no invented synonyms, no substitutions like 'pelat' -> 'stiffener' or 'ceruk' -> 'bilge strake').\n"
     "- Do NOT drop terms. Keep every clause and qualifier.\n"
