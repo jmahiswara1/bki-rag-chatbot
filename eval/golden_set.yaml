@@ -1,5 +1,5 @@
-# BKI RAG chatbot - golden evaluation set (38 entries)
-# Categories: calculation (13), rules_qa (18), guardrail (5), ambiguous (2)
+# BKI RAG chatbot - golden evaluation set (47 entries)
+# Categories: calculation (13), rules_qa (18), guardrail (5), ambiguous (2), lookup (9)
 
 # ---------- A. Calculation (13) ----------
 - id: calc_deck_cargo_en
@@ -245,3 +245,69 @@
   lang: en
   intent: calculation
   expect_clarification: true
+
+# ---------- E. Lookup Rules — deterministic (9) ----------
+# These MUST short-circuit through lookup_rules before retrieval.
+# eval: expect_lookup + must_include keywords (citation + value).
+- id: lookup_bulwark_id
+  question: "tinggi minimum bulwark atau guard rail berapa?"
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["1,0 m", "Sec 6", "K.2", "p.191"]
+
+- id: lookup_bulwark_en
+  question: "what is the minimum bulwark or guard rail height?"
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["1,0 m", "Sec 6", "K.2", "p.191"]
+
+- id: lookup_forepeak_id
+  question: "berapa jarak senta di ceruk haluan?"
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["2,6 m", "Sec 9", "A.5.2.1", "p.228"]
+
+- id: lookup_tug_winch_id
+  question: "diameter drum winch tug minimal berapa kali diameter towrope?"
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["14", "towrope", "Sec 27", "p.630"]
+
+- id: lookup_restricted_p_en
+  question: "what is the restricted ocean service P section modulus reduction?"
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["5%", "Sec 5", "C.2.1", "p.147"]
+
+- id: lookup_restricted_l_en
+  question: "what is the coasting service L section modulus reduction?"
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["15%", "Sec 5", "C.2.1", "p.147"]
+
+- id: lookup_restricted_t_en
+  question: "what is the sheltered water service T section modulus reduction?"
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["25%", "Sec 5", "C.2.1", "p.147"]
+
+- id: lookup_fire_hinged_id
+  question: "waktu penutupan pintu kebakaran engsel berapa?"
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["40", "10", "Sec 22", "C.6.6.2", "p.494"]
+
+- id: lookup_fire_sliding_id
+  question: "kecepatan penutupan pintu kebakaran geser berapa?"
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["0,1", "0,2", "m/s", "Sec 22", "p.494"]

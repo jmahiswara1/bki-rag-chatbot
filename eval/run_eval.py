@@ -29,6 +29,8 @@ def classify_entry(entry: dict) -> str:
         return "calc-clarify"
     if entry.get("should_reject"):
         return "guardrail"
+    if entry.get("expect_lookup"):
+        return "lookup"
     return "rules_qa"
 
 
@@ -125,6 +127,34 @@ def eval_guardrail(result, entry: dict) -> tuple[bool, str]:
     return False, "not rejected"
 
 
+def eval_lookup(result, entry: dict) -> tuple[bool, str]:
+    """Evaluate deterministic lookup-rules answer.
+
+    PASS criteria (all must hold):
+    1. lookup_match is not None (deterministic lookup engaged)
+    2. Language matches
+    3. All must_include keywords present in answer
+    """
+    failures = []
+
+    lang_ok = result.language == entry.get("lang")
+    if not lang_ok:
+        failures.append(f"lang {result.language} != {entry.get('lang')}")
+
+    if not result.lookup_match:
+        failures.append("no lookup_match (fell back to RAG)")
+
+    answer = result.answer or ""
+    answer_norm = _norm(answer)
+    for kw in entry.get("must_include", []):
+        if _norm(kw) not in answer_norm:
+            failures.append(f"missing keyword: {kw}")
+
+    if failures:
+        return False, "; ".join(failures)
+    return True, ""
+
+
 # ---------- Main ----------
 
 def main():
@@ -212,6 +242,8 @@ def main():
                 keyword_ok = eval_rules_qa_keywords(result, entry)
             elif category == "guardrail":
                 passed, reason = eval_guardrail(result, entry)
+            elif category == "lookup":
+                passed, reason = eval_lookup(result, entry)
             else:
                 passed, reason = False, f"unknown category: {category}"
             
