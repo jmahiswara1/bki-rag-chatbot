@@ -7,6 +7,7 @@ from src.calc.engine import calculate
 from src.calc.registry import search_formulas, select_formula
 from src.core.config import settings
 from src.core.models import Intent, RetrievedChunk
+from src.llm import lookup as _lookup
 from src.llm import prompts
 from src.llm.client import chat, chat_stream
 from src.llm.intent import classify, classify_with_llm
@@ -26,6 +27,7 @@ class ChainResult:
     expanded: list[str] = field(default_factory=list)
     rejected: bool = False
     reject_reason: str = ""
+    lookup_match: object = None
 
 
 @dataclass
@@ -47,6 +49,7 @@ class PipelineState:
     mode_cfg: object
     short_circuit_msg: str = ""
     is_pre_answer_only: bool = False
+    lookup_match: object = None
 
 
 @dataclass
@@ -62,6 +65,7 @@ class ChainStreamResult:
     rejected: bool = False
     reject_reason: str = ""
     token_count: int = 0
+    lookup_match: object = None
 
 
 def _pre_answer_pipeline(
@@ -175,6 +179,42 @@ def _pre_answer_pipeline(
             en_query = _translate_condense(query, history, temperature=mode_cfg.temperature)
     timings["translate"] = time.time() - t
 
+    # 4.5. lookup-first (before retrieval — deterministic short-circuit)
+    t = time.time()
+    lookup_match = None
+    if mode == "default" and intent.kind == "rules_qa":
+        try:
+            rules = _get_lookup_rules()
+            if rules:
+                lookup_match = _lookup.match_lookup(
+                    query_id=query, query_en=en_query, rules=rules,
+                )
+            if lookup_match is not None:
+                msg = _format_lookup_answer(lookup_match, lang)
+                timings["lookup"] = time.time() - t
+                return PipelineState(
+                    lang=lang,
+                    intent=intent,
+                    en_query=en_query,
+                    expanded=[],
+                    candidates=[],
+                    rejected=False,
+                    reject_reason="",
+                    timings=timings,
+                    mode_cfg=mode_cfg,
+                    short_circuit_msg=msg,
+                    is_pre_answer_only=True,
+                    lookup_match=lookup_match,
+                )
+        except Exception as exc:
+            print(
+                f"  [chain] WARNING: lookup match failed, falling back to RAG "
+                f"({type(exc).__name__}: {exc})",
+                file=sys.stderr,
+                flush=True,
+            )
+    timings["lookup"] = time.time() - t
+
     # 5. multi-query expansion (gated)
     expanded: list[str] = []
     if mode == "default" and settings.enable_multi_query:
@@ -253,6 +293,7 @@ def chain_answer(
             reject_reason=state.reject_reason,
             en_query=state.en_query,
             expanded=state.expanded,
+            lookup_match=state.lookup_match,
         )
 
     t = time.time()
@@ -276,6 +317,7 @@ def chain_answer(
         expanded=state.expanded,
         rejected=state.rejected,
         reject_reason=state.reject_reason,
+        lookup_match=state.lookup_match,
     )
 
 
@@ -319,6 +361,7 @@ def chain_answer_stream(
             rejected=state.rejected,
             reject_reason=state.reject_reason,
             token_count=0,
+            lookup_match=state.lookup_match,
         ))
         return
 
@@ -375,6 +418,7 @@ def chain_answer_stream(
         rejected=state.rejected,
         reject_reason=state.reject_reason,
         token_count=len(accumulated),
+        lookup_match=state.lookup_match,
     ))
 
 
@@ -404,6 +448,7 @@ def _stream_from_state(
             rejected=state.rejected,
             reject_reason=state.reject_reason,
             token_count=0,
+            lookup_match=state.lookup_match,
         ))
         return
 
@@ -455,12 +500,112 @@ def _stream_from_state(
         rejected=state.rejected,
         reject_reason=state.reject_reason,
         token_count=len(accumulated),
+        lookup_match=state.lookup_match,
     ))
 
 
 # ---------------------------------------------------------------------------
 # Private utility helpers (unchanged from previous version, kept for reuse).
 # ---------------------------------------------------------------------------
+
+# --- lookup-first helpers (Fase C) ---
+
+_lookup_cache: list[_lookup.LookupRule] | None = None
+
+
+def _get_lookup_rules() -> list[_lookup.LookupRule]:
+    """Lazy-load verified lookup_rules from Supabase, cached for session lifetime."""
+    global _lookup_cache
+    if _lookup_cache is not None:
+        return _lookup_cache
+    try:
+        from src.core.db import get_client
+        _lookup_cache = _lookup.load_verified_rules(get_client())
+    except Exception as exc:
+        print(
+            f"  [chain] WARNING: failed to load lookup_rules, "
+            f"lookup will be disabled ({type(exc).__name__}: {exc})",
+            file=sys.stderr,
+            flush=True,
+        )
+        _lookup_cache = []
+    return _lookup_cache
+
+
+# Natural-language topic descriptors per (topic, parameter) for answer formatting.
+_LOOKUP_DESC: dict[str, dict[str | None, tuple[str, str]]] = {
+    "restricted_service_modulus_reduction": {
+        "P": (
+            "pengurangan minimum section modulus untuk Restricted Ocean Service (P) sebesar",
+            "the minimum section modulus reduction for Restricted Ocean Service (P) is",
+        ),
+        "L": (
+            "pengurangan minimum section modulus untuk Coasting Service (L) sebesar",
+            "the minimum section modulus reduction for Coasting Service (L) is",
+        ),
+        "T": (
+            "pengurangan minimum section modulus untuk Sheltered Water Service (T) sebesar",
+            "the minimum section modulus reduction for Sheltered Water Service (T) is",
+        ),
+    },
+    "forepeak_stringer_spacing": {
+        None: (
+            "jarak vertikal tiers of beams/stringer di forepeak (ceruk haluan) adalah",
+            "the vertical spacing of tiers of beams/stringers in the forepeak is",
+        ),
+    },
+    "tug_winch_drum_diameter": {
+        None: (
+            "diameter drum winch kapal tunda adalah",
+            "the tug boat winch drum diameter is",
+        ),
+    },
+    "fire_door_closing_time": {
+        "hinged": (
+            "waktu penutupan pintu kebakaran engsel adalah",
+            "the hinged fire door closing time is",
+        ),
+        "sliding": (
+            "laju penutupan pintu kebakaran geser adalah",
+            "the sliding fire door closure rate is",
+        ),
+    },
+    "bulwark_guardrail_min_height": {
+        None: (
+            "tinggi minimum bulwark atau guard rail adalah",
+            "the minimum bulwark or guard rail height is",
+        ),
+    },
+}
+
+
+def _format_lookup_answer(match: _lookup.LookupMatch, lang: str) -> str:
+    """Format a deterministic lookup answer with citation."""
+    rule = match.rule
+    is_id = lang == "id"
+    desc_id, desc_en = _LOOKUP_DESC.get(rule.topic, {}).get(
+        rule.parameter, ("", "")
+    )
+    desc = desc_id if is_id else desc_en
+
+    para = f" {rule.paragraph_id}" if rule.paragraph_id else ""
+    page = f"p.{rule.page_no}" if rule.page_no is not None else ""
+
+    if is_id:
+        return (
+            f"Berdasarkan BKI Rules for Hull 2026, {desc} {rule.value_text}.\n"
+            f"Sumber: Sec {rule.section_no}{para}, {page}.\n"
+            f"Kutipan: \"{rule.source_quote}\""
+        )
+    else:
+        return (
+            f"According to BKI Rules for Hull 2026, {desc} {rule.value_text}.\n"
+            f"Source: Sec {rule.section_no}{para}, {page}.\n"
+            f"Quote: \"{rule.source_quote}\""
+        )
+
+
+# --- existing chain helpers ---
 
 def _translate_condense(query, history, *, temperature) -> str:
     # Utility call: always fast_model + think=False (AGENTS.md hard rule).
