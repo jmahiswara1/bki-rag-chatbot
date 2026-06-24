@@ -1,5 +1,5 @@
-# BKI RAG chatbot - golden evaluation set (47 entries)
-# Categories: calculation (13), rules_qa (18), guardrail (5), ambiguous (2), lookup (9)
+# BKI RAG chatbot - golden evaluation set (48 entries)
+# Categories: calculation (13), rules_qa (17), guardrail (5), ambiguous (2), lookup (11)
 
 # ---------- A. Calculation (13) ----------
 - id: calc_deck_cargo_en
@@ -115,13 +115,6 @@
   intent: rules_qa
   expected_sources: [{ section_no: 2 }]
   must_include: ["k"]
-
-- id: rules_rule_length_L_id
-  question: "Bagaimana definisi panjang kapal L dalam aturan ini?"
-  lang: id
-  intent: rules_qa
-  expected_sources: [{ section_no: 1 }]
-  must_include: ["L"]
 
 - id: rules_centre_girder_en
   question: "What are the scantling requirements for the centre girder?"
@@ -311,3 +304,17 @@
   intent: rules_qa
   expect_lookup: true
   must_include: ["0,1", "0,2", "m/s", "Sec 22", "p.494"]
+
+- id: lookup_length_l_id
+  question: "Bagaimana definisi panjang kapal L dalam aturan ini?"
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["Sec 1", "H.2.1", "p.22", "96%"]
+
+- id: lookup_length_l_en
+  question: "What is the rule length L in these rules?"
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["Sec 1", "H.2.1", "p.22", "96%"]

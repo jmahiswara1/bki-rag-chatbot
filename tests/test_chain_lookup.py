@@ -87,6 +87,18 @@ _FIXTURE_RULES: list[LookupRule] = [
         trigger_terms=("bulwark", "guard rail", "guardrail", "railing", "height", "tinggi",
                        "pagar pelindung", "timber deck cargo", "muatan kayu", "geladak", "1,0 m"),
     ),
+    LookupRule(
+        topic="ship_length_l_definition", parameter=None,
+        value_text="Panjang aturan (rule length) L adalah jarak dalam meter, diukur pada garis air saat sarat skantling (scantling draught), dari sisi depan linggi haluan (foreside of stem) sampai sisi belakang tongkat kemudi (rudder post), atau ke pusat poros kemudi (rudder stock) bila tidak ada rudder post. L tidak boleh kurang dari 96% dan tidak perlu lebih dari 97% panjang ekstrem pada garis air saat sarat skantling.",
+        value_num=None, unit=None,
+        section_no=1, paragraph_id="H.2.1", page_no=22,
+        source_quote="The rule length L is the distance in metres, measured on the waterline at the scantling draught from the foreside of stem to the after side of the rudder post, or the centre of the rudder stock if there is no rudder post. L is not to be less than 96% and need not be greater than 97% of the extreme length on the waterline at the scantling draught.",
+        trigger_terms=("length L", "rule length", "rule length L",
+                       "definisi panjang kapal", "panjang kapal L", "panjang aturan",
+                       "definisi L", "panjang L", "scantling draught",
+                       "foreside of stem", "rudder post", "rudder stock",
+                       "96%", "97%", "definition of length", "L"),
+    ),
 ]
 
 
@@ -103,6 +115,7 @@ _TRANSLATIONS: dict[str, str] = {
     "apa kapasitas oli mesin?": "what is the engine oil capacity?",
     "berapa jarak senta di ceruk haluan?": "forepeak stringer spacing collision bulkhead",
     "diameter drum winch tug minimal berapa kali diameter towrope?": "tug winch drum diameter towrope 14 times",
+    "Bagaimana definisi panjang kapal L dalam aturan ini?": "definition of ship length L in these rules",
 }
 
 
@@ -394,6 +407,44 @@ def test_chain_lookup_match_tug_winch_drum():
     print("PASS: test_chain_lookup_match_tug_winch_drum")
 
 
+def test_chain_lookup_match_ship_length_l():
+    """Ship length L definition query must match lookup and cite Sec 1 / H.2.1 / p.22."""
+    retrieve_called = []
+
+    def fake_retrieve(*args, **kwargs):
+        retrieve_called.append(True)
+        return []
+
+    def fake_answer(*args, **kwargs):
+        return "LLM ANSWER"
+
+    with patch.multiple(
+        "src.llm.chain",
+        _get_lookup_rules=lambda: list(_FIXTURE_RULES),
+        _translate_condense=_fake_translate,
+        retrieve_context=fake_retrieve,
+        _answer=fake_answer,
+        _answer_fallback_non_stream=fake_answer,
+    ):
+        result = chain.chain_answer(
+            "Bagaimana definisi panjang kapal L dalam aturan ini?"
+        )
+
+    assert result is not None
+    assert "Sec 1" in result.answer
+    assert "H.2.1" in result.answer
+    assert "p.22" in result.answer
+    assert "96%" in result.answer
+    assert "97%" in result.answer
+    assert result.lookup_match is not None
+    assert result.lookup_match.rule.topic == "ship_length_l_definition"
+    assert result.lookup_match.rule.section_no == 1
+    assert result.lookup_match.rule.paragraph_id == "H.2.1"
+    assert result.lookup_match.rule.page_no == 22
+    assert len(retrieve_called) == 0, "retrieve_context should NOT be called when lookup matches"
+    print("PASS: test_chain_lookup_match_ship_length_l")
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -407,4 +458,5 @@ if __name__ == "__main__":
     test_lookup_match_answer_format_en()
     test_chain_lookup_match_forepeak_stringer()
     test_chain_lookup_match_tug_winch_drum()
-    print("\nAll 8 tests passed!")
+    test_chain_lookup_match_ship_length_l()
+    print("\nAll 9 tests passed!")

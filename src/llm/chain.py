@@ -576,6 +576,12 @@ _LOOKUP_DESC: dict[str, dict[str | None, tuple[str, str]]] = {
             "the minimum bulwark or guard rail height is",
         ),
     },
+    "ship_length_l_definition": {
+        None: (
+            "definisi panjang L adalah",
+            "the definition of length L is",
+        ),
+    },
 }
 
 

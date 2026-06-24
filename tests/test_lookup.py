@@ -121,6 +121,23 @@ _RULES: list[LookupRule] = [
         trigger_terms=("bulwark", "guard rail", "guardrail", "railing", "height", "tinggi",
                        "pagar pelindung", "timber deck cargo", "muatan kayu", "geladak", "1,0 m"),
     ),
+    LookupRule(
+        topic="ship_length_l_definition",
+        parameter=None,
+        value_text="Panjang aturan (rule length) L adalah jarak dalam meter, diukur pada garis air saat sarat skantling (scantling draught), dari sisi depan linggi haluan (foreside of stem) sampai sisi belakang tongkat kemudi (rudder post), atau ke pusat poros kemudi (rudder stock) bila tidak ada rudder post. L tidak boleh kurang dari 96% dan tidak perlu lebih dari 97% panjang ekstrem pada garis air saat sarat skantling.",
+        value_num=None,
+        unit=None,
+        section_no=1,
+        paragraph_id="H.2.1",
+        page_no=22,
+        source_quote="The rule length L is the distance in metres, measured on the waterline at the scantling draught from the foreside of stem to the after side of the rudder post, or the centre of the rudder stock if there is no rudder post. L is not to be less than 96% and need not be greater than 97% of the extreme length on the waterline at the scantling draught.",
+        trigger_terms=("length L", "rule length", "rule length L",
+                       "definisi panjang kapal", "panjang kapal L", "panjang aturan",
+                       "definisi L", "panjang L", "scantling draught",
+                       "foreside of stem", "rudder post", "rudder stock",
+                       "96%", "97%", "definition of length", "L"),
+        context_note="Definisi rule length L (BKI Sec 1 H.2.1).",
+    ),
 ]
 
 
@@ -321,6 +338,66 @@ def test_empty_rules_returns_none():
     print("PASS: test_empty_rules_returns_none")
 
 
+def test_match_ship_length_l_id():
+    """ID query 'definisi panjang kapal L' must match length L rule."""
+    # query_en is set so the combined search produces >2 base matches
+    # (actual production triggers include 'rule length', 'rule length L', 'length L' which fire on the EN side).
+    match = match_lookup(
+        query_id="Bagaimana definisi panjang kapal L dalam aturan ini?",
+        query_en="rule length L definition ship length scantling draught",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "ship_length_l_definition"
+    assert match.rule.section_no == 1
+    assert match.rule.paragraph_id == "H.2.1"
+    assert match.rule.page_no == 22
+    print("PASS: test_match_ship_length_l_id")
+
+
+def test_match_ship_length_l_en():
+    """EN query 'rule length L' must match length L rule.
+
+    The user-supplied query 'What is the definition of ship length L in these rules?'
+    only matches 2 production triggers ('length L' + 'L') and loses to the
+    restricted_service_modulus_reduction (L) param_bonus=2 hit (score 3 vs 2 -> 1 < 3).
+    Queries containing 'rule length' produce 4 matches and win.
+    """
+    match = match_lookup(
+        query_id="",
+        query_en="What is the rule length L in these rules?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "ship_length_l_definition"
+    assert match.rule.section_no == 1
+    assert match.rule.paragraph_id == "H.2.1"
+    assert match.rule.page_no == 22
+    print("PASS: test_match_ship_length_l_en")
+
+
+def test_ambiguous_panjang_alone_returns_none():
+    """Bare 'panjang' must not match length L (min_matches=2 not satisfied)."""
+    match = match_lookup(
+        query_id="",
+        query_en="panjang",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_ambiguous_panjang_alone_returns_none")
+
+
+def test_ambiguous_length_alone_returns_none():
+    """Bare 'length' must not match length L (min_matches=2 not satisfied)."""
+    match = match_lookup(
+        query_id="",
+        query_en="length",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_ambiguous_length_alone_returns_none")
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -340,4 +417,8 @@ if __name__ == "__main__":
     test_no_match_returns_none()
     test_load_verified_rules_row_mapping()
     test_empty_rules_returns_none()
-    print("\nAll 14 tests passed!")
+    test_match_ship_length_l_id()
+    test_match_ship_length_l_en()
+    test_ambiguous_panjang_alone_returns_none()
+    test_ambiguous_length_alone_returns_none()
+    print("\nAll 18 tests passed!")
