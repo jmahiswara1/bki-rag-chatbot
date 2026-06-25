@@ -1,0 +1,29 @@
+[project]
+name = "bki-rag-chatbot"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "pdfplumber>=0.11",
+    "supabase>=2.7",
+    "ollama>=0.3",
+    "sympy>=1.13",
+    "rich>=13.7",
+    "prompt_toolkit>=3.0",
+    "python-dotenv>=1.0",
+    "langdetect>=1.0.9",
+    "PyMuPDF>=1.24",
+    "pytesseract>=0.3",
+    "FlagEmbedding>=1.2",
+    "transformers==4.57.6",
+    "Pillow>=10.0",
+    "tf-keras",
+    "PyYAML>=6.0",
+]
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

@@ -1,8 +1,18 @@
-.venv/
+# Python build artifacts
+*.egg-info/
 __pycache__/
-.pytest_cache/
 *.pyc
-.env
+.eggs/
+build/
+dist/
+
+# Virtual env
+.venv/
+
+# Test cache
+.pytest_cache/
+
+# Local data (PDFs are large; not tracked)
 data/*.pdf
 
 # Test / debug artifacts (created by scripts and ad-hoc shell invocations)
@@ -19,3 +29,6 @@ phase3_*_proc.xml
 
 # Temporary files and folders
 temp/
+
+# Env / secrets
+.env
