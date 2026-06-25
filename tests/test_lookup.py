@@ -399,6 +399,39 @@ def test_ambiguous_length_alone_returns_none():
 
 
 # ---------------------------------------------------------------------------
+# Anchor gate tests (Fase E precision fix)
+# ---------------------------------------------------------------------------
+
+def test_anchor_gate_accepts_forepeak_when_anchor_present():
+    match = match_lookup(
+        query_id="berapa jarak senta di ceruk haluan?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "forepeak_stringer_spacing"
+    print("PASS: test_anchor_gate_accepts_forepeak_when_anchor_present")
+
+
+def test_anchor_gate_rejects_forepeak_on_collision_bulkhead_position():
+    match = match_lookup(
+        query_id="Di manakah posisi sekat tubrukan (collision bulkhead) diukur dari garis tegak haluan?",
+        query_en="where is the collision bulkhead position measured from the fore part",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_anchor_gate_rejects_forepeak_on_collision_bulkhead_position")
+
+
+def test_anchor_gate_rejects_restricted_and_lengthL_on_depth_ratio():
+    match = match_lookup(
+        query_id="Berapakah batas minimum rasio kedalaman terhadap panjang L untuk kapal di daerah pelayaran tidak terbatas?",
+        query_en="minimum ratio of depth to length L for ships in unrestricted navigation areas",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_anchor_gate_rejects_restricted_and_lengthL_on_depth_ratio")
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 

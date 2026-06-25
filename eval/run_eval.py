@@ -29,6 +29,8 @@ def classify_entry(entry: dict) -> str:
         return "calc-clarify"
     if entry.get("should_reject"):
         return "guardrail"
+    if entry.get("expect_no_lookup"):
+        return "lookup_negative"
     if entry.get("expect_lookup"):
         return "lookup"
     return "rules_qa"
@@ -155,8 +157,43 @@ def eval_lookup(result, entry: dict) -> tuple[bool, str]:
     return True, ""
 
 
-# ---------- Main ----------
 
+def eval_lookup_negative(result, entry: dict) -> tuple[bool, str]:
+    """Evaluate negative lookup entry: lookup MUST NOT short-circuit.
+
+    PASS criteria:
+    1. lookup_match is None (guard correctly rejected the lookup candidate)
+    2. Top retrieval hit matches the expected section (RAG path used)
+    3. Answer is NOT a refusal message (RAG path produced content)
+    """
+    failures = []
+
+    if result.lookup_match is not None:
+        failures.append(
+            f"unexpected lookup_match: {result.lookup_match.rule.topic}"
+        )
+
+    expected_sections = {s["section_no"] for s in entry.get("expected_sources", [])}
+    result_sections = {s.section_no for s in result.sources}
+    if expected_sections and not (expected_sections & result_sections):
+        failures.append(
+            f"retrieval miss: expected {expected_sections}, got {result_sections}"
+        )
+
+    answer = result.answer or ""
+    answer_lc = answer.lower()
+    if (
+        "Konteks yang tersedia tidak cukup" in answer
+        or "context is insufficient" in answer_lc
+    ):
+        failures.append("got refusal message (RAG path did not produce content)")
+
+    if failures:
+        return False, "; ".join(failures)
+    return True, ""
+
+
+# ---------- Main ----------
 def main():
     # Configure UTF-8 output to handle Unicode characters (e.g. ℓ, σ, etc.)
     if sys.stdout.encoding != 'utf-8':
@@ -244,6 +281,8 @@ def main():
                 passed, reason = eval_guardrail(result, entry)
             elif category == "lookup":
                 passed, reason = eval_lookup(result, entry)
+            elif category == "lookup_negative":
+                passed, reason = eval_lookup_negative(result, entry)
             else:
                 passed, reason = False, f"unknown category: {category}"
             

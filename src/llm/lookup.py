@@ -61,6 +61,74 @@ _PARAM_BONUS: int = 2
 
 
 # ---------------------------------------------------------------------------
+# Anchor terms (per-topic). Required for a topic to be eligible.
+#
+# The trigger_terms sets in lookup_rules include some generic phrases
+# (e.g. "haluan", "collision bulkhead", "tinggi") that overlap across
+# topics and with general narrative queries. The anchor gate enforces
+# that the query carries at least ONE topic-distinctive phrase before
+# trigger matching is even allowed, eliminating false positives on
+# near-miss questions (e.g. "depth/L ratio" must not fire restricted
+# service, "collision bulkhead position" must not fire forepeak).
+#
+# Anchor phrases are designed from the actual trigger_terms + golden-set
+# positive queries so each anchor appears in the corresponding positive
+# query AND is absent from the documented negative queries.
+# ---------------------------------------------------------------------------
+ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
+    # restricted service (Sec 5): modulus reduction percentages P/L/T.
+    # Generics banned: "range of service", bare "l", bare "service".
+    "restricted_service_modulus_reduction": (
+        "section modulus",
+        "modulus penampang",
+        "reduction",
+        "reduksi",
+        "restricted ocean",
+        "coasting service",
+        "sheltered water",
+    ),
+    # forepeak (Sec 9): tiers of beams / stringer spacing.
+    # Generics banned: "collision bulkhead", "forward", bare "haluan".
+    "forepeak_stringer_spacing": (
+        "tiers of beams",
+        "stringer",
+        "forepeak",
+        "ceruk haluan",
+        "beam spacing",
+    ),
+    # tug winch drum (Sec 27): winch drum vs towrope.
+    "tug_winch_drum_diameter": (
+        "winch",
+        "drum",
+        "towing",
+        "tow line",
+    ),
+    # fire door closing time / rate (Sec 22).
+    "fire_door_closing_time": (
+        "fire door",
+        "pintu kebakaran",
+        "closing time",
+        "waktu penutupan",
+    ),
+    # bulwark / guard rail minimum height (Sec 6).
+    "bulwark_guardrail_min_height": (
+        "bulwark",
+        "guard rail",
+        "guardrail",
+    ),
+    # ship rule length L definition (Sec 1 H.2.1).
+    # Generics banned: bare "length l" / bare "panjang l".
+    "ship_length_l_definition": (
+        "rule length",
+        "definisi panjang kapal",
+        "definition of ship length",
+        "panjang aturan",
+        "scantling draught",
+        "foreside of stem",
+        "rudder post",
+    ),
+}
+# ---------------------------------------------------------------------------
 # Normalisation helpers
 # ---------------------------------------------------------------------------
 
@@ -144,6 +212,12 @@ def match_lookup(
     Normalises case/whitespace/punctuation.  Short trigger tokens (≤2 chars)
     must match as whole words; longer terms match as substrings.
 
+    Topic-distinctive ANCHOR_TERMS gate: for topics registered in
+    ANCHOR_TERMS the query MUST carry at least one anchor phrase before
+    trigger matching runs. Topics not in ANCHOR_TERMS fall through to
+    the legacy behaviour. Kills false-positives on near-miss narrative
+    queries (e.g. "depth/L ratio" must not fire restricted_service).
+
     Multi-parameter topics require at least one PARAM_TOKENS disambiguation
     token to match.  Ties return None.
 
@@ -158,6 +232,16 @@ def match_lookup(
     # candidate = (rule, matched_terms, total_score, param_bonus)
 
     for rule in rules:
+        # Anchor gate: skip rules whose topic requires an anchor but the
+        # query does not carry any of the topic-distinctive phrases.
+        topic_anchors = ANCHOR_TERMS.get(rule.topic)
+        if topic_anchors is not None:
+            anchor_hit = any(
+                _term_matches(search_text, anchor) for anchor in topic_anchors
+            )
+            if not anchor_hit:
+                continue
+
         matched: list[str] = []
         base_score = 0
         for term in rule.trigger_terms:

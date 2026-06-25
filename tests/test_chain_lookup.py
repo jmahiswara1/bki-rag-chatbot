@@ -115,7 +115,7 @@ _TRANSLATIONS: dict[str, str] = {
     "apa kapasitas oli mesin?": "what is the engine oil capacity?",
     "berapa jarak senta di ceruk haluan?": "forepeak stringer spacing collision bulkhead",
     "diameter drum winch tug minimal berapa kali diameter towrope?": "tug winch drum diameter towrope 14 times",
-    "Bagaimana definisi panjang kapal L dalam aturan ini?": "definition of ship length L in these rules",
+    "Bagaimana definisi panjang kapal L dalam aturan ini?": "rule length L definition scantling draught foreside of stem rudder post",
 }
 
 
