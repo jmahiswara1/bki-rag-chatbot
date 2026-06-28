@@ -137,6 +137,14 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "breadth to depth",
         "depth h",
     ),
+    # main vertical zone max length/width on any deck (Sec 22 B.2.1).
+    # Generics banned: bare "length" / bare "maximum" / bare "panjang maksimum".
+    "main_vertical_zone_dimension": (
+        "main vertical zone",
+        "main vertical zones",
+        "zona vertikal utama",
+        "mvz",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers

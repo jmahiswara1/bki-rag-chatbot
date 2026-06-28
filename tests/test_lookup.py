@@ -168,6 +168,38 @@ _RULES: list[LookupRule] = [
         ),
         context_note="BKI Sec 1 A.1 (Validity, Equivalence).",
     ),
+    LookupRule(
+        topic="main_vertical_zone_dimension",
+        parameter=None,
+        value_text=(
+            "Panjang dan lebar rata-rata main vertical zone pada tiap "
+            "geladak umumnya tidak boleh melebihi 40 m. Perpanjangan "
+            "hingga maksimum 48 m hanya diizinkan bila total luas main "
+            "vertical zone tidak melebihi 1600 m2 pada tiap geladak "
+            "(Sec 22 B.2.1)."
+        ),
+        value_num=40,
+        unit="m",
+        section_no=22,
+        paragraph_id="B.2.1",
+        page_no=489,
+        source_quote=(
+            "The hull, superstructures and deckhouses are to be subdivided "
+            "into main vertical zones the average length and width of "
+            "which on any deck is generally not to exceed 40 m."
+        ),
+        trigger_terms=(
+            "main vertical zone", "main vertical zones",
+            "zona vertikal utama", "mvz",
+            "average length", "panjang rata-rata",
+            "maximum length", "panjang maksimum",
+            "length and width", "panjang dan lebar",
+        ),
+        context_note=(
+            "General limit 40 m; 48 m extension only if total zone area "
+            "<= 1600 m2 per deck. Do not assume the 48 m extension applies."
+        ),
+    ),
 ]
 
 
@@ -521,6 +553,44 @@ def test_depth_rule_does_not_match_on_length_l_query():
     print("PASS: test_depth_rule_does_not_match_on_length_l_query")
 
 
+def test_mvz_rule_matches_on_mvz_length_query_id():
+    match = match_lookup(
+        query_id="berapa panjang maksimum rata-rata main vertical zone?",
+        query_en="maximum average length of a main vertical zone",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "main_vertical_zone_dimension"
+    assert match.rule.section_no == 22
+    assert match.rule.paragraph_id == "B.2.1"
+    assert match.rule.page_no == 489
+    assert "40" in match.rule.value_text
+    print("PASS: test_mvz_rule_matches_on_mvz_length_query_id")
+
+
+def test_mvz_rule_does_not_match_on_freeboard_query():
+    match = match_lookup(
+        query_id="Berapa tinggi lambung timbul minimum kapal?",
+        query_en="what is the minimum freeboard of the ship?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "main_vertical_zone_dimension"
+    print("PASS: test_mvz_rule_does_not_match_on_freeboard_query")
+
+
+def test_mvz_anchor_gate_rejects_without_anchor():
+    match = match_lookup(
+        query_id="berapa panjang maksimum kapal?",
+        query_en="what is the maximum length of the ship",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "main_vertical_zone_dimension"
+    print("PASS: test_mvz_anchor_gate_rejects_without_anchor")
+    print("PASS: test_depth_rule_does_not_match_on_length_l_query")
+
+
 # ---------------------------------------------------------------------------
 
 def test_anchor_gate_rejects_bulwark_on_freeboard_query():
@@ -581,8 +651,25 @@ if __name__ == "__main__":
     test_no_match_returns_none()
     test_load_verified_rules_row_mapping()
     test_empty_rules_returns_none()
-    print("\nAll 29 tests passed!")
+    test_match_ship_length_l_id()
     test_match_ship_length_l_en()
     test_ambiguous_panjang_alone_returns_none()
     test_ambiguous_length_alone_returns_none()
-    print("\nAll 18 tests passed!")
+    # Anchor gate tests
+    test_anchor_gate_accepts_forepeak_when_anchor_present()
+    test_anchor_gate_rejects_forepeak_on_collision_bulkhead_position()
+    test_anchor_gate_rejects_restricted_and_lengthL_on_depth_ratio()
+    test_anchor_gate_rejects_bulwark_on_freeboard_query()
+    test_anchor_gate_rejects_fire_door_on_plain_door_query()
+    test_anchor_gate_rejects_length_l_on_freeboard_query()
+    test_anchor_gate_rejects_restricted_on_generic_modulus_query()
+    # Depth rule
+    test_depth_rule_matches_on_depth_ratio_query_id()
+    test_depth_rule_matches_on_depth_ratio_query_en()
+    test_depth_rule_does_not_match_on_restricted_query()
+    test_depth_rule_does_not_match_on_length_l_query()
+    # MVZ rule
+    test_mvz_rule_matches_on_mvz_length_query_id()
+    test_mvz_rule_does_not_match_on_freeboard_query()
+    test_mvz_anchor_gate_rejects_without_anchor()
+    print("\nAll 32 tests passed!")

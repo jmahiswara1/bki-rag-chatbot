@@ -438,14 +438,12 @@
   lang: id
   intent: rules_qa
   expect_no_lookup: true
-- id: rules_mvz_max_length_id
+- id: lookup_mvz_max_length_id
   question: Berapa panjang maksimum rata-rata main vertical zone?
   lang: id
   intent: rules_qa
-  expected_sources:
-  - section_no: 22
+  expect_lookup: true
   must_include:
   - '40'
   must_not_contain:
   - '2304'
-  known_fail: true
