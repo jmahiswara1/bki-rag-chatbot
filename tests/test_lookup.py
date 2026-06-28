@@ -138,6 +138,36 @@ _RULES: list[LookupRule] = [
                        "96%", "97%", "definition of length", "L"),
         context_note="Definisi rule length L (BKI Sec 1 H.2.1).",
     ),
+    LookupRule(
+        topic="depth_to_length_ratio",
+        parameter=None,
+        value_text=(
+            "Kedalaman (depth H) kapal tidak boleh kurang dari: L/16 untuk "
+            "Unlimited Range of Service dan P (Restricted Ocean Service); "
+            "L/18 untuk L (Coasting Service); L/19 untuk T (Sheltered Water "
+            "Service)."
+        ),
+        value_num=None,
+        unit=None,
+        section_no=1,
+        paragraph_id="A.1",
+        page_no=17,
+        source_quote=(
+            "The Rules apply to seagoing steel ships classed A100 whose "
+            "breadth to depth ratio is within the range common for seagoing "
+            "ships and the depth H of which is not less than: L/16 for "
+            "Unlimited Range of Service and P (Restricted Ocean Service); "
+            "L/18 for L (Coasting Service); L/19 for T (Sheltered Water "
+            "Service)."
+        ),
+        trigger_terms=(
+            "depth to length ratio", "kedalaman terhadap panjang",
+            "rasio kedalaman", "ratio of depth", "breadth to depth",
+            "depth h", "minimum depth", "kedalaman minimum",
+            "range of service", "l/16", "l/18", "l/19",
+        ),
+        context_note="BKI Sec 1 A.1 (Validity, Equivalence).",
+    ),
 ]
 
 
@@ -424,13 +454,69 @@ def test_anchor_gate_rejects_forepeak_on_collision_bulkhead_position():
 
 
 def test_anchor_gate_rejects_restricted_and_lengthL_on_depth_ratio():
+    """The depth-ratio query now FIRES depth_to_length_ratio (added in same
+    batch).  Restricted-service and ship-length rules must NOT win:
+    no anchor match for them, depth rule's anchor ('rasio kedalaman' /
+    'kedalaman terhadap panjang') is present.
+    """
     match = match_lookup(
         query_id="Berapakah batas minimum rasio kedalaman terhadap panjang L untuk kapal di daerah pelayaran tidak terbatas?",
         query_en="minimum ratio of depth to length L for ships in unrestricted navigation areas",
         rules=_RULES,
     )
-    assert match is None
+    assert match is not None
+    assert match.rule.topic == "depth_to_length_ratio"
+    assert "L/16" in match.rule.value_text
     print("PASS: test_anchor_gate_rejects_restricted_and_lengthL_on_depth_ratio")
+def test_depth_rule_matches_on_depth_ratio_query_id():
+    match = match_lookup(
+        query_id="Berapakah batas minimum rasio kedalaman terhadap panjang L untuk kapal di daerah pelayaran tidak terbatas?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "depth_to_length_ratio"
+    assert match.rule.section_no == 1
+    assert match.rule.paragraph_id == "A.1"
+    assert "L/16" in match.rule.value_text
+    assert "L/18" in match.rule.value_text
+    print("PASS: test_depth_rule_matches_on_depth_ratio_query_id")
+
+
+def test_depth_rule_matches_on_depth_ratio_query_en():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the minimum depth to length ratio for ships in unlimited range of service?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "depth_to_length_ratio"
+    assert "L/16" in match.rule.value_text
+    print("PASS: test_depth_rule_matches_on_depth_ratio_query_en")
+
+
+def test_depth_rule_does_not_match_on_restricted_query():
+    match = match_lookup(
+        query_id="",
+        query_en="what is the restricted ocean service P section modulus reduction?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "restricted_service_modulus_reduction"
+    print("PASS: test_depth_rule_does_not_match_on_restricted_query")
+
+
+def test_depth_rule_does_not_match_on_length_l_query():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the rule length L in these rules?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "ship_length_l_definition"
+    print("PASS: test_depth_rule_does_not_match_on_length_l_query")
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------

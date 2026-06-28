@@ -326,14 +326,20 @@
 #   - ChainResult.lookup_match is None
 #   - Top retrieval section matches expected_sources
 #   - Answer is not a refusal message
-- id: neg_depth_ratio_id
+
+- id: lookup_depth_ratio_id
   question: "Berapakah batas minimum rasio kedalaman terhadap panjang L untuk kapal di daerah pelayaran tidak terbatas?"
   lang: id
   intent: rules_qa
-  expect_no_lookup: true
-  expected_sources: [{ section_no: 1 }]
-  must_include_any: ["L/16", "1/16"]
+  expect_lookup: true
+  must_include: ["L/16", "Sec 1", "A.1", "p.17"]
 
+- id: lookup_depth_ratio_en
+  question: "What is the minimum depth to length ratio for ships in unlimited range of service?"
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include: ["L/16", "Sec 1", "A.1", "p.17"]
 - id: neg_collision_bulkhead_id
   question: "Di manakah posisi sekat tubrukan (collision bulkhead) diukur dari garis tegak haluan?"
   lang: id

@@ -582,6 +582,12 @@ _LOOKUP_DESC: dict[str, dict[str | None, tuple[str, str]]] = {
             "the definition of length L is",
         ),
     },
+    "depth_to_length_ratio": {
+        None: (
+            "rasio kedalaman minimum terhadap panjang (depth-to-length ratio) adalah",
+            "the minimum depth-to-length ratio is",
+        ),
+    },
 }
 
 

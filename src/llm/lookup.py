@@ -127,6 +127,16 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "foreside of stem",
         "rudder post",
     ),
+    # depth H >= L/n by range of service (Sec 1 A.1).
+    # Generics banned: bare "depth" / bare "kedalaman" / bare "l" / bare "length".
+    "depth_to_length_ratio": (
+        "depth to length ratio",
+        "kedalaman terhadap panjang",
+        "rasio kedalaman",
+        "ratio of depth",
+        "breadth to depth",
+        "depth h",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers
