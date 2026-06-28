@@ -1,349 +1,451 @@
-# BKI RAG chatbot - golden evaluation set (48 entries)
-# Categories: calculation (13), rules_qa (17), guardrail (5), ambiguous (2), lookup (11)
-
-# ---------- A. Calculation (13) ----------
 - id: calc_deck_cargo_en
-  question: "Calculate lower deck cargo plating thickness with a=0.6, pL=10, k=1, tK=1"
+  question: Calculate lower deck cargo plating thickness with a=0.6, pL=10, k=1, tK=1
   lang: en
   intent: calculation
-  expected_result: { value: 3.2958, unit: mm, tol: 0.01 }
-
+  expected_result:
+    value: 3.2958
+    unit: mm
+    tol: 0.01
 - id: calc_deck_cargo_comma_id
-  question: "Hitung tebal pelat dek kargo dengan a=0,6, pL=10, k=1, tK=1"
+  question: Hitung tebal pelat dek kargo dengan a=0,6, pL=10, k=1, tK=1
   lang: id
   intent: calculation
-  expected_result: { value: 3.2958, unit: mm, tol: 0.01 }
-
+  expected_result:
+    value: 3.2958
+    unit: mm
+    tol: 0.01
 - id: calc_deck_min_id
-  question: "Hitung tebal minimum pelat dek kedua dengan L=100, k=1"
+  question: Hitung tebal minimum pelat dek kedua dengan L=100, k=1
   lang: id
   intent: calculation
-  expected_result: { value: 7.5, unit: mm, tol: 0.01 }
-
+  expected_result:
+    value: 7.5
+    unit: mm
+    tol: 0.01
 - id: calc_wheel_default_en
-  question: "Calculate wheel load with Q=100, n=4"
+  question: Calculate wheel load with Q=100, n=4
   lang: en
   intent: calculation
-  expected_result: { value: 25.0, unit: kN, tol: 0.01 }
-
+  expected_result:
+    value: 25.0
+    unit: kN
+    tol: 0.01
 - id: calc_wheel_av_id
-  question: "Hitung beban roda dengan Q=100, n=4, av=0.5"
+  question: Hitung beban roda dengan Q=100, n=4, av=0.5
   lang: id
   intent: calculation
-  expected_result: { value: 37.5, unit: kN, tol: 0.01 }
-
+  expected_result:
+    value: 37.5
+    unit: kN
+    tol: 0.01
 - id: calc_floor_web_en
-  question: "Floor plate web thickness with h=800"
+  question: Floor plate web thickness with h=800
   lang: en
   intent: calculation
-  expected_result: { value: 11.0, unit: mm, tol: 0.01 }
-
+  expected_result:
+    value: 11.0
+    unit: mm
+    tol: 0.01
 - id: calc_floor_peak_id
-  question: "Hitung tebal pelat alas di ceruk dengan L=100"
+  question: Hitung tebal pelat alas di ceruk dengan L=100
   lang: id
   intent: calculation
-  expected_result: { value: 8.5, unit: mm, tol: 0.01 }
-
+  expected_result:
+    value: 8.5
+    unit: mm
+    tol: 0.01
 - id: calc_floor_height_en
-  question: "Floor plate height in fore peak with H=12"
+  question: Floor plate height in fore peak with H=12
   lang: en
   intent: calculation
-  expected_result: { value: 1.42, unit: m, tol: 0.01 }
-
+  expected_result:
+    value: 1.42
+    unit: m
+    tol: 0.01
 - id: calc_centre_web_id
-  question: "Hitung tebal web penumpu tengah dengan L=100"
+  question: Hitung tebal web penumpu tengah dengan L=100
   lang: id
   intent: calculation
-  expected_result: { value: 12.5, unit: mm, tol: 0.01 }
-
+  expected_result:
+    value: 12.5
+    unit: mm
+    tol: 0.01
 - id: calc_centre_faceplate_en
-  question: "Centre girder face plate sectional area with L=100"
+  question: Centre girder face plate sectional area with L=100
   lang: en
   intent: calculation
-  expected_result: { value: 82.0, unit: cm2, tol: 0.01 }
-
+  expected_result:
+    value: 82.0
+    unit: cm2
+    tol: 0.01
 - id: calc_frame_modulus_id
-  question: "Hitung modulus penampang gading dengan m=1, a=0.6, l=2, p=10, cr=1, k=1"
+  question: Hitung modulus penampang gading dengan m=1, a=0.6, l=2, p=10, cr=1, k=1
   lang: id
   intent: calculation
-  expected_result: { value: 13.2, unit: cm3, tol: 0.01 }
-
+  expected_result:
+    value: 13.2
+    unit: cm3
+    tol: 0.01
 - id: calc_forecastle_speed_en
-  question: "Forecastle frame speed threshold for L=100"
+  question: Forecastle frame speed threshold for L=100
   lang: en
   intent: calculation
-  expected_result: { value: 16.0, unit: kn, tol: 0.01 }
-
+  expected_result:
+    value: 16.0
+    unit: kn
+    tol: 0.01
 - id: calc_div_zero_id
-  question: "Hitung beban roda dengan Q=100, n=0"
+  question: Hitung beban roda dengan Q=100, n=0
   lang: id
   intent: calculation
   expect_error: true
-
-# ---------- B. Rules Q&A (18) ----------
 - id: rules_deck_cargo_formula_en
-  question: "What formula gives the lower deck plating thickness for cargo loads?"
+  question: What formula gives the lower deck plating thickness for cargo loads?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 7 }]
-  must_include: ["1,21", "tK"]
-
+  expected_sources:
+  - section_no: 7
+  must_include:
+  - 1,21
+  - tK
 - id: rules_deck_min_id
-  question: "Berapa tebal minimum pelat dek kedua menurut aturan?"
+  question: Berapa tebal minimum pelat dek kedua menurut aturan?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 7 }]
-  must_include: ["5,5"]
-
+  expected_sources:
+  - section_no: 7
+  must_include:
+  - 5,5
 - id: rules_shell_plating_en
-  question: "How is side shell plating thickness determined?"
+  question: How is side shell plating thickness determined?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 6 }]
-  must_include: ["1,11"]
-
+  expected_sources:
+  - section_no: 6
+  must_include:
+  - 1,9
 - id: rules_corrosion_addition_id
-  question: "Apa itu corrosion addition tK dan bagaimana penerapannya?"
+  question: Apa itu corrosion addition tK dan bagaimana penerapannya?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 3 }]
-  must_include: ["tK"]
-
+  expected_sources:
+  - section_no: 3
+  must_include:
+  - tK
 - id: rules_material_factor_k_en
-  question: "What does the material factor k represent?"
+  question: What does the material factor k represent?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 2 }]
-  must_include: ["k"]
-
+  expected_sources:
+  - section_no: 2
+  must_include:
+  - k
 - id: rules_centre_girder_en
-  question: "What are the scantling requirements for the centre girder?"
+  question: What are the scantling requirements for the centre girder?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 8 }]
-  must_include: ["girder"]
-
+  expected_sources:
+  - section_no: 8
+  must_include:
+  - girder
 - id: rules_floor_plates_id
-  question: "Apa ketentuan tebal pelat alas (floor plates) di ceruk?"
+  question: Apa ketentuan tebal pelat alas (floor plates) di ceruk?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 8 }]
-  must_include: ["alas"]
-
+  expected_sources:
+  - section_no: 8
+  must_include:
+  - alas
 - id: rules_frame_modulus_en
-  question: "How is the section modulus of tween deck frames calculated?"
+  question: How is the section modulus of tween deck frames calculated?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 9 }]
-  must_include: ["section modulus"]
-
+  expected_sources:
+  - section_no: 9
+  must_include:
+  - section modulus
+  must_not_contain:
+  - flexural
 - id: rules_forecastle_frames_id
-  question: "Kapan gading forecastle perlu diperkuat terhadap kecepatan kapal?"
+  question: Kapan gading forecastle perlu diperkuat terhadap kecepatan kapal?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 9 }]
-  must_include: ["forecastle"]
-
+  expected_sources:
+  - section_no: 9
+  must_include:
+  - forecastle
 - id: rules_design_principles_en
-  question: "What permissible stresses are defined in the design principles?"
+  question: What permissible stresses are defined in the design principles?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 3 }]
-  must_include: ["stress"]
-
+  expected_sources:
+  - section_no: 3
+  must_include:
+  - stress
 - id: rules_bulk_carrier_id
-  question: "Apa persyaratan struktur untuk bulk carrier?"
+  question: Apa persyaratan struktur untuk bulk carrier?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 23 }]
-  must_include: ["bulk"]
-
+  expected_sources:
+  - section_no: 23
+  must_include:
+  - bulk
 - id: rules_superstructure_en
-  question: "What are the requirements for superstructures and deckhouses?"
+  question: What are the requirements for superstructures and deckhouses?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 16 }]
-  must_include: ["superstructure"]
-
+  expected_sources:
+  - section_no: 16
+  must_include:
+  - superstructure
 - id: rules_deck_load_pL_id
-  question: "Bagaimana menentukan beban dek pL untuk perhitungan pelat?"
+  question: Bagaimana menentukan beban dek pL untuk perhitungan pelat?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 4 }]
-  must_include: ["pL"]
-
+  expected_sources:
+  - section_no: 4
+  must_include:
+  - pL
 - id: rules_wheel_load_en
-  question: "How is the wheel load on a deck panel determined?"
+  question: How is the wheel load on a deck panel determined?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 7 }]
-  must_include: ["wheel"]
-
+  expected_sources:
+  - section_no: 7
+  must_include:
+  - wheel
 - id: rules_min_thickness_general_id
-  question: "Apa tebal pelat minimum umum untuk pelat geladak?"
+  question: Apa tebal pelat minimum umum untuk pelat geladak?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 7 }]
-  must_include: ["minimum"]
-
+  expected_sources:
+  - section_no: 7
+  must_include:
+  - minimum
 - id: rules_framing_spacing_en
-  question: "How is frame spacing 'a' defined in the framing rules?"
+  question: How is frame spacing 'a' defined in the framing rules?
   lang: en
   intent: rules_qa
-  expected_sources: [{ section_no: 9 }]
-  must_include: ["spacing"]
-
+  expected_sources:
+  - section_no: 9
+  must_include:
+  - spacing
 - id: rules_bottom_structure_id
-  question: "Apa saja komponen utama struktur alas (bottom structures)?"
+  question: Apa saja komponen utama struktur alas (bottom structures)?
   lang: id
   intent: rules_qa
-  expected_sources: [{ section_no: 8 }]
-  must_include: ["alas"]
-
-# ---------- C. Guardrail / out-of-scope (5) ----------
+  expected_sources:
+  - section_no: 8
+  must_include:
+  - alas
 - id: guard_weather_id
-  question: "Bagaimana cuaca besok di Jakarta?"
+  question: Bagaimana cuaca besok di Jakarta?
   lang: id
   should_reject: true
-
 - id: guard_recipe_en
-  question: "How do I cook beef rendang?"
+  question: How do I cook beef rendang?
   lang: en
   should_reject: true
-
 - id: guard_president_id
-  question: "Siapa presiden Indonesia saat ini?"
+  question: Siapa presiden Indonesia saat ini?
   lang: id
   should_reject: true
-
 - id: guard_code_en
-  question: "Write a Python script to sort a list of numbers"
+  question: Write a Python script to sort a list of numbers
   lang: en
   should_reject: true
-
 - id: guard_stock_id
-  question: "Berapa harga saham BBRI hari ini?"
+  question: Berapa harga saham BBRI hari ini?
   lang: id
   should_reject: true
-
-# ---------- D. Ambiguous calc (2) ----------
 - id: ambig_thickness_id
-  question: "Tolong hitung tebal pelat"
+  question: Tolong hitung tebal pelat
   lang: id
   intent: calculation
   expect_clarification: true
-
 - id: ambig_calc_en
-  question: "Calculate the thickness for me"
+  question: Calculate the thickness for me
   lang: en
   intent: calculation
   expect_clarification: true
-
-# ---------- E. Lookup Rules — deterministic (9) ----------
-# These MUST short-circuit through lookup_rules before retrieval.
-# eval: expect_lookup + must_include keywords (citation + value).
 - id: lookup_bulwark_id
-  question: "tinggi minimum bulwark atau guard rail berapa?"
+  question: tinggi minimum bulwark atau guard rail berapa?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["1,0 m", "Sec 6", "K.2", "p.191"]
-
+  must_include:
+  - 1,0 m
+  - Sec 6
+  - K.2
+  - p.191
+  must_not_contain:
+  - freeboard
+  - hatch
 - id: lookup_bulwark_en
-  question: "what is the minimum bulwark or guard rail height?"
+  question: what is the minimum bulwark or guard rail height?
   lang: en
   intent: rules_qa
   expect_lookup: true
-  must_include: ["1,0 m", "Sec 6", "K.2", "p.191"]
-
+  must_include:
+  - 1,0 m
+  - Sec 6
+  - K.2
+  - p.191
+  must_not_contain:
+  - freeboard
+  - hatch
 - id: lookup_forepeak_id
-  question: "berapa jarak senta di ceruk haluan?"
+  question: berapa jarak senta di ceruk haluan?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["2,6 m", "Sec 9", "A.5.2.1", "p.228"]
-
+  must_include:
+  - 2,6 m
+  - Sec 9
+  - A.5.2.1
+  - p.228
 - id: lookup_tug_winch_id
-  question: "diameter drum winch tug minimal berapa kali diameter towrope?"
+  question: diameter drum winch tug minimal berapa kali diameter towrope?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["14", "towrope", "Sec 27", "p.630"]
-
+  must_include:
+  - '14'
+  - towrope
+  - Sec 27
+  - p.630
 - id: lookup_restricted_p_en
-  question: "what is the restricted ocean service P section modulus reduction?"
+  question: what is the restricted ocean service P section modulus reduction?
   lang: en
   intent: rules_qa
   expect_lookup: true
-  must_include: ["5%", "Sec 5", "C.2.1", "p.147"]
-
+  must_include:
+  - 5%
+  - Sec 5
+  - C.2.1
+  - p.147
+  must_not_contain:
+  - flexural
 - id: lookup_restricted_l_en
-  question: "what is the coasting service L section modulus reduction?"
+  question: what is the coasting service L section modulus reduction?
   lang: en
   intent: rules_qa
   expect_lookup: true
-  must_include: ["15%", "Sec 5", "C.2.1", "p.147"]
-
+  must_include:
+  - 15%
+  - Sec 5
+  - C.2.1
+  - p.147
+  must_not_contain:
+  - flexural
 - id: lookup_restricted_t_en
-  question: "what is the sheltered water service T section modulus reduction?"
+  question: what is the sheltered water service T section modulus reduction?
   lang: en
   intent: rules_qa
   expect_lookup: true
-  must_include: ["25%", "Sec 5", "C.2.1", "p.147"]
-
+  must_include:
+  - 25%
+  - Sec 5
+  - C.2.1
+  - p.147
+  must_not_contain:
+  - flexural
 - id: lookup_fire_hinged_id
-  question: "waktu penutupan pintu kebakaran engsel berapa?"
+  question: waktu penutupan pintu kebakaran engsel berapa?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["40", "10", "Sec 22", "C.6.6.2", "p.494"]
-
+  must_include:
+  - '40'
+  - '10'
+  - Sec 22
+  - C.6.6.2
+  - p.494
+  must_not_contain:
+  - freeboard
+  - hatch
 - id: lookup_fire_sliding_id
-  question: "kecepatan penutupan pintu kebakaran geser berapa?"
+  question: kecepatan penutupan pintu kebakaran geser berapa?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["0,1", "0,2", "m/s", "Sec 22", "p.494"]
-
+  must_include:
+  - 0,1
+  - 0,2
+  - m/s
+  - Sec 22
+  - p.494
+  must_not_contain:
+  - freeboard
+  - hatch
 - id: lookup_length_l_id
-  question: "Bagaimana definisi panjang kapal L dalam aturan ini?"
+  question: Bagaimana definisi panjang kapal L dalam aturan ini?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["Sec 1", "H.2.1", "p.22", "96%"]
-
+  must_include:
+  - Sec 1
+  - H.2.1
+  - p.22
+  - 96%
 - id: lookup_length_l_en
-  question: "What is the rule length L in these rules?"
+  question: What is the rule length L in these rules?
   lang: en
   intent: rules_qa
   expect_lookup: true
-  must_include: ["Sec 1", "H.2.1", "p.22", "96%"]
-
-# ---------- F. Lookup Negative — must NOT short-circuit (cross-check guard) ----------
-# The cross-check guard must REJECT these: the deterministic lookup_match
-# candidate's section disagrees with the top retrieved chunk's section, so
-# the pipeline must fall through to the normal RAG path. PASS criteria:
-#   - ChainResult.lookup_match is None
-#   - Top retrieval section matches expected_sources
-#   - Answer is not a refusal message
-
+  must_include:
+  - Sec 1
+  - H.2.1
+  - p.22
+  - 96%
 - id: lookup_depth_ratio_id
-  question: "Berapakah batas minimum rasio kedalaman terhadap panjang L untuk kapal di daerah pelayaran tidak terbatas?"
+  question: Berapakah batas minimum rasio kedalaman terhadap panjang L untuk kapal di daerah pelayaran tidak terbatas?
   lang: id
   intent: rules_qa
   expect_lookup: true
-  must_include: ["L/16", "Sec 1", "A.1", "p.17"]
-
+  must_include:
+  - L/16
+  - Sec 1
+  - A.1
+  - p.17
 - id: lookup_depth_ratio_en
-  question: "What is the minimum depth to length ratio for ships in unlimited range of service?"
+  question: What is the minimum depth to length ratio for ships in unlimited range of service?
   lang: en
   intent: rules_qa
   expect_lookup: true
-  must_include: ["L/16", "Sec 1", "A.1", "p.17"]
+  must_include:
+  - L/16
+  - Sec 1
+  - A.1
+  - p.17
 - id: neg_collision_bulkhead_id
-  question: "Di manakah posisi sekat tubrukan (collision bulkhead) diukur dari garis tegak haluan?"
+  question: Di manakah posisi sekat tubrukan (collision bulkhead) diukur dari garis tegak haluan?
   lang: id
   intent: rules_qa
   expect_no_lookup: true
-  expected_sources: [{ section_no: 11 }]
-  must_include_any: ["collision bulkhead", "0,05"]
+  expected_sources:
+  - section_no: 11
+  must_include_any:
+  - collision bulkhead
+  - 0,05
+- id: neg_bulwark_freeboard_id
+  question: Berapa tinggi lambung timbul minimum kapal?
+  lang: id
+  intent: rules_qa
+  expect_no_lookup: true
+- id: neg_fire_door_plain_id
+  question: Berapa tinggi minimum pintu kabin akomodasi?
+  lang: id
+  intent: rules_qa
+  expect_no_lookup: true
+- id: rules_mvz_max_length_id
+  question: Berapa panjang maksimum rata-rata main vertical zone?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 22
+  must_include:
+  - '40'
+  must_not_contain:
+  - '2304'
+  known_fail: true

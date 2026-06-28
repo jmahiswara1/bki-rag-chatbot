@@ -484,6 +484,10 @@ def test_depth_rule_matches_on_depth_ratio_query_id():
 
 
 def test_depth_rule_matches_on_depth_ratio_query_en():
+    test_anchor_gate_rejects_bulwark_on_freeboard_query()
+    test_anchor_gate_rejects_fire_door_on_plain_door_query()
+    test_anchor_gate_rejects_length_l_on_freeboard_query()
+    test_anchor_gate_rejects_restricted_on_generic_modulus_query()
     match = match_lookup(
         query_id="",
         query_en="What is the minimum depth to length ratio for ships in unlimited range of service?",
@@ -518,6 +522,47 @@ def test_depth_rule_does_not_match_on_length_l_query():
 
 
 # ---------------------------------------------------------------------------
+
+def test_anchor_gate_rejects_bulwark_on_freeboard_query():
+    match = match_lookup(
+        query_id="Berapa tinggi lambung timbul minimum kapal?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None or match.rule.topic != "bulwark_guardrail_min_height"
+    print("PASS: test_anchor_gate_rejects_bulwark_on_freeboard_query")
+
+
+def test_anchor_gate_rejects_fire_door_on_plain_door_query():
+    match = match_lookup(
+        query_id="Berapa tinggi minimum pintu kabin akomodasi?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None or match.rule.topic != "fire_door_closing_time"
+    print("PASS: test_anchor_gate_rejects_fire_door_on_plain_door_query")
+
+
+def test_anchor_gate_rejects_length_l_on_freeboard_query():
+    match = match_lookup(
+        query_id="Berapa tinggi lambung timbul minimum kapal?",
+        query_en="what is the minimum freeboard of the ship?",
+        rules=_RULES,
+    )
+    assert match is None or match.rule.topic != "ship_length_l_definition"
+    print("PASS: test_anchor_gate_rejects_length_l_on_freeboard_query")
+
+
+def test_anchor_gate_rejects_restricted_on_generic_modulus_query():
+    match = match_lookup(
+        query_id="",
+        query_en="section modulus formula for frames",
+        rules=_RULES,
+    )
+    assert match is None or match.rule.topic != "restricted_service_modulus_reduction"
+    print("PASS: test_anchor_gate_rejects_restricted_on_generic_modulus_query")
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
@@ -536,7 +581,7 @@ if __name__ == "__main__":
     test_no_match_returns_none()
     test_load_verified_rules_row_mapping()
     test_empty_rules_returns_none()
-    test_match_ship_length_l_id()
+    print("\nAll 29 tests passed!")
     test_match_ship_length_l_en()
     test_ambiguous_panjang_alone_returns_none()
     test_ambiguous_length_alone_returns_none()

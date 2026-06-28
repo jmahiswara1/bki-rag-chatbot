@@ -81,15 +81,23 @@ def eval_calc_clarify(result, entry: dict) -> tuple[bool, str]:
 
 
 def _norm(s: str) -> str:
-    """Normalize string for keyword matching: lowercase and comma->dot."""
-    return s.lower().replace(",", ".")
+    """Normalize string for keyword matching.
+    Lowercase, comma -> dot, AND collapse all whitespace so phrases like
+    '1, 21' and '1,21' both normalise to '1.21'.  Applied symmetrically to
+    the answer and to all keyword lists (must_include, must_not_contain,
+    must_include_any) so multi-word phrases such as 'side shell' still match
+    ('sideshell' on both sides).
+    """
+    return re.sub(r"\s+", "", s.lower().replace(",", "."))
 
 
 def eval_rules_qa(result, entry: dict) -> tuple[bool, str]:
     """Evaluate rules Q&A entry.
-    
-    PASS criteria: retrieval_hit AND lang_ok (keyword NOT a gate).
-    Keyword matching is computed separately for reporting only.
+    PASS criteria:
+    1. Retrieval hits expected section (if expected_sources declared)
+    2. Language matches
+    3. Every keyword in must_include is present in answer_norm
+    4. No forbidden substring in must_not_contain is present in answer_norm
     """
     failures = []
     
@@ -109,6 +117,15 @@ def eval_rules_qa(result, entry: dict) -> tuple[bool, str]:
         failures.append(f"lang {result.language} != {entry.get('lang')}")
     
     # PASS = retrieval_hit AND lang_ok (keyword NOT a gate)
+    # must_include is now a GATE (was reporting-only pre-coverage-fix).
+    answer = result.answer or ""
+    answer_norm = _norm(answer)
+    for kw in entry.get("must_include", []):
+        if _norm(kw) not in answer_norm:
+            failures.append(f"missing keyword: {kw}")
+    for bad in entry.get("must_not_contain", []):
+        if _norm(bad) in answer_norm:
+            failures.append(f"forbidden substring present: {bad}")
     if failures:
         return False, "; ".join(failures)
     return True, ""
@@ -151,20 +168,31 @@ def eval_lookup(result, entry: dict) -> tuple[bool, str]:
     for kw in entry.get("must_include", []):
         if _norm(kw) not in answer_norm:
             failures.append(f"missing keyword: {kw}")
-
+            failures.append(f"missing keyword: {kw}")
+    for bad in entry.get("must_not_contain", []):
+        if _norm(bad) in answer_norm:
+            failures.append(f"forbidden substring present: {bad}")
     if failures:
         return False, "; ".join(failures)
     return True, ""
 
 
-
 def eval_lookup_negative(result, entry: dict) -> tuple[bool, str]:
-    """Evaluate negative lookup entry: lookup MUST NOT short-circuit.
+    """Evaluate negative lookup entry.
 
-    PASS criteria:
-    1. lookup_match is None (guard correctly rejected the lookup candidate)
-    2. Top retrieval hit matches the expected section (RAG path used)
-    3. Answer is NOT a refusal message (RAG path produced content)
+    Two modes (decoupled by presence of expected_sources):
+
+    STRICT (entry has expected_sources):
+      1. lookup_match is None
+      2. Top retrieval hit intersects expected_sections
+      3. Answer is NOT a refusal message
+      4. must_include_any: at least one keyword matches answer_norm
+      5. must_not_contain: no forbidden substring in answer_norm
+
+    PURE ANTI-MISFIRE (entry has NO expected_sources):
+      1. lookup_match is None (anchor gate alone)
+      2. must_include_any (if present) honored
+      3. must_not_contain (if present) honored
     """
     failures = []
 
@@ -174,19 +202,32 @@ def eval_lookup_negative(result, entry: dict) -> tuple[bool, str]:
         )
 
     expected_sections = {s["section_no"] for s in entry.get("expected_sources", [])}
-    result_sections = {s.section_no for s in result.sources}
-    if expected_sections and not (expected_sections & result_sections):
-        failures.append(
-            f"retrieval miss: expected {expected_sections}, got {result_sections}"
-        )
-
     answer = result.answer or ""
+    answer_norm = _norm(answer)
     answer_lc = answer.lower()
-    if (
-        "Konteks yang tersedia tidak cukup" in answer
-        or "context is insufficient" in answer_lc
-    ):
-        failures.append("got refusal message (RAG path did not produce content)")
+
+    if expected_sections:
+        # STRICT mode
+        result_sections = {s.section_no for s in result.sources}
+        if not (expected_sections & result_sections):
+            failures.append(
+                f"retrieval miss: expected {expected_sections}, got {result_sections}"
+            )
+        if (
+            "Konteks yang tersedia tidak cukup" in answer
+            or "context is insufficient" in answer_lc
+        ):
+            failures.append("got refusal message (RAG path did not produce content)")
+
+    # Honor must_include_any (at least one kw must match answer_norm).
+    any_kws = entry.get("must_include_any", [])
+    if any_kws and not any(_norm(kw) in answer_norm for kw in any_kws):
+        failures.append(f"no must_include_any keyword hit: {any_kws}")
+
+    # Honor must_not_contain.
+    for bad in entry.get("must_not_contain", []):
+        if _norm(bad) in answer_norm:
+            failures.append(f"forbidden substring present: {bad}")
 
     if failures:
         return False, "; ".join(failures)
@@ -294,6 +335,7 @@ def main():
                 "elapsed": elapsed,
                 "keyword_ok": keyword_ok,
             })
+            results[-1]['known_fail'] = bool(entry.get('known_fail'))
             
             status = "PASS" if passed else "FAIL"
             print(f"  {status}: {reason}\n")
@@ -362,15 +404,27 @@ def main():
     
     print(f"\nOverall: {total_pass}/{total_entries} ({overall_rate:.1f}%)  avg={avg_total_time:.1f}s")
     
-    # Failures table
-    failures = [r for r in results if not r["pass"]]
+    known_fail_ids = [r["id"] for r in results if r.get("known_fail")]
+    tracked_pass = sum(1 for r in results if r["pass"] and not r.get("known_fail"))
+    tracked_total = sum(1 for r in results if not r.get("known_fail"))
+    if known_fail_ids:
+        print(f"Overall: {total_pass}/{total_entries}  [tracked PASS: {tracked_pass}/{tracked_total} excluding {len(known_fail_ids)} known_fail]")
+
+    kf_results = [r for r in results if r.get("known_fail")]
+    if kf_results:
+        kf_pass = [r for r in kf_results if r["pass"]]
+        kf_fail = [r for r in kf_results if not r["pass"]]
+        print(f"\nKNOWN FAIL (tracked): {len(kf_results)} entries")
+        for r in kf_fail:
+            print(f"  [FAIL expected] {r['id']:40s} [{r['category']:15s}] {r['reason']}")
+        if kf_pass:
+            print(f"\nPROMOTE candidate (known_fail that PASSed, ready to drop flag):")
+            for r in kf_pass:
+                print(f"  {r['id']:40s} [{r['category']:15s}]")
+
+    failures = [r for r in results if not r["pass"] and not r.get("known_fail")]
     if failures:
-        print(f"\nFAILURES ({len(failures)}):")
+        print(f"\nFAILURES ({len(failures)}) [excluding known_fail]:")
         for r in failures:
             print(f"  {r['id']:40s} [{r['category']:15s}] {r['reason']}")
-    
-    print(f"\nTotal runtime: {total_time:.1f}s")
 
-
-if __name__ == "__main__":
-    main()
