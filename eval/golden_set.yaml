@@ -117,7 +117,7 @@
   must_include:
   - 5,5
 - id: rules_shell_plating_en
-  question: How is side shell plating thickness determined?
+  question: For ships with length L below 90 m, what is the required thickness formula for side shell plating amidships?
   lang: en
   intent: rules_qa
   expected_sources:
