@@ -596,27 +596,26 @@ def _format_lookup_answer(match: _lookup.LookupMatch, lang: str) -> str:
     """Format a deterministic lookup answer with citation."""
     rule = match.rule
     is_id = lang == "id"
-    desc_id, desc_en = _LOOKUP_DESC.get(rule.topic, {}).get(
-        rule.parameter, ("", "")
-    )
-    desc = desc_id if is_id else desc_en
-
-    body = rule.localized_text(lang)
+    body = rule.localized_text(lang).strip()
+    while body.endswith("."):
+        body = body[:-1].rstrip()
+    body = body + "."
     para = f" {rule.paragraph_id}" if rule.paragraph_id else ""
     page = f"p.{rule.page_no}" if rule.page_no is not None else ""
 
     if is_id:
         return (
-            f"Berdasarkan BKI Rules for Hull 2026, {desc} {body}.\n"
+            f"Berdasarkan BKI Rules for Hull 2026: {body}\n"
             f"Sumber: Sec {rule.section_no}{para}, {page}.\n"
-            f"Kutipan: \"{rule.source_quote}\""
+            f"Kutipan: \"" + rule.source_quote + "\""
         )
     else:
         return (
-            f"According to BKI Rules for Hull 2026, {desc} {body}.\n"
+            f"According to BKI Rules for Hull 2026: {body}\n"
             f"Source: Sec {rule.section_no}{para}, {page}.\n"
-            f"Quote: \"{rule.source_quote}\""
+            f"Quote: \"" + rule.source_quote + "\""
         )
+
 
 
 # --- existing chain helpers ---

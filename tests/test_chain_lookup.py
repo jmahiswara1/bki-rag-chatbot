@@ -300,18 +300,22 @@ def test_chain_lookup_ambiguous_fire_door_falls_back():
 
 
 def test_lookup_match_answer_format_id():
+
     """Verify _format_lookup_answer produces Indonesian answer with citation."""
     rule = LookupRule(
         topic="bulwark_guardrail_min_height", parameter=None,
         value_text="tidak kurang dari 1,0 m", value_num=1.0, unit="m",
+        value_text_id="tidak kurang dari 1,0 m",
         section_no=6, paragraph_id="K.2", page_no=191,
         source_quote="The bulwark height or height of guard rail is not to be less than 1,0 m.",
         trigger_terms=("bulwark",),
     )
     match = LookupMatch(rule=rule, matched_terms=("bulwark",), score=2)
     answer = chain._format_lookup_answer(match, "id")
-    assert "Berdasarkan BKI Rules for Hull 2026" in answer
+    assert "Berdasarkan BKI Rules for Hull 2026:" in answer
     assert "tidak kurang dari 1,0 m" in answer
+    assert "  " not in answer
+    assert ". ." not in answer
     assert "Sumber:" in answer
     assert "Sec 6" in answer
     assert "K.2" in answer
@@ -319,7 +323,6 @@ def test_lookup_match_answer_format_id():
     assert "Kutipan:" in answer
     assert "The bulwark height" in answer
     print("PASS: test_lookup_match_answer_format_id")
-
 
 def test_lookup_match_answer_format_en():
     """Verify _format_lookup_answer produces English answer with citation."""
