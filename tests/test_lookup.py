@@ -200,12 +200,51 @@ _RULES: list[LookupRule] = [
             "<= 1600 m2 per deck. Do not assume the 48 m extension applies."
         ),
     ),
+    LookupRule(
+        topic="probability_factor_fq",
+        parameter=None,
+        value_text="fQ = 1,000 at standard Q=10^-8",
+        value_text_en="The probability factor fQ depends on the probability level Q (Table 4.2): fQ = 1.000 at Q = 10^-8.",
+        value_text_id="Faktor probabilitas fQ bergantung pada level probabilitas Q (Table 4.2): fQ = 1,000 pada Q = 10^-8.",
+        value_num=1.0, unit=None,
+        section_no=4, paragraph_id="E.1", page_no=131,
+        source_quote="fQ = probability factor depending on probability level Q as outline in Table 4.2.",
+        trigger_terms=("probability factor","faktor probabilitas","probability level",
+                       "level probabilitas","fq","table 4.2","tabel 4.2",
+                       "probability factor fq"),
+        context_note="Discrete table; standard Q=10^-8 -> fQ=1,000.",
+    ),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Test cases
 # ---------------------------------------------------------------------------
+
+
+def test_probability_factor_matches_on_fq_query_id():
+    match = match_lookup(
+        query_id="Berapa nilai faktor probabilitas fQ pada level probabilitas skantling standar?",
+        query_en="what is the value of probability factor fQ at standard scantling probability level?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "probability_factor_fq"
+    assert match.rule.section_no == 4
+    assert match.rule.paragraph_id == "E.1"
+    assert "1.000" in match.rule.value_text_en
+    print("PASS: test_probability_factor_matches_on_fq_query_id")
+
+
+def test_probability_factor_rejects_without_anchor():
+    match = match_lookup(
+        query_id="",
+        query_en="what is the section modulus reduction for coasting service?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "probability_factor_fq"
+    print("PASS: test_probability_factor_rejects_without_anchor")
 
 def test_match_forepeak_stringer_spacing():
     match = match_lookup(

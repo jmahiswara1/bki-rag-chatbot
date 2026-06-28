@@ -158,6 +158,14 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "zona vertikal utama",
         "mvz",
     ),
+    # probability factor fQ (Table 4.2, Sec 4 E.1).
+    # Generics banned: bare "fq".
+    "probability_factor_fq": (
+        "probability factor",
+        "faktor probabilitas",
+        "probability level",
+        "level probabilitas",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers

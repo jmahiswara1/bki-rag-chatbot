@@ -456,3 +456,10 @@
   - section_no: 17
   must_include:
   - '230'
+- id: lookup_probability_factor_fq_id
+  question: Berapa nilai faktor probabilitas fQ pada level probabilitas skantling standar?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 1,000
