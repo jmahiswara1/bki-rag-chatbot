@@ -601,18 +601,19 @@ def _format_lookup_answer(match: _lookup.LookupMatch, lang: str) -> str:
     )
     desc = desc_id if is_id else desc_en
 
+    body = rule.localized_text(lang)
     para = f" {rule.paragraph_id}" if rule.paragraph_id else ""
     page = f"p.{rule.page_no}" if rule.page_no is not None else ""
 
     if is_id:
         return (
-            f"Berdasarkan BKI Rules for Hull 2026, {desc} {rule.value_text}.\n"
+            f"Berdasarkan BKI Rules for Hull 2026, {desc} {body}.\n"
             f"Sumber: Sec {rule.section_no}{para}, {page}.\n"
             f"Kutipan: \"{rule.source_quote}\""
         )
     else:
         return (
-            f"According to BKI Rules for Hull 2026, {desc} {rule.value_text}.\n"
+            f"According to BKI Rules for Hull 2026, {desc} {body}.\n"
             f"Source: Sec {rule.section_no}{para}, {page}.\n"
             f"Quote: \"{rule.source_quote}\""
         )

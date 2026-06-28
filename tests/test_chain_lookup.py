@@ -326,6 +326,8 @@ def test_lookup_match_answer_format_en():
     rule = LookupRule(
         topic="tug_winch_drum_diameter", parameter=None,
         value_text="not less than 14 x towrope diameter", value_num=14, unit="x",
+        value_text_en="For towing winches on tugs, the drum barrel diameter is to be at least 14 times the towline diameter (Sec 27 C.5.2.3).",
+        value_text_id="tidak kurang dari 14 x diameter towrope",
         section_no=27, paragraph_id="C.5.2.3", page_no=630,
         source_quote="The diameter of the winch drum is to be not less than 14 times the towrope diameter.",
         trigger_terms=("winch drum",),
@@ -333,13 +335,70 @@ def test_lookup_match_answer_format_en():
     match = LookupMatch(rule=rule, matched_terms=("winch drum",), score=2)
     answer = chain._format_lookup_answer(match, "en")
     assert "According to BKI Rules for Hull 2026" in answer
-    assert "not less than 14 x towrope diameter" in answer
+    assert "at least 14 times the towline diameter" in answer
     assert "Source:" in answer
     assert "Sec 27" in answer
     assert "C.5.2.3" in answer
     assert "p.630" in answer
     assert "Quote:" in answer
     print("PASS: test_lookup_match_answer_format_en")
+
+
+def test_lookup_match_answer_format_id_uses_id_body():
+    """ID query on a bilingual rule: body must come from value_text_id
+    (Indonesian), NOT from the legacy value_text or value_text_en."""
+    rule = LookupRule(
+        topic="bulwark_guardrail_min_height", parameter=None,
+        value_text="legacy value_text (should not appear)",
+        value_text_en="The minimum height of bulwarks or guard rails is 1.0 m (Sec 6 K.2).",
+        value_text_id="tidak kurang dari 1,0 m (versi ID)",
+        value_num=1.0, unit="m",
+        section_no=6, paragraph_id="K.2", page_no=191,
+        source_quote="The bulwark height ...", trigger_terms=("bulwark",),
+    )
+    match = LookupMatch(rule=rule, matched_terms=("bulwark",), score=2)
+    answer = chain._format_lookup_answer(match, "id")
+    assert "tidak kurang dari 1,0 m (versi ID)" in answer
+    assert "The minimum height of bulwarks or guard rails" not in answer
+    print("PASS: test_lookup_match_answer_format_id_uses_id_body")
+
+
+def test_lookup_match_answer_format_en_uses_en_body():
+    """EN query on a bilingual rule: body must come from value_text_en,
+    NOT from value_text_id or the legacy value_text."""
+    rule = LookupRule(
+        topic="bulwark_guardrail_min_height", parameter=None,
+        value_text="legacy value_text (should not appear)",
+        value_text_en="The minimum height of bulwarks or guard rails is 1.0 m (Sec 6 K.2).",
+        value_text_id="tidak kurang dari 1,0 m (versi ID)",
+        value_num=1.0, unit="m",
+        section_no=6, paragraph_id="K.2", page_no=191,
+        source_quote="The bulwark height ...", trigger_terms=("bulwark",),
+    )
+    match = LookupMatch(rule=rule, matched_terms=("bulwark",), score=2)
+    answer = chain._format_lookup_answer(match, "en")
+    assert "The minimum height of bulwarks or guard rails" in answer
+    assert "tidak kurang dari 1,0 m (versi ID)" not in answer
+    assert "legacy value_text" not in answer
+    print("PASS: test_lookup_match_answer_format_en_uses_en_body")
+
+
+def test_lookup_match_answer_format_en_fallback_when_en_missing():
+    """If value_text_en is None for an EN query, fall back to value_text_id
+    (then legacy value_text).  Ensures no crash on partial bilingual rows."""
+    rule = LookupRule(
+        topic="bulwark_guardrail_min_height", parameter=None,
+        value_text="fallback legacy text",
+        value_text_en=None,
+        value_text_id="fallback ID text",
+        value_num=1.0, unit="m",
+        section_no=6, paragraph_id="K.2", page_no=191,
+        source_quote="The bulwark height ...", trigger_terms=("bulwark",),
+    )
+    match = LookupMatch(rule=rule, matched_terms=("bulwark",), score=2)
+    answer = chain._format_lookup_answer(match, "en")
+    assert "fallback ID text" in answer
+    print("PASS: test_lookup_match_answer_format_en_fallback_when_en_missing")
 
 
 def test_chain_lookup_match_forepeak_stringer():

@@ -25,7 +25,20 @@ class LookupRule:
     page_no: int | None
     source_quote: str
     trigger_terms: tuple[str, ...]
+    value_text_en: str | None = None
+    value_text_id: str | None = None
     context_note: str | None = None
+    def localized_text(self, lang: str) -> str:
+        """Pick the body text in the query language.
+        Priority: lang-specific column ('en' -> value_text_en, else
+        value_text_id) if present, else fall back to the legacy
+        value_text column.  Always returns a non-empty string.
+        """
+        if lang == "en":
+            return self.value_text_en or self.value_text_id or self.value_text
+        # default to ID for any non-en lang
+        return self.value_text_id or self.value_text_en or self.value_text
+
 
 
 @dataclass(frozen=True)
@@ -202,6 +215,8 @@ def load_verified_rules(client) -> list[LookupRule]:
             topic=topic,
             parameter=row.get("parameter"),
             value_text=row.get("value_text", ""),
+            value_text_en=row.get("value_text_en"),
+            value_text_id=row.get("value_text_id"),
             value_num=row.get("value_num"),
             unit=row.get("unit"),
             section_no=section_no,
