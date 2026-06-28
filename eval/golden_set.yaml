@@ -447,3 +447,12 @@
   - '40'
   must_not_contain:
   - '2304'
+- id: rules_hatch_stopper_pressure_en
+  question: What pressure must the No. 1 hatch cover stoppers withstand against longitudinal forces acting on the forward
+    end?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 17
+  must_include:
+  - '230'
