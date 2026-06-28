@@ -19,7 +19,7 @@ MODES = {
     # questions showed 25/26 NONDETERMINISTIC at temp=0.2. Retrieval is
     # already deterministic post-embedding, and utility calls
     # (classify_with_llm, _expand) also benefit from temp=0.0. _translate_condense
-    # is unaffected -- it caps its own temperature at 0.1 internally.
+    # is unaffected -- it hard-codes temperature=0.0 internally.
     "default": ModeConfig(
         "default", settings.default_model,
         top_k=8, rerank=True, temperature=0.0, answer_style="detailed",

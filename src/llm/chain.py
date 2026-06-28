@@ -9,6 +9,7 @@ from src.core.config import settings
 from src.core.models import Intent, RetrievedChunk
 from src.llm import lookup as _lookup
 from src.llm import prompts
+from src.llm.glossary import apply_glossary
 from src.llm.client import chat, chat_stream
 from src.llm.intent import classify, classify_with_llm
 from src.llm.language import detect_language
@@ -629,10 +630,16 @@ def _translate_condense(query, history, *, temperature) -> str:
     # HARD prompt rules ("Preserve formula symbols verbatim", etc.) prevent
     # topic-drift; low temperature is not the lever.
     history = history or []  # accept None from direct callers (e.g. test scripts)
+    # Deterministic ID->EN substitution for BKI domain phrases before the LLM
+    # call. Keeps the corpus-verified terms (e.g. 'sekat tubrukan' ->
+    # 'collision bulkhead') pinned so qwen2.5:3b does not hallucinate
+    # 'freeboard' / 'hatch cover' / 'side stringer' from a thin glossary
+    # priming in the system prompt.
+    query_pre = apply_glossary(query)
     messages = [{"role": "system", "content": prompts.TRANSLATE_CONDENSE_SYSTEM}]
     for h in history:
         messages.append(h)
-    messages.append({"role": "user", "content": query})
+    messages.append({"role": "user", "content": query_pre})
     out = chat(
         settings.fast_model,
         messages,
@@ -641,7 +648,7 @@ def _translate_condense(query, history, *, temperature) -> str:
         think=False,
     )
     result = _clean_one_liner(out)
-    return result if result else query  # fall back to original if LLM produced nothing
+    return result if result else query_pre  # fall back to substituted query if LLM empty
 
 
 def _expand(en_query, *, temperature) -> list[str]:

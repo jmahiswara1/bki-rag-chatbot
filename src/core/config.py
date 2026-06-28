@@ -24,12 +24,20 @@ class Settings:
     pdf_path: str = os.getenv("PDF_PATH", "data/bki_hull_2026.pdf")
     # Fase 3 settings
     reranker_max_length: int = int(os.getenv("RERANKER_MAX_LENGTH", "512"))
-    translate_max_tokens: int = int(os.getenv("TRANSLATE_MAX_TOKENS", "200"))
+    translate_max_tokens: int = int(os.getenv("TRANSLATE_MAX_TOKENS", "96"))
     expand_n_queries: int = int(os.getenv("EXPAND_N_QUERIES", "2"))
     guardrail_top_gap: float = float(os.getenv("GUARDRAIL_TOP_GAP", "0.5"))
     guardrail_min_top_score: float = float(os.getenv("GUARDRAIL_MIN_TOP_SCORE", "-2.0"))
     # Multi-query expansion gate. Default False (single-query path).
     # Set to True in .env to enable averaged multi-query embedding.
     enable_multi_query: bool = os.getenv("ENABLE_MULTI_QUERY", "false").lower() == "true"
+    # Lookup cross-check guard (Fase cross-check fix).
+    # When enabled, a deterministic lookup short-circuit is only honoured if
+    # the rule's section_no matches the section_no of one of the top-K
+    # reranked chunks. Otherwise the lookup match is dropped and the pipeline
+    # falls through to the normal RAG path. Prevents lookup false positives
+    # (well-cited but wrong topic) from outranking retrieval.
+    lookup_crosscheck_enabled: bool = os.getenv("LOOKUP_CROSSCHECK_ENABLED", "true").lower() == "true"
+    lookup_crosscheck_top_k: int = int(os.getenv("LOOKUP_CROSSCHECK_TOP_K", "1"))
 
 settings = Settings()

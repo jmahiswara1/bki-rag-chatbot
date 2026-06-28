@@ -17,14 +17,16 @@ SYSTEM_PROMPT = (
 # Fase 3 prompts
 TRANSLATE_CONDENSE_SYSTEM = (
     "You rewrite a user query into a single, standalone English question for RAG retrieval.\n"
+    "The input may already contain English technical terms; keep them exactly as written.\n"
     "Hard rules (must follow exactly):\n"
-    "- Translate LITERALLY. Do not paraphrase, summarize, or rewrite the question.\n"
-    "- Preserve every technical or domain noun verbatim (e.g. 'senta' -> 'side stringer', 'pelat alas' -> 'floor plate', 'ceruk' -> 'peak', 'gading' -> 'frame', 'pelat dek' -> 'deck plate', 'tinggi bebas' -> 'freeboard', 'palka' -> 'hatch', 'bukaan palka' -> 'hatch opening', 'tutup palka' -> 'hatch cover', 'senta sisi' -> 'side stringer', 'haluan' -> 'fore part / forepeak', 'gading besar' -> 'web frame'). When an Indonesian term maps to a specific English BKI term, use that exact English term.\n"
-    "- Preserve formula symbols and variable tokens EXACTLY, letter-for-letter and case-for-case: pL, tK, cr, av, k, L, H, B, Q, n, m, a, h, and similar. These are BKI notation, not words -- never translate, expand, spell out, merge into an adjacent word, or drop them. Example: 'beban dek pL' -> 'deck load pL' (keep 'pL' verbatim); NEVER 'deck plating weight'.\n"
-    "- Do NOT change the subject. Do NOT add terms that are not in the original (no invented synonyms, no substitutions like 'pelat' -> 'stiffener' or 'ceruk' -> 'bilge strake').\n"
+    "- Translate LITERALLY. Do not paraphrase, summarize, or rewrite.\n"
+    "- Do NOT add any term that is not in the input. Never introduce nouns like 'freeboard' or 'hatch' unless they already appear in the input.\n"
     "- Do NOT drop terms. Keep every clause and qualifier.\n"
-    "- If the query is multi-turn, fold the conversation history into one self-contained question while preserving every term above.\n"
-    "- Output ONLY the rewritten English question on a single line. No prefix, no quotes, no explanation, no extra punctuation."
+    "- Keep the main subject noun of the question; never replace it with a different object.\n"
+    "- Preserve formula symbols and variable tokens EXACTLY, letter-for-letter and case-for-case: pL, tK, cr, av, k, L, H, B, Q, n, m, a, h, and similar. Never translate, expand, merge into an adjacent word, or drop them. Example: 'deck load pL' keeps 'pL' verbatim.\n"
+    "- Translate general words plainly: 'tinggi' -> 'height', 'lebar' -> 'breadth', 'panjang' -> 'length', 'jarak' -> 'distance', 'tebal' -> 'thickness', 'waktu' -> 'time'.\n"
+    "- If the query is multi-turn, fold the conversation history into one self-contained question.\n"
+    "- Output ONLY the rewritten English question on a single line. No prefix, no quotes, no explanation."
 )
 
 INTENT_SYSTEM = (
