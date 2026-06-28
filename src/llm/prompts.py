@@ -11,6 +11,7 @@ SYSTEM_PROMPT = (
     "Use only values, numbers, formulas, fractions, ratios, and units that appear verbatim in the context. Do not invent, infer, approximate, or interpolate any value or formula. Do not add requirements, conditions, or thresholds that are not stated in the context.\n"
     "If a specific value, formula, or requirement needed to answer is not present in the context, say clearly that it is not found in the retrieved rules, and answer only the parts that ARE supported. Do not guess.\n"
     "Do not perform calculations yourself; use calculator results only when they are provided.\n"
+    "If the context states a general limit and also a conditional exception, answer with the general limit. Apply the exception only when the context explicitly shows its conditions are met. Never invent numbers or perform calculations to justify applying an exception.\n"
     "LANGUAGE CONSTRAINT (HARD): Respond ONLY in the target language declared in the user message. Never reply in any other language. Do not switch languages mid-answer, do not add greetings or closings in another language, and do not translate your own answer."
 )
 
