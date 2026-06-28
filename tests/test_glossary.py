@@ -62,9 +62,30 @@ def test_word_boundary_no_partial_match():
 
 
 def test_control_unchanged():
-    q = "berapa pengurangan modulus penampang untuk restricted ocean service?"
-    assert apply_glossary(q) == q
+    # Plain Indonesian with no BKI domain phrase -> glossary must leave it
+    # untouched (all 25 keys are corpus-specific compound/anchor terms).
+    q = "berapa jumlah anak kapal di kapal ini?"
     print("PASS: test_control_unchanged")
+
+
+def test_modulus_penampang_to_section_modulus():
+    out = apply_glossary("berapa pengurangan modulus penampang untuk restricted ocean service?")
+    assert "section modulus" in out
+    assert "flexural" not in out
+    print("PASS: test_modulus_penampang_to_section_modulus")
+
+
+def test_penampang_alone_to_section():
+    assert "section" in apply_glossary("luas penampang")
+    print("PASS: test_penampang_alone_to_section")
+
+
+def test_engsel_to_hinged():
+    out = apply_glossary("waktu penutupan pintu kebakaran engsel")
+    assert "hinged" in out
+    assert "fire door" in out
+    assert "latch" not in out
+    print("PASS: test_engsel_to_hinged")
 
 
 if __name__ == "__main__":
@@ -79,4 +100,7 @@ if __name__ == "__main__":
     test_pelat_dek_to_deck_plating()
     test_word_boundary_no_partial_match()
     test_control_unchanged()
-    print("\nAll 11 tests passed!")
+    test_modulus_penampang_to_section_modulus()
+    test_penampang_alone_to_section()
+    test_engsel_to_hinged()
+    print("\nAll 14 tests passed!")

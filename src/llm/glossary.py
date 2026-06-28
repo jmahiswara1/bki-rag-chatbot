@@ -11,6 +11,7 @@ GLOSSARY = (
     ("lambung timbul", "freeboard"),
     ("tinggi bebas", "freeboard"),
     ("sekat tubrukan", "collision bulkhead"),
+    ("modulus penampang", "section modulus"),
     ("garis tegak haluan", "forward perpendicular"),
     ("garis tegak buritan", "aft perpendicular"),
     ("garis tegak", "perpendicular"),
@@ -28,6 +29,8 @@ GLOSSARY = (
     ("pelat dek", "deck plating"),
     ("gading", "frame"),
     ("sekat", "bulkhead"),
+    ("penampang", "section"),
+    ("engsel", "hinged"),
     ("ceruk", "peak"),
 )
 
