@@ -1,4 +1,5 @@
 import os
+os.environ.setdefault("USE_TF", "0")
 os.environ['TF_USE_LEGACY_KERAS'] = '1'
 
 from FlagEmbedding import FlagReranker
