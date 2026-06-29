@@ -227,12 +227,57 @@ _RULES: list[LookupRule] = [
                        "faktor material k","reh","tegangan luluh","yield strength"),
         context_note="Discrete table per ReH; 235->1,0; 315->0,78; 355->0,72; 390->0,66 (0,68); 460->0,62.",
     ),
+    LookupRule(
+        topic="modulus_of_elasticity_steel",
+        parameter=None,
+        value_text="Modulus elastisitas (modulus Young) E untuk baja = 2,06 x 10^5 N/mm^2",
+        value_text_en="The modulus of elasticity (Young's modulus) E for hull structural steel is 2.06 x 10^5 N/mm^2.",
+        value_text_id="Modulus elastisitas (modulus Young) E untuk baja = 2,06 x 10^5 N/mm^2.",
+        value_num=206000.0, unit="N/mm^2",
+        section_no=3, paragraph_id="F.5.1.6", page_no=85,
+        source_quote="E = Young's modulus = 2,06 . 10^5 [N/mm2] for steel",
+        trigger_terms=("modulus of elasticity","young modulus","youngs modulus",
+                       "elastic modulus","modulus elastisitas","modulus young",
+                       "e for steel","elasticity","elastisitas","young"),
+        context_note="Discrete value 2,06e5 N/mm^2 for hull steel per Sec 3 F.5.1.6.",
+    ),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Test cases
 # ---------------------------------------------------------------------------
+
+
+def test_modulus_of_elasticity_matches():
+    match_en = match_lookup(
+        query_id="",
+        query_en="what is the modulus of elasticity of steel?",
+        rules=_RULES,
+    )
+    assert match_en is not None
+    assert match_en.rule.topic == "modulus_of_elasticity_steel"
+    assert match_en.rule.section_no == 3
+    assert match_en.rule.paragraph_id == "F.5.1.6"
+    match_id = match_lookup(
+        query_id="berapa modulus elastisitas baja?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match_id is not None
+    assert match_id.rule.topic == "modulus_of_elasticity_steel"
+    print("PASS: test_modulus_of_elasticity_matches")
+
+
+def test_modulus_of_elasticity_rejects_section_modulus():
+    match = match_lookup(
+        query_id="",
+        query_en="what is the section modulus of the forepeak stringer?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "modulus_of_elasticity_steel"
+    print("PASS: test_modulus_of_elasticity_rejects_section_modulus")
 
 
 def test_material_factor_k_matches_on_k_query_id():

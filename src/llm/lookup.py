@@ -172,6 +172,14 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "material factor",
         "faktor material",
     ),
+    # modulus of elasticity E for hull structural steel (Sec 3 F.5.1.6).
+    # Generics banned: bare "modulus" / bare "e" / bare "factor".
+    "modulus_of_elasticity_steel": (
+        "modulus of elasticity",
+        "young's modulus",
+        "modulus elastisitas",
+        "elastic modulus",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers

@@ -469,3 +469,17 @@
   expect_lookup: true
   must_include:
   - 0,72
+- id: lookup_modulus_of_elasticity_steel_en
+  question: What is the modulus of elasticity (Young's modulus) of steel?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '2.06'
+- id: lookup_modulus_of_elasticity_steel_id
+  question: Berapa modulus elastisitas (modulus Young) baja?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 2,06
