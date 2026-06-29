@@ -241,12 +241,58 @@ _RULES: list[LookupRule] = [
                        "e for steel","elasticity","elastisitas","young"),
         context_note="Discrete value 2,06e5 N/mm^2 for hull steel per Sec 3 F.5.1.6.",
     ),
+    LookupRule(
+        topic="sea_water_density",
+        parameter=None,
+        value_text="Massa jenis air laut = 1,025 t/m^3",
+        value_text_en="The density of sea water used in the BKI Rules for Hull is 1.025 t/m^3.",
+        value_text_id="Massa jenis air laut yang digunakan dalam BKI Rules for Hull adalah 1,025 t/m^3.",
+        value_num=1.025, unit="t/m^3",
+        section_no=21, paragraph_id="F.5.3.1", page_no=472,
+        source_quote="rho = density of sea water (1,025 t/m3)",
+        trigger_terms=("sea water density","seawater density","density of sea water",
+                       "sea water","seawater",
+                       "massa jenis air laut","densitas air laut",
+                       "berat jenis air laut","air laut"),
+        context_note="Discrete value 1,025 t/m^3 for sea water per Sec 21 F.5.3.1.",
+    ),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Test cases
 # ---------------------------------------------------------------------------
+
+
+def test_sea_water_density_matches():
+    match_en = match_lookup(
+        query_id="",
+        query_en="what is the density of sea water?",
+        rules=_RULES,
+    )
+    assert match_en is not None
+    assert match_en.rule.topic == "sea_water_density"
+    assert match_en.rule.section_no == 21
+    assert match_en.rule.paragraph_id == "F.5.3.1"
+    match_id = match_lookup(
+        query_id="berapa massa jenis air laut?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match_id is not None
+    assert match_id.rule.topic == "sea_water_density"
+    print("PASS: test_sea_water_density_matches")
+
+
+def test_sea_water_density_rejects_cargo_density():
+    match = match_lookup(
+        query_id="berapa massa jenis muatan curah di palka?",
+        query_en="",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "sea_water_density"
+    print("PASS: test_sea_water_density_rejects_cargo_density")
 
 
 def test_modulus_of_elasticity_matches():

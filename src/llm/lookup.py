@@ -180,6 +180,16 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "modulus elastisitas",
         "elastic modulus",
     ),
+    # sea water density (rho, 1.025 t/m^3) per Sec 21 F.5.3.1.
+    # Generics banned: bare "density" / bare "massa jenis" / bare "sea water" / bare "air laut".
+    "sea_water_density": (
+        "sea water density",
+        "seawater density",
+        "density of sea water",
+        "massa jenis air laut",
+        "densitas air laut",
+        "berat jenis air laut",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers

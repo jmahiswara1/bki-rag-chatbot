@@ -483,3 +483,17 @@
   expect_lookup: true
   must_include:
   - 2,06
+- id: lookup_sea_water_density_en
+  question: What is the density of sea water used in the BKI Rules for Hull?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '1.025'
+- id: lookup_sea_water_density_id
+  question: Berapa massa jenis air laut standar?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 1,025
