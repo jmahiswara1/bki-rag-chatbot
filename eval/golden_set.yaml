@@ -497,3 +497,23 @@
   expect_lookup: true
   must_include:
   - 1,025
+- id: lookup_modulus_aluminium_en
+  question: What is the Young's modulus of aluminium alloys?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '70000'
+  must_not_contain:
+  - 2,06
+  - '206000'
+  - '2.06'
+- id: lookup_modulus_aluminium_id
+  question: Berapa modulus elastisitas paduan aluminium standar?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '70000'
+  must_not_contain:
+  - 2,06

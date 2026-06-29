@@ -228,18 +228,33 @@ _RULES: list[LookupRule] = [
         context_note="Discrete table per ReH; 235->1,0; 315->0,78; 355->0,72; 390->0,66 (0,68); 460->0,62.",
     ),
     LookupRule(
-        topic="modulus_of_elasticity_steel",
-        parameter=None,
+        topic="modulus_of_elasticity",
+        parameter="steel",
         value_text="Modulus elastisitas (modulus Young) E untuk baja = 2,06 x 10^5 N/mm^2",
         value_text_en="The modulus of elasticity (Young's modulus) E for hull structural steel is 2.06 x 10^5 N/mm^2.",
         value_text_id="Modulus elastisitas (modulus Young) E untuk baja = 2,06 x 10^5 N/mm^2.",
         value_num=206000.0, unit="N/mm^2",
         section_no=3, paragraph_id="F.5.1.6", page_no=85,
         source_quote="E = Young's modulus = 2,06 . 10^5 [N/mm2] for steel",
-        trigger_terms=("modulus of elasticity","young modulus","youngs modulus",
-                       "elastic modulus","modulus elastisitas","modulus young",
-                       "e for steel","elasticity","elastisitas","young"),
+        trigger_terms=("modulus of elasticity","young's modulus","modulus elastisitas",
+                       "elastic modulus","elasticity","elastisitas","young",
+                       "steel","baja"),
         context_note="Discrete value 2,06e5 N/mm^2 for hull steel per Sec 3 F.5.1.6.",
+    ),
+    LookupRule(
+        topic="modulus_of_elasticity",
+        parameter="aluminium",
+        value_text="Modulus elastisitas (modulus Young) E untuk paduan aluminium = 70000 N/mm^2",
+        value_text_en="For aluminium alloys, the Young's modulus (E) is 70000 N/mm^2.",
+        value_text_id="Untuk paduan aluminium, modulus elastisitas (Young) E adalah 70000 N/mm^2.",
+        value_num=70000, unit="N/mm^2",
+        section_no=2, paragraph_id="D.1.7", page_no=43,
+        source_quote="the Young's modulus for aluminium alloys (E) is equal to 70000 N/mm2",
+        trigger_terms=("modulus of elasticity","young's modulus","modulus elastisitas",
+                       "elastic modulus","elasticity","elastisitas","young",
+                       "aluminium","aluminum","alumunium",
+                       "paduan aluminium","aluminium alloy","70000"),
+        context_note="Discrete value 70000 N/mm^2 for aluminium alloys per Sec 2 D.1.7.",
     ),
     LookupRule(
         topic="sea_water_density",
@@ -302,7 +317,8 @@ def test_modulus_of_elasticity_matches():
         rules=_RULES,
     )
     assert match_en is not None
-    assert match_en.rule.topic == "modulus_of_elasticity_steel"
+    assert match_en.rule.topic == "modulus_of_elasticity"
+    assert match_en.rule.parameter == "steel"
     assert match_en.rule.section_no == 3
     assert match_en.rule.paragraph_id == "F.5.1.6"
     match_id = match_lookup(
@@ -311,7 +327,8 @@ def test_modulus_of_elasticity_matches():
         rules=_RULES,
     )
     assert match_id is not None
-    assert match_id.rule.topic == "modulus_of_elasticity_steel"
+    assert match_id.rule.topic == "modulus_of_elasticity"
+    assert match_id.rule.parameter == "steel"
     print("PASS: test_modulus_of_elasticity_matches")
 
 
@@ -322,8 +339,58 @@ def test_modulus_of_elasticity_rejects_section_modulus():
         rules=_RULES,
     )
     if match is not None:
-        assert match.rule.topic != "modulus_of_elasticity_steel"
+        assert match.rule.topic != "modulus_of_elasticity"
     print("PASS: test_modulus_of_elasticity_rejects_section_modulus")
+
+
+def test_modulus_of_elasticity_steel_still_matches():
+    match = match_lookup(
+        query_id="",
+        query_en="what is the modulus of elasticity?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "modulus_of_elasticity"
+    assert match.rule.parameter == "steel"
+    assert match.rule.value_num == 206000.0
+    assert match.rule.section_no == 3
+    print("PASS: test_modulus_of_elasticity_steel_still_matches")
+
+
+def test_modulus_of_elasticity_aluminium_matches():
+    match_en = match_lookup(
+        query_id="",
+        query_en="What is the Young's modulus of aluminium alloys?",
+        rules=_RULES,
+    )
+    assert match_en is not None
+    assert match_en.rule.topic == "modulus_of_elasticity"
+    assert match_en.rule.parameter == "aluminium"
+    assert match_en.rule.value_num == 70000
+    assert match_en.rule.section_no == 2
+    assert match_en.rule.paragraph_id == "D.1.7"
+    match_id = match_lookup(
+        query_id="modulus elastisitas paduan aluminium",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match_id is not None
+    assert match_id.rule.topic == "modulus_of_elasticity"
+    assert match_id.rule.parameter == "aluminium"
+    print("PASS: test_modulus_of_elasticity_aluminium_matches")
+
+
+def test_modulus_aluminium_not_returns_steel():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the Young's modulus of aluminium alloys?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.parameter == "aluminium"
+    assert match.rule.value_num == 70000
+    assert match.rule.value_num != 206000
+    print("PASS: test_modulus_aluminium_not_returns_steel")
 
 
 def test_material_factor_k_matches_on_k_query_id():

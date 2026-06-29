@@ -63,6 +63,10 @@ PARAM_TOKENS: dict[str, dict[str, list[str]]] = {
         "hinged": ["hinged", "engsel"],
         "sliding": ["sliding", "geser", "sorong"],
     },
+    "modulus_of_elasticity": {
+        "steel": ["steel", "baja"],
+        "aluminium": ["aluminium", "aluminum", "alumunium", "aluminium alloy", "paduan aluminium"],
+    },
 }
 
 # Topics that have multiple parameter rows — must be disambiguated via
@@ -173,8 +177,11 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "faktor material",
     ),
     # modulus of elasticity E for hull structural steel (Sec 3 F.5.1.6).
+    # modulus of elasticity E for hull structural steel (Sec 3 F.5.1.6) and
+    # for aluminium alloys (Sec 2 D.1.7). Single-anchor: rows differ by
+    # parameter (steel vs aluminium). PARAM_TOKENS disambiguates material.
     # Generics banned: bare "modulus" / bare "e" / bare "factor".
-    "modulus_of_elasticity_steel": (
+    "modulus_of_elasticity": (
         "modulus of elasticity",
         "young's modulus",
         "modulus elastisitas",
@@ -334,10 +341,33 @@ def match_lookup(
 
     # Tie at the top -> ambiguous
     if len(candidates) > 1 and candidates[1][2] == best[2]:
+        # If all candidates share param_bonus=0 (no material token matched),
+        # pick the first candidate by id as deterministic default (e.g.
+        # steel for generic 'modulus elastisitas' query) instead of None.
+        default_path = False
+        if all(c[3] == 0 for c in candidates):
+            # Default-path is ONLY for modulus_of_elasticity (no material
+            # token in query -> pick steel as default). Other multi-param
+            # topics must return None when param_token is missing.
+            if best[0].topic == "modulus_of_elasticity":
+                # Prefer 'steel' as default (BKI canonical); alphabetical tie-break.
+                candidates.sort(key=lambda c: (0 if c[0].parameter == "steel" else 1, c[0].parameter or ""))
+                best = candidates[0]
+                default_path = True
+            else:
+                return None
+        else:
+            return None
+        # Default-path: skip the strict param-token check below and return.
+        if default_path:
+            return LookupMatch(rule=best[0], matched_terms=best[1], score=best[2])
         return None
 
     # Multi-parameter topics: require at least one disambiguation token
     if best[0].topic in _MULTI_PARAM_TOPICS and best[3] == 0:
+        # Default-path: if all candidates had param_bonus=0 (no material token
+        # matched), we already picked the default (alphabetical first) above.
+        # Skip the strict param-token requirement in that case.
         return None
 
     return LookupMatch(rule=best[0], matched_terms=best[1], score=best[2])
