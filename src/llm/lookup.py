@@ -166,6 +166,12 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "probability level",
         "level probabilitas",
     ),
+    # material factor k (Table 2.1, Sec 2 B.2).
+    # Generics banned: bare "k" alone, bare "factor" alone.
+    "material_factor_k": (
+        "material factor",
+        "faktor material",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers

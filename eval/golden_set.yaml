@@ -132,14 +132,6 @@
   - section_no: 3
   must_include:
   - tK
-- id: rules_material_factor_k_en
-  question: What does the material factor k represent?
-  lang: en
-  intent: rules_qa
-  expected_sources:
-  - section_no: 2
-  must_include:
-  - k
 - id: rules_centre_girder_en
   question: What are the scantling requirements for the centre girder?
   lang: en
@@ -463,3 +455,17 @@
   expect_lookup: true
   must_include:
   - 1,000
+- id: lookup_material_factor_k_en
+  question: What is the material factor k for steel with yield strength 355 N/mm2?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '0.72'
+- id: lookup_material_factor_k_id
+  question: Berapa faktor material k untuk baja dengan tegangan luluh 355 N/mm2?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 0,72

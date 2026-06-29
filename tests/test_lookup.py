@@ -214,12 +214,50 @@ _RULES: list[LookupRule] = [
                        "probability factor fq"),
         context_note="Discrete table; standard Q=10^-8 -> fQ=1,000.",
     ),
+    LookupRule(
+        topic="material_factor_k",
+        parameter=None,
+        value_text="k = 1,0 untuk baja kekuatan normal (ReH=235)",
+        value_text_en="The material factor k depends on the steel nominal upper yield strength ReH (Table 2.1, Sec 2 B): k = 1.0 for ReH=235, 0.78 at 315, 0.72 at 355, 0.66 at 390, 0.62 at 460.",
+        value_text_id="Faktor material k bergantung pada tegangan luluh atas nominal baja ReH (Table 2.1, Sec 2 B): k = 1,0 untuk ReH=235.",
+        value_num=1.0, unit=None,
+        section_no=2, paragraph_id="B.2", page_no=32,
+        source_quote="The material factor k in the formulae of the following Sections is to be taken 1,0 for normal strength hull structural steel.",
+        trigger_terms=("material factor","faktor material","material factor k",
+                       "faktor material k","reh","tegangan luluh","yield strength"),
+        context_note="Discrete table per ReH; 235->1,0; 315->0,78; 355->0,72; 390->0,66 (0,68); 460->0,62.",
+    ),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Test cases
 # ---------------------------------------------------------------------------
+
+
+def test_material_factor_k_matches_on_k_query_id():
+    match = match_lookup(
+        query_id="berapa faktor material k untuk baja dengan tegangan luluh 355 N/mm2?",
+        query_en="what is the material factor k for steel with yield strength 355 N/mm2?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "material_factor_k"
+    assert match.rule.section_no == 2
+    assert match.rule.paragraph_id == "B.2"
+    assert "0.72" in match.rule.value_text_en
+    print("PASS: test_material_factor_k_matches_on_k_query_id")
+
+
+def test_material_factor_k_rejects_without_anchor():
+    match = match_lookup(
+        query_id="",
+        query_en="what is the fire door closing time for hinged door?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "material_factor_k"
+    print("PASS: test_material_factor_k_rejects_without_anchor")
 
 
 def test_probability_factor_matches_on_fq_query_id():
