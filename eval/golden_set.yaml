@@ -517,3 +517,103 @@
   - '70000'
   must_not_contain:
   - 2,06
+- id: rules_hose_test_pressure_en
+  question: What is the minimum water pressure for the hose test of hatch covers?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 17
+  must_include:
+  - 2 bar
+- id: rules_hose_test_pressure_id
+  question: Menurut Section 17, berapa tekanan air minimum dalam bar untuk uji selang (hose test) tutup palka?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 17
+  must_include:
+  - 2 bar
+- id: rules_anchor_hhp_holding_en
+  question: How much holding power must a High Holding Power (HHP) anchor have compared to an ordinary stockless anchor?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - double
+  must_not_contain:
+  - four times
+- id: rules_anchor_hhp_holding_id
+  question: Menurut Section 18, berapa kali lipat daya cengkeram minimum jangkar High Holding Power (HHP) dibandingkan jangkar stockless biasa?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - dua kali
+  must_not_contain:
+  - empat kali
+- id: rules_anchor_vhhp_holding_en
+  question: According to Section 18, what is the minimum holding power of a Very High Holding Power (VHHP) anchor as a multiple of an ordinary stockless anchor's holding power?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - four times
+- id: rules_anchor_vhhp_holding_id
+  question: Menurut Section 18, berapa daya cengkeram minimum jangkar Very High Holding Power (VHHP) dibandingkan jangkar stockless biasa?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - empat kali
+- id: rules_anchor_vhhp_mass_en
+  question: What is the maximum mass allowed for a VHHP anchor?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - '1500'
+- id: rules_anchor_vhhp_mass_id
+  question: Berapa massa maksimum yang diizinkan untuk jangkar VHHP?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - '1500'
+- id: rules_anchor_hhp_reduce_en
+  question: For High Holding Power (HHP) bower anchors, the mass of each anchor may be reduced to what percentage of the ordinary stockless bower anchor mass, per Section 18?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - 75%
+- id: rules_anchor_hhp_reduce_id
+  question: Menurut Section 18, berapa persen massa jangkar stockless yang menjadi massa minimum jangkar bower High Holding Power (HHP)?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - 75%
+- id: rules_corrosion_tk_thin_en
+  question: What is the corrosion addition tK value in mm for superstructure plating with thickness 10 mm or less per Section 3 K?
+  lang: en
+  intent: rules_qa
+  expected_sources:
+  - section_no: 3
+  must_include:
+  - '1.0'
+- id: rules_corrosion_tk_thin_id
+  question: Menurut Section 3 K, berapa nilai tK dalam mm untuk pelat superstruktur dengan ketebalan 10 mm atau kurang?
+  lang: id
+  intent: rules_qa
+  expected_sources:
+  - section_no: 3
+  must_include:
+  - '1.0'
