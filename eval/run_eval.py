@@ -428,3 +428,7 @@ def main():
         for r in failures:
             print(f"  {r['id']:40s} [{r['category']:15s}] {r['reason']}")
 
+
+
+if __name__ == "__main__":
+    main()
