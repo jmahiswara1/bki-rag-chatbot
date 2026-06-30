@@ -533,42 +533,6 @@
   - section_no: 17
   must_include:
   - 2 bar
-- id: rules_anchor_hhp_holding_en
-  question: How much holding power must a High Holding Power (HHP) anchor have compared to an ordinary stockless anchor?
-  lang: en
-  intent: rules_qa
-  expected_sources:
-  - section_no: 18
-  must_include:
-  - double
-  must_not_contain:
-  - four times
-- id: rules_anchor_hhp_holding_id
-  question: Menurut Section 18, berapa kali lipat daya cengkeram minimum jangkar High Holding Power (HHP) dibandingkan jangkar stockless biasa?
-  lang: id
-  intent: rules_qa
-  expected_sources:
-  - section_no: 18
-  must_include:
-  - dua kali
-  must_not_contain:
-  - empat kali
-- id: rules_anchor_vhhp_holding_en
-  question: According to Section 18, what is the minimum holding power of a Very High Holding Power (VHHP) anchor as a multiple of an ordinary stockless anchor's holding power?
-  lang: en
-  intent: rules_qa
-  expected_sources:
-  - section_no: 18
-  must_include:
-  - four times
-- id: rules_anchor_vhhp_holding_id
-  question: Menurut Section 18, berapa daya cengkeram minimum jangkar Very High Holding Power (VHHP) dibandingkan jangkar stockless biasa?
-  lang: id
-  intent: rules_qa
-  expected_sources:
-  - section_no: 18
-  must_include:
-  - empat kali
 - id: rules_anchor_vhhp_mass_en
   question: What is the maximum mass allowed for a VHHP anchor?
   lang: en
@@ -743,6 +707,85 @@
   expect_no_lookup: true
 - id: neg_deckhouse_height_id
   question: Berapa tinggi minimum deckhouse?
+  lang: id
+  intent: rules_qa
+  expect_no_lookup: true
+- id: lookup_anchor_holding_power_hhp_en
+  question: What is the minimum holding power of a High Holding Power (HHP) anchor compared to an ordinary stockless anchor?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - twice
+  - Sec 18
+  - C.4
+  - p.389
+  must_not_contain:
+  - four times
+  - VHHP
+- id: lookup_anchor_holding_power_hhp_id
+  question: Berapa daya cengkeram minimum jangkar High Holding Power (HHP) dibandingkan jangkar stockless biasa?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - dua kali
+  - Sec 18
+  - C.4
+  - p.389
+  must_not_contain:
+  - empat kali
+  - VHHP
+- id: lookup_anchor_holding_power_vhhp_en
+  question: What is the minimum holding power of a Very High Holding Power (VHHP) anchor compared to an ordinary stockless anchor?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - four times
+  - Sec 18
+  - C.5
+  - p.389
+- id: lookup_anchor_holding_power_vhhp_id
+  question: Berapa daya cengkeram minimum jangkar Very High Holding Power (VHHP) dibandingkan jangkar stockless biasa?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - empat kali
+  - Sec 18
+  - C.5
+  - p.389
+- id: lookup_accommodation_deck_min_thickness_en
+  question: What are the minimum thicknesses for accommodation and superstructure decks?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '5.0'
+  - '5.5'
+  - Sec 29
+  - E.2
+  - p.646
+- id: lookup_accommodation_deck_min_thickness_id
+  question: Berapa tebal minimum geladak akomodasi dan bangunan atas?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 5,0
+  - 5,5
+  - Sec 29
+  - E.2
+  - p.646
+# Negative: stockless-only query must NOT fire hhp/vhhp lookup.
+- id: neg_anchor_stockless_only_en
+  question: What is the holding power of an ordinary stockless anchor?
+  lang: en
+  intent: rules_qa
+  expect_no_lookup: true
+- id: neg_anchor_stockless_only_id
+  question: Berapa daya cengkeram jangkar stockless biasa?
   lang: id
   intent: rules_qa
   expect_no_lookup: true
