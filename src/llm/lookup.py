@@ -197,6 +197,46 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "densitas air laut",
         "berat jenis air laut",
     ),
+    # cargo hatch coaming minimum height (Sec 17 A.2.2). Two positions.
+    # Generics banned: bare "coaming" (overlaps with ventilator), bare "hatch",
+    # bare "tutup palka" / "hatch cover" (overlaps with hose test queries).
+    "cargo_hatch_coaming_height": (
+        "hatch coaming",
+        "cargo hatch",
+        "hatchway coaming",
+        "coaming palka",
+        "palka kargo",
+    ),
+    # ventilator coaming minimum height (Sec 21 G.1.1). Two positions.
+    # Generics banned: bare "coaming" (overlaps with cargo hatch).
+    "ventilator_coaming_height": (
+        "ventilator coaming",
+        "coaming ventilator",
+    ),
+    # Poisson's ratio for aluminium alloys (Sec 2 D.1.7). Only for aluminium.
+    # Generics banned: bare "poisson" alone is acceptable (distinctive enough).
+    "poisson_ratio_aluminium": (
+        "poisson",
+        "poisson's ratio",
+        "poisson ratio",
+        "rasio poisson",
+    ),
+    # collision bulkhead position from forward perpendicular (Sec 11 A.2.1.1).
+    # Position-specific anchors. Bare "collision bulkhead" / "sekat tubrukan"
+    # excluded so thickness/other-aspect queries do not false-fire.
+    "collision_bulkhead_position": (
+        "forward perpendicular",
+        "garis tegak haluan",
+        "0,05Lc",
+        "0,08Lc",
+        "0.05Lc",
+        "0.08Lc",
+        "located from",
+        "posisi sekat tubrukan",
+        "sekat tubrukan dari",
+        "sekat tabrakan dari",
+        "posisi sekat tabrakan",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers
