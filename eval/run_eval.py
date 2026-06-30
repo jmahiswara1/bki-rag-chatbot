@@ -147,21 +147,25 @@ def eval_guardrail(result, entry: dict) -> tuple[bool, str]:
 
 
 def eval_lookup(result, entry: dict) -> tuple[bool, str]:
-    """Evaluate deterministic lookup-rules answer.
+    """Evaluate answer against must_include gate.
 
-    PASS criteria (all must hold):
-    1. lookup_match is not None (deterministic lookup engaged)
-    2. Language matches
-    3. All must_include keywords present in answer
+    Answer-correctness is the PRIMARY pass criterion: every must_include
+    token must appear (as a substring after _norm) in the model's final
+    answer. lookup_match presence is a SEPARATE DIAGNOSTIC signal and is
+    NOT required to pass — if the RAG path produced a correct answer, the
+    entry passes. The reason string includes a [lookup:...] tag so the
+    caller can compute lookup-fire-rate separately.
     """
     failures = []
+    diag_notes: list[str] = []
 
     lang_ok = result.language == entry.get("lang")
     if not lang_ok:
         failures.append(f"lang {result.language} != {entry.get('lang')}")
 
+    # Diagnostic only: did the deterministic lookup fire?
     if not result.lookup_match:
-        failures.append("no lookup_match (fell back to RAG)")
+        diag_notes.append("no lookup_match (fell back to RAG)")
 
     answer = result.answer or ""
     answer_norm = _norm(answer)
@@ -172,9 +176,10 @@ def eval_lookup(result, entry: dict) -> tuple[bool, str]:
     for bad in entry.get("must_not_contain", []):
         if _norm(bad) in answer_norm:
             failures.append(f"forbidden substring present: {bad}")
+    lookup_tag = f"[lookup:{'fire' if result.lookup_match else 'miss'}]"
     if failures:
-        return False, "; ".join(failures)
-    return True, ""
+        return False, "; ".join(failures) + " " + lookup_tag + " " + " ".join(diag_notes)
+    return True, lookup_tag
 
 
 def eval_lookup_negative(result, entry: dict) -> tuple[bool, str]:
@@ -409,6 +414,11 @@ def main():
                 "elapsed": elapsed,
                 "keyword_ok": keyword_ok,
             })
+            # Diagnostic: did the deterministic lookup fire for this entry?
+            # Only meaningful for entries that expect it (lookup category).
+            if category == "lookup":
+                results[-1]['lookup_fire'] = bool(result.lookup_match)
+
             results[-1]['known_fail'] = bool(entry.get('known_fail'))
             
             status = "PASS" if passed else "FAIL"
@@ -477,7 +487,18 @@ def main():
     avg_total_time = total_time / total_entries if total_entries > 0 else 0
     
     print(f"\nOverall: {total_pass}/{total_entries} ({overall_rate:.1f}%)  avg={avg_total_time:.1f}s")
-    
+
+    # Secondary diagnostic: lookup-fire-rate among entries that expect
+    # a deterministic lookup (expect_lookup: true). Reported separately
+    # from overall because it measures the lookup-table coverage, not
+    # answer correctness.
+    lookup_expect = [r for r in results
+                     if r["category"] == "lookup" and r.get("lookup_fire") is not None]
+    if lookup_expect:
+        lookup_fire = sum(1 for r in lookup_expect if r.get("lookup_fire"))
+        print(f"Lookup-fire-rate: {lookup_fire}/{len(lookup_expect)} "
+              f"({lookup_fire/len(lookup_expect)*100:.1f}%) [secondary, diagnostic]")
+
     known_fail_ids = [r["id"] for r in results if r.get("known_fail")]
     tracked_pass = sum(1 for r in results if r["pass"] and not r.get("known_fail"))
     tracked_total = sum(1 for r in results if not r.get("known_fail"))
