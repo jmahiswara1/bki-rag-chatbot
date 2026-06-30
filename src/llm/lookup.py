@@ -67,6 +67,17 @@ PARAM_TOKENS: dict[str, dict[str, list[str]]] = {
         "steel": ["steel", "baja"],
         "aluminium": ["aluminium", "aluminum", "alumunium", "aluminium alloy", "paduan aluminium"],
     },
+    "anchor_holding_power": {
+        # HHP and VHHP are acronyms. _term_matches detects all-uppercase
+        # tokens and applies word-boundary matching, so "HHP" will NOT
+        # match inside "VHHP" (and vice versa). The full phrase
+        # "very high holding power" is a vhhp token; "high holding power"
+        # is intentionally NOT an hhp token because it is a substring of
+        # the vhhp phrase and would cause a false hhp param_bonus on vhhp
+        # queries that happen to include the full phrase.
+        "hhp": ["HHP"],
+        "vhhp": ["VHHP"],
+    },
 }
 
 # Topics that have multiple parameter rows — must be disambiguated via
@@ -237,6 +248,43 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "sekat tabrakan dari",
         "posisi sekat tabrakan",
     ),
+    # anchor holding power (Sec 18 C.4/C.5). HHP vs VHHP discriminated by
+    # PARAM_TOKENS (acronyms, word-boundary matched). Anchor is RESTRICTIVE:
+    # only "holding power" / "daya cengkeram" — generic "anchor", "stockless",
+    # and the acronyms are excluded to prevent over-match on mass / other
+    # aspect queries (e.g. "VHHP max mass", "HHP mass reduction %"). If
+    # query carries neither holding-power phrase, the anchor gate rejects
+    # the rule. If HHP/VHHP acronym absent, param_bonus is 0 and the
+    # multi-param check returns None — no silent default.
+    "anchor_holding_power": (
+        "holding power",
+        "daya cengkeram",
+    ),
+    # accommodation / superstructure deck min thickness (Sec 29 E.2).
+    # Distinct from Sec 7 general deck plating (rules_deck_min_id).
+    "accommodation_deck_min_thickness": (
+        "accommodation deck",
+        "accommodation decks",
+        "superstructure deck",
+        "superstructure decks",
+        "geladak akomodasi",
+        "geladak bangunan atas",
+    ),
+}
+
+# Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
+# the rule is skipped regardless of anchor/trigger match. Used to prevent
+# over-match when the anchor name appears incidentally in a question
+# about a different aspect (e.g. "HHP mass reduction" must not fire the
+# anchor_holding_power lookup, even though "holding power" / "HHP" are
+# present as part of the anchor type name).
+EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
+    "anchor_holding_power": (
+        "mass", "massa",
+        "reduction", "reduksi", "reduced",
+        "percentage", "persen", "percent",
+        "reduce", "kurangi",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers
@@ -253,11 +301,14 @@ def _normalize(text: str) -> str:
 def _term_matches(normalized_search: str, term: str) -> bool:
     """Check if a single trigger term matches the search text.
 
-    Short tokens (≤2 chars) must match as whole words (word boundary).
-    Longer tokens and multi-word phrases match as substrings.
+    Short tokens (≤2 chars) and all-uppercase acronyms (e.g. HHP, VHHP)
+    must match as whole words (word boundary). This prevents substring
+    collisions like "hhp" inside "vhhp" and "high holding power" inside
+    "very high holding power".
     """
+    is_acronym = term.isupper() and term.isalpha()
     term = _normalize(term)
-    if " " not in term and len(term) <= 2:
+    if " " not in term and (len(term) <= 2 or is_acronym):
         return bool(re.search(r"\b" + re.escape(term) + r"\b", normalized_search))
     return term in normalized_search
 
@@ -352,6 +403,14 @@ def match_lookup(
                 _term_matches(search_text, anchor) for anchor in topic_anchors
             )
             if not anchor_hit:
+                continue
+
+        # Exclude gate: skip rules whose topic has exclude terms and the
+        # query carries any of them. Prevents over-match on incidental
+        # mentions of the topic (e.g. anchor name in a mass/aspect query).
+        topic_excludes = EXCLUDE_TERMS.get(rule.topic)
+        if topic_excludes is not None:
+            if any(_term_matches(search_text, ex) for ex in topic_excludes):
                 continue
 
         matched: list[str] = []
