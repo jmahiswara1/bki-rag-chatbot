@@ -54,10 +54,17 @@ def classify(query: str, history: list[dict] | None = None) -> Intent:
     has_num = NUM_ASSIGN.search(q) is not None
     
     # Check for compute imperative with WORD BOUNDARIES (not substring)
-    has_imper = any(re.search(rf"\b{v}\b", q) for v in COMPUTE_IMPERATIVE)
-    
+    # Word boundary at the START only (not end): Indonesian interrogatives
+    # commonly take a "-kah" suffix (berapakah, apakah, bagaimanakah) that
+    # keeps the match inside a word-char region, so a trailing \b would
+    # miss these forms and the heuristic would fall through to the LLM
+    # fallback, which misroutes value-asking queries to the calc engine.
+    has_imper = any(re.search(rf"\b{v}\w*", q) for v in COMPUTE_IMPERATIVE)
+
     # Check for question cues with WORD BOUNDARIES
-    is_quest = any(re.search(rf"\b{w}\b", q) for w in QUESTION_CUES)
+    # Same boundary fix as has_imper: trailing \b dropped to handle -kah
+    # suffix in Indonesian interrogatives.
+    is_quest = any(re.search(rf"\b{w}\w*", q) for w in QUESTION_CUES)
     
     # Check for topical terms (only count with numeric assignment)
     has_topical = any(term in q for term in _CALC_TERMS)
