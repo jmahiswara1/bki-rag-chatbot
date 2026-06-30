@@ -1,0 +1,278 @@
+# Held-out eval set (40 entries, independent of golden_set.yaml).
+# INDEPENDENT — not used by regression baselines.
+# Schema mirrors eval/golden_set.yaml: id, lang, question, category, must_include.
+# Note: category is metadata only — run_eval.py derives the actual scoring
+# category from flags (expect_lookup / expect_no_lookup / expected_result /
+# expect_error / expect_clarification / should_reject / else rules_qa).
+# Tokens in must_include are matched AFTER _norm() — lowercase, comma->dot,
+# whitespace collapsed. So "1,0 m" matches "1.0m" in the answer.
+- id: holdout_length_l_def_id
+  lang: id
+  category: rules_qa
+  question: Apa definisi "Length L" menurut BKI Rules for Hull?
+  must_include:
+  - sarat scantling
+  - linggi
+- id: holdout_mooring_current_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa kecepatan arus maksimum yang disyaratkan untuk penentuan tali tambat pada kapal dengan nilai Z lebih dari 2000?
+  must_include:
+  - 1,0
+  - m/s
+- id: holdout_bulwark_thick_l100_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Bagaimana ketentuan tebal pelat kubu-kubu (bulwark) untuk kapal dengan panjang (L) melebihi 100 meter?
+  must_include:
+  - 0,65
+- id: holdout_hatch_tk_nonbulk_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa tambahan korosi (tK) yang disyaratkan untuk struktur internal dari penutup palka kulit ganda pada kapal cuaca geladak kargo selain tipe kapal curah?
+  must_include:
+  - 1,0 mm
+- id: holdout_box_keel_baseline_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa jarak vertikal minimum antara bagian terbawah lunas kotak (box keel) dengan garis dasar (baseline) jika tidak berfungsi sebagai docking keel?
+  must_include:
+  - 0,5
+- id: holdout_dredger_transverse_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Pada kapal keruk (dredgers), berapakah jarak maksimum yang diizinkan untuk transverses dasar (bottom transverses) pada konstruksi dasar tunggal (single bottom) secara memanjang?
+  must_include:
+  - 3,6
+- id: holdout_tsc_measure_id
+  lang: id
+  category: rules_qa
+  question: Di manakah letak pengukuran sarat scantling (TSC) dilakukan?
+  must_include:
+  - sisi atas lunas
+- id: holdout_weather_deck_def_id
+  lang: id
+  category: rules_qa
+  question: Apa definisi geladak cuaca (weather deck) menurut aturan BKI?
+  must_include:
+  - geladak bebas
+- id: holdout_doubling_plate_tank_id
+  lang: id
+  category: rules_qa
+  question: Apakah pelat ganda (doubling plates) diizinkan dipasang di dalam tangki untuk muatan cairan yang mudah terbakar?
+  must_include:
+  - pelat kerah
+- id: holdout_reh_normal_steel_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapakah tegangan luluh nominal atas (ReH) minimum yang disyaratkan untuk baja struktur lambung dengan kekuatan normal (normal strength)?
+  must_include:
+  - '235'
+- id: holdout_swash_perforation_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa persentase luas area perforasi yang disyaratkan pada sekat berlubang (swash bulkhead) dibandingkan dengan total luas sekat?
+  must_include:
+  - 20%
+- id: holdout_single_skin_hatch_id
+  lang: id
+  category: rules_qa
+  question: Berapakah ketebalan minimum dari pelat penutup palka kulit tunggal (single skin hatch covers)?
+  must_include:
+  - 6,5
+  - 5,0
+- id: holdout_mvz_deck_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Pada zona vertikal utama di kapal penumpang, berapakah batas rata-rata panjang dan lebar maksimum yang diizinkan pada setiap geladak?
+  must_include:
+  - '40'
+- id: holdout_alu_steel_galvanic_id
+  lang: id
+  category: rules_qa
+  question: Pada sambungan struktur baut antara paduan aluminium dan baja, apa yang harus diaplikasikan untuk mencegah korosi galvanik?
+  must_include:
+  - insulasi
+- id: holdout_proof_load_ref_id
+  lang: id
+  category: rules_qa
+  question: Di bagian manakah pedoman beban uji proof load (PL) untuk rantai jangkar stud link (stud link chain cables) dapat ditemukan?
+  must_include:
+  - '13.7'
+- id: holdout_vhhp_def_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Apa definisi dari jangkar dengan daya cengkeram sangat tinggi (Very High Holding Power / VHHP anchor)?
+  must_include:
+  - empat kali
+- id: holdout_stainless_yield_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana cara menentukan tegangan luluh minimum untuk baja tahan karat (stainless steel) tipe austenitik dan duplex?
+  must_include:
+  - 0,2
+- id: holdout_means_escape_id
+  lang: id
+  category: rules_qa
+  question: Pada kapal penumpang, berapakah jumlah minimum sarana jalan keluar (means of escape) yang harus disediakan dari setiap ruang atau kelompok ruang?
+  must_include:
+  - dua sarana
+- id: holdout_access_hatch_width_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapakah dimensi bersih (clear width) minimum untuk bukaan palka akses (access hatchways)?
+  must_include:
+  - 600 x 600
+- id: holdout_supply_deck_thick_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Untuk kapal suplai (supply vessels), berapakah ketebalan pelat geladak minimum yang disyaratkan?
+  must_include:
+  - 8,0
+- id: holdout_nominal_ice_pressure_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the nominal ice pressure (p0) used to determine the design ice pressure?
+  must_include:
+  - '5.6'
+- id: holdout_freeboard_deck_def_en
+  lang: en
+  category: rules_qa
+  question: How is the freeboard deck defined in the BKI rules?
+  must_include:
+  - uppermost
+- id: holdout_coating_dft_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum required dry film thickness of the coating for corrosion protection in underwater hull systems without antifouling?
+  must_include:
+  - '250'
+- id: holdout_collision_blkhd_barge_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: Where is the collision bulkhead required to be located on barges?
+  must_include:
+  - '0.05'
+  - '0.08'
+- id: holdout_material_factor_k315_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the material factor (k) for higher strength hull structural steel with a nominal yield stress of 315 N/mm2?
+  must_include:
+  - '0.78'
+- id: holdout_side_scuttle_area_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the maximum area for round or oval openings to be officially defined as side scuttles according to the rules?
+  must_include:
+  - '0.16'
+- id: holdout_towing_winch_hold_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the holding capacity required for the towing winch on tugs in the first layer of the towrope?
+  must_include:
+  - 80%
+- id: holdout_iso_window_test_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: Which ISO standards must be met when testing windows and side scuttles?
+  must_include:
+  - '1751'
+  - '3903'
+- id: holdout_dredger_transverse_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: For single bottom longitudinally framed dredgers, what is the maximum general spacing for bottom transverses?
+  must_include:
+  - '3.6'
+- id: holdout_bottom_shell_thick_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum required thickness for bottom shell plating of a ship with a length of 50 meters or greater?
+  must_include:
+  - square root
+  - k
+- id: holdout_tanker_strake_width_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: In tankers, what is the minimum required width for the top and bottom strakes of longitudinal bulkheads?
+  must_include:
+  - '0.1'
+- id: holdout_bow_height_measure_en
+  lang: en
+  category: rules_qa
+  question: Where is the minimum bow height required to be measured according to ICLL Regulation 39?
+  must_include:
+  - forward perpendicular
+- id: holdout_expansion_joints_en
+  lang: en
+  category: rules_qa
+  question: How many expansion joints are recommended in the bulwark for ships exceeding 60 meters in length?
+  must_include:
+  - l / 40
+- id: holdout_hatch_tk_bulk_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the total corrosion addition (tK) required for hatch covers in general for weather deck cargo hatches of all bulk carriers?
+  must_include:
+  - 2.0 mm
+- id: holdout_bulwark_stay_modulus_en
+  lang: en
+  category: rules_qa
+  question: What is the required section modulus formula for bulwark stays effectively attached to the deck?
+  must_include:
+  - 4 * p * e * l
+- id: holdout_helicopter_skid_en
+  lang: en
+  category: rules_qa
+  question: For a helicopter lashed on deck, where does the wheel and/or skid force (P) act?
+  must_include:
+  - lashing
+- id: holdout_hatch_deflection_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the maximum allowed deflection for weather deck hatch covers under the design load pH?
+  must_include:
+  - '0.0056'
+- id: holdout_combustible_gasket_en
+  lang: en
+  category: rules_qa
+  question: Are combustible gaskets permitted in flanged ventilation duct connections within 600 mm of openings in "A" or "B" class divisions?
+  must_include:
+  - not permitted
+- id: holdout_stockless_head_mass_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: For ordinary (stockless) anchors, what is the minimum required mass of the heads including pins and fittings?
+  must_include:
+  - 60%
+- id: holdout_towing_hook_force_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the required test force (PL) for a towing hook on a tug if the design force (T) is less than or equal to 500 kN?
+  must_include:
+  - '2.0'

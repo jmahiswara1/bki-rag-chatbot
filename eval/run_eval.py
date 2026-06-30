@@ -235,6 +235,62 @@ def eval_lookup_negative(result, entry: dict) -> tuple[bool, str]:
 
 
 # ---------- Main ----------
+def _derive_category(entry: dict) -> str:
+    """Mirror of classify_entry() for validation reporting only."""
+    if entry.get("expected_result"):
+        return "calc-value"
+    if entry.get("expect_error"):
+        return "calc-error"
+    if entry.get("expect_clarification"):
+        return "calc-clarify"
+    if entry.get("should_reject"):
+        return "guardrail"
+    if entry.get("expect_no_lookup"):
+        return "lookup_negative"
+    if entry.get("expect_lookup"):
+        return "lookup"
+    return "rules_qa"
+
+
+def _print_validation(entries, source_path: str) -> None:
+    """Static validation: report entry count + breakdowns. No model calls."""
+    from collections import Counter
+    print(f"Validated: {source_path}")
+    print(f"Total entries: {len(entries)}")
+
+    # Per derived category
+    cat = Counter(_derive_category(e) for e in entries)
+    print("\nPer-category (derived):")
+    for c in sorted(cat):
+        print(f"  {c:18s}: {cat[c]}")
+
+    # Per literal 'category' field (metadata label)
+    label = Counter(e.get("category", "?") for e in entries)
+    print("\nPer-category (literal 'category' field):")
+    for c in sorted(label):
+        print(f"  {c:12s}: {label[c]}")
+
+    # Per lang
+    lang = Counter(e.get("lang", "?") for e in entries)
+    print("\nPer-lang:")
+    for l in sorted(lang):
+        print(f"  {l}: {lang[l]}")
+
+    # Sanity: all entries have id + question
+    missing = [e.get("id", "<no-id>") for e in entries
+               if not e.get("id") or not e.get("question")]
+    if missing:
+        print(f"\nWARN: missing id/question in: {missing}")
+
+    # Sanity: id uniqueness
+    ids = [e["id"] for e in entries if e.get("id")]
+    dupes = sorted({i for i in ids if ids.count(i) > 1})
+    if dupes:
+        print(f"WARN: duplicate ids: {dupes}")
+
+    print("\nValidation OK. (no Ollama/Supabase calls)")
+
+
 def main():
     # Configure UTF-8 output to handle Unicode characters (e.g. ℓ, σ, etc.)
     if sys.stdout.encoding != 'utf-8':
@@ -245,11 +301,29 @@ def main():
     parser = argparse.ArgumentParser(description="BKI RAG chatbot golden evaluation")
     parser.add_argument("--ids", type=str, help="Comma-separated entry ids to run")
     parser.add_argument("--debug", action="store_true", help="Print raw diagnostic fields, skip scoring")
+    parser.add_argument(
+        "--file", "--set",
+        dest="eval_file",
+        default="eval/golden_set.yaml",
+        help="YAML eval set to load (default: eval/golden_set.yaml). "
+             "Backward-compatible alias: --set.",
+    )
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="Parse the eval set, print entry count + per-category/per-lang "
+             "breakdown, and exit. Does NOT call Ollama/Supabase.",
+    )
     args = parser.parse_args()
     
-    # Load golden set
-    with open("eval/golden_set.yaml", "r", encoding="utf-8") as f:
+    # Load eval set
+    with open(args.eval_file, "r", encoding="utf-8") as f:
         entries = yaml.safe_load(f)
+
+    # Optional static validation: just report breakdown and exit.
+    if args.validate_only:
+        _print_validation(entries, args.eval_file)
+        return
     
     # Filter by ids if specified
     if args.ids:
