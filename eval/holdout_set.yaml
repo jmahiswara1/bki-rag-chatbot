@@ -242,7 +242,7 @@
   category: rules_qa
   question: What is the required section modulus formula for bulwark stays effectively attached to the deck?
   must_include:
-  - 4 * p * e * l
+  - 4 · p · e · l²
 - id: holdout_helicopter_skid_en
   lang: en
   category: rules_qa
