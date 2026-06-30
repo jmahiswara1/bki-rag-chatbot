@@ -411,15 +411,15 @@
   - A.1
   - p.17
 - id: neg_collision_bulkhead_id
-  question: Di manakah posisi sekat tubrukan (collision bulkhead) diukur dari garis tegak haluan?
+  question: Berapa tebal minimum pelat sekat tubrukan?
   lang: id
   intent: rules_qa
   expect_no_lookup: true
   expected_sources:
   - section_no: 11
   must_include_any:
-  - collision bulkhead
-  - 0,05
+  - tebal
+  - plating
 - id: neg_bulwark_freeboard_id
   question: Berapa tinggi lambung timbul minimum kapal?
   lang: id
@@ -617,3 +617,132 @@
   - section_no: 3
   must_include:
   - '1.0'
+- id: lookup_cargo_hatch_coaming_height_en
+  question: What are the minimum cargo hatch coaming heights in positions 1 and 2?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '600'
+  - '450'
+  - Sec 17
+  - A.2.2
+  - p.347
+  must_not_contain:
+  - ventilator
+  - '900'
+  - '760'
+- id: lookup_cargo_hatch_coaming_height_id
+  question: Berapa tinggi minimum coaming palka kargo untuk position 1 dan position 2?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '600'
+  - '450'
+  - Sec 17
+  - A.2.2
+  - p.347
+  must_not_contain:
+  - ventilator
+  - '900'
+  - '760'
+- id: lookup_ventilator_coaming_height_en
+  question: What are the minimum ventilator coaming heights in positions 1 and 2?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '900'
+  - '760'
+  - Sec 21
+  - G.1.1
+  - p.475
+  must_not_contain:
+  - hatch
+  - '600'
+  - '450'
+- id: lookup_ventilator_coaming_height_id
+  question: Berapa tinggi minimum coaming ventilator untuk position 1 dan position 2?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '900'
+  - '760'
+  - Sec 21
+  - G.1.1
+  - p.475
+  must_not_contain:
+  - hatch
+  - '600'
+  - '450'
+- id: lookup_poisson_ratio_aluminium_en
+  question: What is the Poisson ratio for aluminium alloys?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '0.33'
+  - Sec 2
+  - D.1.7
+  - p.43
+  must_not_contain:
+  - '2,06'
+  - '206000'
+  - '2.06'
+- id: lookup_poisson_ratio_aluminium_id
+  question: Berapa rasio Poisson untuk paduan aluminium?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - '0,33'
+  - Sec 2
+  - D.1.7
+  - p.43
+  must_not_contain:
+  - '2,06'
+  - '206000'
+- id: lookup_collision_bulkhead_position_en
+  question: Where shall the collision bulkhead be located from the forward perpendicular?
+  lang: en
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 0,05
+  - 0,08
+  - Sec 11
+  - A.2.1.1
+  - p.247
+  must_not_contain:
+  - '2,6'
+  - stringer
+  - forepeak
+- id: lookup_collision_bulkhead_position_id
+  question: Di mana posisi sekat tubrukan dari forward perpendicular?
+  lang: id
+  intent: rules_qa
+  expect_lookup: true
+  must_include:
+  - 0,05
+  - 0,08
+  - Sec 11
+  - A.2.1.1
+  - p.247
+  must_not_contain:
+  - '2,6'
+  - senta
+  - ceruk
+  - haluan
+# Negative: deckhouse height must NOT trigger any coaming lookup.
+- id: neg_deckhouse_height_en
+  question: What is the minimum height of a deckhouse?
+  lang: en
+  intent: rules_qa
+  expect_no_lookup: true
+- id: neg_deckhouse_height_id
+  question: Berapa tinggi minimum deckhouse?
+  lang: id
+  intent: rules_qa
+  expect_no_lookup: true
