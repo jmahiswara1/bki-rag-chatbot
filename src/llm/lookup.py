@@ -285,6 +285,39 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "percentage", "persen", "percent",
         "reduce", "kurangi",
     ),
+    # reh_normal_steel: prevent over-fire on questions about specific
+    # higher-strength steel grades (315, 355, 390, 460 N/mm2) which
+    # are covered by material_factor_k rule.
+    "reh_normal_steel": (
+        "315", "355", "390", "460",
+    ),
+    # collision_bulkhead_barge: prevent over-fire on ship collision
+    # bulkhead position queries (handled by collision_bulkhead_position).
+    # Barge queries mention "barge" or "pontoon" or "Lcon".
+    "collision_bulkhead_barge": (
+        "forward perpendicular", "garis tegak haluan", "from FP", "0,05L",
+        "thickness", "tebal", "plating",
+    ),
+    # stockless_anchor_head_mass: prevent over-fire on holding capacity
+    # queries (handled by anchor_holding_power). Head mass vs holding
+    # capacity are different aspects.
+    "stockless_anchor_head_mass": (
+        "holding", "hold",
+        "daya cengkeram", "cengkeram",
+        "two times", "four times", "dua kali", "empat kali",
+    ),
+    # towing_hook_force: prevent over-fire on drum/winch diameter queries
+    # (handled by tug_winch_drum_diameter). Hook force vs drum diameter
+    # are different aspects of the same equipment.
+    "towing_hook_force": (
+        "drum", "diameter", "14 times", "derek",
+    ),
+    # hatch_cover_deflection: prevent over-fire on coaming height queries
+    # (handled by cargo_hatch_coaming_height). Deflection vs coaming
+    # height are different aspects of hatch covers.
+    "hatch_cover_deflection": (
+        "coaming", "600 mm", "450 mm", "coaming height",
+    ),
     # tug_winch_drum_diameter: prevent over-fire on questions about
     # towing winch HOLDING CAPACITY or BRAKE HOLDING (a different aspect
     # of the same equipment). Without this gate the winch/drum/tug anchors
