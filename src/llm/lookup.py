@@ -285,6 +285,27 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "percentage", "persen", "percent",
         "reduce", "kurangi",
     ),
+    # tug_winch_drum_diameter: prevent over-fire on questions about
+    # towing winch HOLDING CAPACITY or BRAKE HOLDING (a different aspect
+    # of the same equipment). Without this gate the winch/drum/tug anchors
+    # and triggers match any winch query, and the rule returns the drum
+    # diameter answer for a holding-capacity question. The correct
+    # behaviour when no holding-capacity lookup rule exists is to fall
+    # back to RAG, not to answer with the wrong aspect.
+    "tug_winch_drum_diameter": (
+        "holding", "hold",
+        "brake",
+        "capacity", "kapasitas",
+    ),
+    # poisson_ratio_aluminium: prevent over-fire on questions about
+    # Poisson's ratio for steel / baja. The document does not state
+    # Poisson's ratio for steel explicitly (context_note on the rule),
+    # so the correct behaviour for steel queries is to fall back to RAG
+    # rather than return the aluminium value (0.33).
+    "poisson_ratio_aluminium": (
+        "baja",
+        "steel",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers
