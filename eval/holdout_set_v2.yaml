@@ -1,0 +1,456 @@
+- id: v2_bilge_well_capacity_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa kapasitas minimum sumur air got?
+  coverage: uncovered
+  source_quote: 'Bilge wells shall have a capacity of more than 0,2 m3.'
+  section_no: 8
+  paragraph_id: 'B.5.4.1'
+  page_no: 212
+  must_include:
+  - '0,2'
+
+- id: v2_flat_plate_keel_width_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa lebar minimum lunas plat?
+  coverage: uncovered
+  source_quote: 'b = 800 + 5 L [mm]'
+  section_no: 6
+  paragraph_id: 'C.1.1'
+  page_no: 170
+  must_include:
+  - '800'
+
+- id: v2_corrugated_bh_radius_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa jari-jari dalam minimum tekukan dingin sekat bergelombang?
+  coverage: uncovered
+  source_quote: 'not be less than 4,5 times the as-built plate thickness'
+  section_no: 2
+  paragraph_id: 'B.8.3'
+  page_no: 41
+  must_include:
+  - '4,5'
+
+- id: v2_fire_division_B15_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Apa kelas sekat api B-15?
+  coverage: uncovered
+  source_quote: 'B-15 | A-60 | A-0 | B-15'
+  section_no: 22
+  page_no: 490
+  must_include:
+  - 'B-15'
+
+- id: v2_funnel_corrosion_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa tambahan korosi cerobong sebagai tiang?
+  coverage: uncovered
+  source_quote: 'masts used as funnels a corrosion addition of at least 1,0 mm'
+  section_no: 21
+  paragraph_id: 'M.4.1'
+  page_no: 480
+  must_include:
+  - '1,0'
+
+- id: v2_cathodic_protection_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Material anoda proteksi katodik sea chest?
+  coverage: uncovered
+  source_quote: 'galvanic anodes made of zinc or aluminium'
+  section_no: 8
+  paragraph_id: 'B.6.2.2'
+  page_no: 213
+  must_include:
+  - 'zinc'
+
+- id: v2_guard_rail_height_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa tinggi minimum sandaran?
+  coverage: uncovered
+  source_quote: 'at least 1,0 m from the deck'
+  section_no: 21
+  page_no: 483
+  must_include:
+  - '1,0'
+
+- id: v2_bulwark_plating_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: 'Berapa tebal minimum pelat kubu-kubu L>100 m?'
+  coverage: uncovered
+  source_quote: '= 0,65 (mm) for L > 100 m'
+  section_no: 6
+  paragraph_id: 'K.1000'
+  page_no: 191
+  must_include:
+  - '0,65'
+
+- id: v2_structural_fire_protection_id
+  lang: id
+  category: rules_qa
+  question: Apa yang diatur Perlindungan Api Struktural?
+  coverage: uncovered
+  source_quote: 'Structural fire protection'
+  section_no: 22
+  paragraph_id: 'A.1.3'
+  page_no: 487
+  must_include:
+  - 'fire'
+
+- id: v2_peak_bulkhead_id
+  lang: id
+  category: rules_qa
+  question: Di mana sekat pucuk ditempatkan?
+  coverage: uncovered
+  source_quote: 'to the after peak bulkhead'
+  section_no: 8
+  paragraph_id: 'B.1.4'
+  page_no: 209
+  must_include:
+  - 'after peak'
+
+- id: v2_corrosion_addition_steel_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana penambahan korosi diterapkan?
+  coverage: uncovered
+  source_quote: 'tK = corrosion addition'
+  section_no: 3
+  page_no: 48
+  must_include:
+  - 'tK'
+
+- id: v2_rudder_plating_radii_id
+  lang: id
+  category: rules_qa
+  question: Berapa jari-jari minimum pengelasan pelat kemudi?
+  coverage: uncovered
+  source_quote: '5 times the plate thickness, but in no case less than 100 mm'
+  section_no: 14
+  paragraph_id: 'A.4.8'
+  page_no: 282
+  must_include:
+  - '100 mm'
+
+- id: v2_engine_casing_thick_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana selubung mesin dihubungkan?
+  coverage: uncovered
+  source_quote: 'connected to transverses, web frames'
+  section_no: 10
+  paragraph_id: 'D.100'
+  page_no: 245
+  must_include:
+  - 'transverses'
+
+- id: v2_companionway_door_id
+  lang: id
+  category: rules_qa
+  question: Arah bukaan pintu penghubung?
+  coverage: uncovered
+  source_quote: 'doors are to open outward'
+  section_no: 21
+  page_no: 486
+  must_include:
+  - 'outward'
+
+- id: v2_rudder_stock_diameter_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum diameter formula for the rudder stock?
+  coverage: uncovered
+  source_quote: 'Dt = 4, 2'
+  section_no: 14
+  paragraph_id: 'C.1.4'
+  page_no: 286
+  must_include:
+  - '4, 2'
+
+- id: v2_bilge_well_capacity_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum capacity for bilge wells?
+  coverage: uncovered
+  source_quote: 'capacity of more than 0,2 m3'
+  section_no: 8
+  paragraph_id: 'B.5.4.1'
+  page_no: 212
+  must_include:
+  - '0,2'
+
+- id: v2_flat_plate_keel_width_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum width for the flat plate keel?
+  coverage: uncovered
+  source_quote: 'b = 800 + 5 L'
+  section_no: 6
+  paragraph_id: 'C.1.1'
+  page_no: 170
+  must_include:
+  - '800'
+
+- id: v2_corrugated_bh_radius_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum inside bending radius for corrugated bulkhead plating?
+  coverage: uncovered
+  source_quote: 'not be less than 4,5 times the as-built plate thickness'
+  section_no: 2
+  paragraph_id: 'B.8.3'
+  page_no: 41
+  must_include:
+  - '4,5'
+
+- id: v2_fire_division_A60_en
+  lang: en
+  category: rules_qa
+  question: What fire integrity class for high-risk space divisions?
+  coverage: uncovered
+  source_quote: 'A-60 class divisions'
+  section_no: 22
+  paragraph_id: 'B.2.2'
+  page_no: 489
+  must_include:
+  - 'A-60'
+
+- id: v2_funnel_corrosion_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum corrosion addition for a mast used as a funnel?
+  coverage: uncovered
+  source_quote: 'masts used as funnels a corrosion addition of at least 1,0 mm'
+  section_no: 21
+  paragraph_id: 'M.4.1'
+  page_no: 480
+  must_include:
+  - '1,0'
+
+- id: v2_cathodic_protection_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What material for galvanic anodes in sea chest?
+  coverage: uncovered
+  source_quote: 'galvanic anodes made of zinc or aluminium'
+  section_no: 8
+  paragraph_id: 'B.6.2.2'
+  page_no: 213
+  must_include:
+  - 'zinc'
+
+- id: v2_guard_rail_height_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum height of guard rails?
+  coverage: uncovered
+  source_quote: 'at least 1,0 m from the deck'
+  section_no: 21
+  page_no: 483
+  must_include:
+  - '1,0'
+
+- id: v2_structural_fire_protection_en
+  lang: en
+  category: rules_qa
+  question: What does Structural Fire Protection cover?
+  coverage: uncovered
+  source_quote: 'Structural fire protection'
+  section_no: 22
+  paragraph_id: 'A.1.3'
+  page_no: 487
+  must_include:
+  - 'fire'
+
+- id: v2_peak_bulkhead_en
+  lang: en
+  category: rules_qa
+  question: What is the relationship between collision and after peak bulkhead?
+  coverage: uncovered
+  source_quote: 'to the after peak bulkhead'
+  section_no: 8
+  paragraph_id: 'B.1.4'
+  page_no: 209
+  must_include:
+  - 'after peak'
+
+- id: v2_corrosion_addition_en
+  lang: en
+  category: rules_qa
+  question: How is corrosion addition applied?
+  coverage: uncovered
+  source_quote: 'tK = corrosion addition'
+  section_no: 3
+  page_no: 48
+  must_include:
+  - 'tK'
+
+- id: v2_rudder_plating_radii_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum radius for welding in rudder plating?
+  coverage: uncovered
+  source_quote: '5 times the plate thickness, but in no case less than 100 mm'
+  section_no: 14
+  paragraph_id: 'A.4.8'
+  page_no: 282
+  must_include:
+  - '100 mm'
+
+- id: v2_engine_casing_en
+  lang: en
+  category: rules_qa
+  question: How are engine casings connected structurally?
+  coverage: uncovered
+  source_quote: 'connected to transverses, web frames'
+  section_no: 10
+  paragraph_id: 'D.100'
+  page_no: 245
+  must_include:
+  - 'transverses'
+
+- id: v2_companionway_door_en
+  lang: en
+  category: rules_qa
+  question: In which direction do companionway doors open?
+  coverage: uncovered
+  source_quote: 'doors are to open outward'
+  section_no: 21
+  page_no: 486
+  must_include:
+  - 'outward'
+
+- id: v2_ooc_engine_power_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas daya mesin utama minimum untuk kapal kargo umum?
+  coverage: ooc
+  must_include:
+  - 'tidak'
+
+- id: v2_ooc_generator_capacity_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum generator capacity for ship service generators?
+  coverage: ooc
+  must_include:
+  - 'not found'
+
+- id: v2_ooc_radar_range_id
+  lang: id
+  category: rules_qa
+  question: Berapa jangkauan minimum radar navigasi?
+  coverage: ooc
+  must_include:
+  - 'tidak'
+
+- id: v2_ooc_gmdss_en
+  lang: en
+  category: rules_qa
+  question: What GMDSS equipment for Sea Area A3?
+  coverage: ooc
+  must_include:
+  - 'not in hull'
+
+- id: v2_ooc_boiler_efficiency_id
+  lang: id
+  category: rules_qa
+  question: Berapa efisiensi minimum ketel uap auxiliary?
+  coverage: ooc
+  must_include:
+  - 'tidak'
+
+- id: v2_ooc_heat_exchanger_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum heat transfer area for freshwater cooler?
+  coverage: ooc
+  must_include:
+  - 'not in hull'
+
+- id: v2_ooc_pump_capacity_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas minimum pompa air tawar?
+  coverage: ooc
+  must_include:
+  - 'tidak'
+
+- id: v2_ooc_automation_en
+  lang: en
+  category: rules_qa
+  question: What automation redundancy for engine room monitoring?
+  coverage: ooc
+  must_include:
+  - 'not in hull'
+
+- id: v2_para_length_l_measure_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Pada garis air dan sarat mana pengukuran Panjang Aturan?
+  coverage: covered
+  source_quote: 'measured on the waterline at the scantling draught'
+  section_no: 1
+  paragraph_id: 'H.2.1'
+  page_no: 22
+  must_include:
+  - 'scantling'
+
+- id: v2_para_fire_door_hinged_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum closing time for a hinged fire door?
+  coverage: covered
+  source_quote: 'no more than 40 s and no less than 10 s'
+  section_no: 22
+  paragraph_id: 'B.6.6.2'
+  page_no: 494
+  must_include:
+  - '10'
+
+- id: v2_para_corrosion_tk_method_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana menghitung tK untuk geladak terbuka?
+  coverage: covered
+  source_quote: 'tK = corrosion addition'
+  section_no: 3
+  page_no: 48
+  must_include:
+  - 'tK'
+
+- id: v2_para_bulwark_plating_formula_en
+  lang: en
+  category: rules_qa
+  question: What formula for minimum bulwark plating thickness?
+  coverage: covered
+  source_quote: '= 0,65 (mm) for L > 100 m'
+  section_no: 6
+  paragraph_id: 'K.1000'
+  page_no: 191
+  must_include:
+  - '0,65'
