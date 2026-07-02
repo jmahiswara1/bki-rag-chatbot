@@ -32,3 +32,24 @@ temp/
 
 # Env / secrets
 .env
+
+# Internal / planning documents (not for commit)
+AGENTS.md
+HANDOFF.md
+PRD*.md
+commit-rules.md
+handoff-fase*.md
+
+# Ad-hoc demo / exploratory content (CLI experiments, not shipped code)
+demos/
+
+# Ad-hoc / private script helpers (underscore-prefixed)
+scripts/_*.py
+
+# Throwaway eval-run transcripts (created by ad-hoc shell invocations)
+golden_run*.txt
+holdout_run*.txt
+v2_run4.txt
+golden_post018*.txt
+v1_post018.txt
+v2_post018.txt
