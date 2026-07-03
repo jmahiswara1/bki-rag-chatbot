@@ -78,6 +78,26 @@ PARAM_TOKENS: dict[str, dict[str, list[str]]] = {
         "hhp": ["HHP"],
         "vhhp": ["VHHP"],
     },
+    # Build 7D: hatch corrosion addition (Sec 17 B Table 17.1). Discriminator
+    # tokens for nonbulk vs bulk application columns of Table 17.1. Phrases
+    # are kept long enough to avoid incidental match on general queries.
+    "hatch_corrosion_addition": {
+        "nonbulk": [
+            "non-bulk", "non bulk",
+            "other ship types", "all other ship types",
+            "selain tipe kapal curah", "selain kapal curah",
+            "passenger",
+            "container ship", "container ships",
+            "car carrier", "car carriers",
+            "paper carrier", "paper carriers",
+        ],
+        "bulk": [
+            "bulk carrier", "bulk carriers",
+            "self-unloading", "self unloading",
+            "ore carrier", "ore carriers",
+            "combination carrier", "combination carriers",
+        ],
+    },
 }
 
 # Topics that have multiple parameter rows — must be disambiguated via
@@ -269,6 +289,36 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "superstructure decks",
         "geladak akomodasi",
         "geladak bangunan atas",
+    ),
+    # Build 7D: hatch corrosion addition (Sec 17 B Table 17.1). Distinct
+    # from hatch_cover_deflection (Sec 17 B.2.2) and from
+    # cargo_hatch_coaming_height / ventilator_coaming_height. Anchor requires
+    # corrosion-specific phrases so the rule only fires on tK / corrosion
+    # addition queries for hatch covers, not on coaming / deflection queries
+    # or general 'corrosion' queries unrelated to hatches.
+    "hatch_corrosion_addition": (
+        "corrosion addition",
+        "tambahan korosi",
+        "corrosion addition tK",
+        "corrosion addition hatch",
+        "corrosion addition tk",
+        "tk hatch",
+        "tk palka",
+        "hatch corrosion",
+    ),
+    # Build 7D: restrict hatch_cover_deflection to deflection-specific
+    # queries. Trigger set includes generic phrases ('hatch cover',
+    # 'penutup palka') that incidentally match hatch corrosion queries; the
+    # anchor gate now requires a deflection-specific phrase before trigger
+    # matching is allowed. hatch_deflection_en (golden) carries 'deflection'
+    # and remains eligible. Hatch corrosion queries (carry 'corrosion'
+    # /'tambahan korosi' but not 'defleksi'/'deflection'/'0,0056'/'lg')
+    # are blocked here and routed to hatch_corrosion_addition.
+    "hatch_cover_deflection": (
+        "defleksi",
+        "deflection",
+        "0,0056",
+        "lg",
     ),
 }
 
