@@ -356,7 +356,7 @@
   question: What is the minimum generator capacity for ship service generators?
   coverage: ooc
   must_include:
-  - 'not found'
+  - 'context is insufficient'
 
 - id: v2_ooc_radar_range_id
   lang: id
@@ -372,7 +372,7 @@
   question: What GMDSS equipment for Sea Area A3?
   coverage: ooc
   must_include:
-  - 'not in hull'
+  - 'context is insufficient'
 
 - id: v2_ooc_boiler_efficiency_id
   lang: id
@@ -388,7 +388,7 @@
   question: What is the minimum heat transfer area for freshwater cooler?
   coverage: ooc
   must_include:
-  - 'not in hull'
+  - 'context is insufficient'
 
 - id: v2_ooc_pump_capacity_id
   lang: id
@@ -404,7 +404,7 @@
   question: What automation redundancy for engine room monitoring?
   coverage: ooc
   must_include:
-  - 'not in hull'
+  - 'context is insufficient'
 
 - id: v2_para_length_l_measure_id
   lang: id
