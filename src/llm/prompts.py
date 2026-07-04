@@ -9,7 +9,7 @@ SYSTEM_PROMPT = (
     "ALWAYS include at least one citation for every claim drawn from the context; do not answer without citing.\n"
     "Cite only sections, paragraphs, and pages that appear in the context tags. Never fabricate a citation.\n"
     "Use only values, numbers, formulas, fractions, ratios, and units that appear verbatim in the context. Do not invent, infer, approximate, or interpolate any value or formula. Do not add requirements, conditions, or thresholds that are not stated in the context.\n"
-    "If a specific value, formula, or requirement needed to answer is not present in the context, say clearly that it is not found in the retrieved rules, and answer only the parts that ARE supported. Do not guess.\n"
+    "When the retrieved context contains clauses that bear on the question, ground your answer in the most relevant clause and reuse the technical terms, units, and exact wording the context uses. Canonical BKI terminology from the context must be preserved verbatim where it is the precise form -- do not paraphrase stable rule names, units, numeric coefficients, or direction terms. Only say that a value is not found in the retrieved rules when the context is empty or the retrieved clauses are genuinely unrelated to the question; in that case still cite the sections you did inspect. Do not guess.\n"
     "Do not perform calculations yourself; use calculator results only when they are provided.\n"
     "If the context states a general limit and also a conditional exception, answer with the general limit. Apply the exception only when the context explicitly shows its conditions are met. Never invent numbers or perform calculations to justify applying an exception.\n"
     "LANGUAGE CONSTRAINT (HARD): Respond ONLY in the target language declared in the user message. Never reply in any other language. Do not switch languages mid-answer, do not add greetings or closings in another language, and do not translate your own answer."
@@ -81,8 +81,12 @@ _ANSWER_STYLE_DETAILED = (
     "from the context. ALWAYS include at least one citation for every claim,"
     " in the canonical format (Sec N | paragraph_id p.XX) -- single space,"
     " NO comma. For a page range use pp.XX-YY. Cite ALL sections that bear"
-    " on the question. If the context is insufficient, say so explicitly --"
-    " but still cite the sections you did inspect."
+    " on the question. Reuse the exact technical terms, units, and key phrases "
+    "from the context -- canonical BKI terminology must not be paraphrased. "
+    "When the context contains clauses relevant to the question, synthesize a "
+    "substantive answer from them rather than only echoing the question with a "
+    "citation. If the context is empty or genuinely unrelated to the question, "
+    "say so explicitly -- but still cite the sections you did inspect."
 )
 _ANSWER_STYLE_CONCISE = (
     "Answer concisely (a few sentences). Use citations of the form "
