@@ -271,6 +271,32 @@ _RULES: list[LookupRule] = [
                        "berat jenis air laut","air laut"),
         context_note="Discrete value 1,025 t/m^3 for sea water per Sec 21 F.5.3.1.",
     ),
+    LookupRule(
+        topic="hatch_min_thickness_single_skin",
+        parameter=None,
+        value_text="Single-skin hatch cover: t = 6,5 . a + tK [mm]; tmin = 5,0 + tK [mm] for project cargo (Sec 17 B.5.1.1, p.363).",
+        value_text_en="Single-skin hatch cover: t = 6.5 . a + tK [mm]; tmin = 5.0 + tK [mm] for project cargo (Sec 17 B.5.1.1, p.363).",
+        value_text_id="Pelat penutup palka kulit tunggal (single-skin hatch cover): t = 6,5 . a + tK [mm]; tmin = 5,0 + tK [mm] untuk project cargo (Sec 17 B.5.1.1, p.363).",
+        value_num=6.5, unit="mm",
+        section_no=17, paragraph_id="B.5.1.1", page_no=363,
+        source_quote="t = 6,5 . a + tK [mm] If project cargo is intended to be carried on a hatch cover tmin = 5,0 + tK [mm]",
+        trigger_terms=("palka kulit tunggal", "pelat penutup palka kulit tunggal",
+                       "single skin", "single-skin"),
+        context_note="Build 8: deterministic coverage for v3_single_skin_hatch (was F/P/P). Single-skin hatch cover formula per Sec 17 B.5.1.1.",
+    ),
+    LookupRule(
+        topic="access_hatch_min_width",
+        parameter=None,
+        value_text="Access hatchways shall have a clear width of at least 600 x 600 mm (Sec 17 A.1.10, p.375).",
+        value_text_en="Access hatchways shall have a clear width of at least 600 x 600 mm (Sec 17 A.1.10, p.375).",
+        value_text_id="Bukaan palka akses (access hatchways) harus memiliki clear width minimum 600 x 600 mm (Sec 17 A.1.10, p.375).",
+        value_num=600, unit="mm",
+        section_no=17, paragraph_id="A.1.10", page_no=375,
+        source_quote="Access hatchways shall have a clear width of at least 600 x 600 mm.",
+        trigger_terms=("bukaan palka akses", "palka akses",
+                       "access hatchway", "access hatch", "clear width"),
+        context_note="Build 8: deterministic coverage for v3_access_hatch_width. Access hatchway clear width per Sec 17 A.1.10.",
+    ),
 ]
 
 
@@ -696,6 +722,117 @@ def test_ambiguous_length_alone_returns_none():
 
 
 # ---------------------------------------------------------------------------
+# Build 8: single-skin hatch + access hatch coverage tests
+# ---------------------------------------------------------------------------
+def test_match_single_skin_hatch_id():
+    """ID query on single-skin hatch cover must match the new rule."""
+    match = match_lookup(
+        query_id="Berapakah ketebalan minimum dari pelat penutup palka kulit tunggal (single skin hatch covers)?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "hatch_min_thickness_single_skin"
+    assert match.rule.section_no == 17
+    assert match.rule.paragraph_id == "B.5.1.1"
+    assert match.rule.page_no == 363
+    assert match.rule.value_num == 6.5
+    print("PASS: test_match_single_skin_hatch_id")
+def test_match_single_skin_hatch_en():
+    """EN query on single skin hatch cover must match the new rule."""
+    match = match_lookup(
+        query_id="",
+        query_en="minimum thickness for single skin hatch cover plating",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "hatch_min_thickness_single_skin"
+    print("PASS: test_match_single_skin_hatch_en")
+def test_single_skin_hatch_rejects_hatch_corrosion_query():
+    """The single-skin rule must NOT fire on hatch corrosion queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="corrosion addition tK for hatch covers in general for weather deck cargo hatches of all bulk carriers",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "hatch_min_thickness_single_skin"
+    print("PASS: test_single_skin_hatch_rejects_hatch_corrosion_query")
+def test_single_skin_hatch_rejects_hatch_deflection_query():
+    """The single-skin rule must NOT fire on hatch deflection queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="maximum allowed deflection for weather deck hatch covers under the design load pH",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "hatch_min_thickness_single_skin"
+    print("PASS: test_single_skin_hatch_rejects_hatch_deflection_query")
+def test_single_skin_hatch_rejects_unrelated_query():
+    """The single-skin rule must NOT fire on unrelated queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="what is the density of sea water?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "hatch_min_thickness_single_skin"
+    print("PASS: test_single_skin_hatch_rejects_unrelated_query")
+def test_match_access_hatch_width_id():
+    """ID query on access hatchway must match the new rule."""
+    match = match_lookup(
+        query_id="Berapakah dimensi bersih (clear width) minimum untuk bukaan palka akses (access hatchways)?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "access_hatch_min_width"
+    assert match.rule.section_no == 17
+    assert match.rule.paragraph_id == "A.1.10"
+    assert match.rule.page_no == 375
+    assert match.rule.value_num == 600
+    print("PASS: test_match_access_hatch_width_id")
+def test_match_access_hatch_width_en():
+    """EN query on access hatchway must match the new rule."""
+    match = match_lookup(
+        query_id="",
+        query_en="minimum clear width of access hatchway shall be 600 x 600",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "access_hatch_min_width"
+    print("PASS: test_match_access_hatch_width_en")
+def test_access_hatch_rejects_hatch_corrosion_query():
+    """The access-hatch rule must NOT fire on hatch corrosion queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="corrosion addition tK for hatch covers in general",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "access_hatch_min_width"
+    print("PASS: test_access_hatch_rejects_hatch_corrosion_query")
+def test_access_hatch_rejects_single_skin_query():
+    """The access-hatch rule must NOT fire on single-skin hatch queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="minimum thickness for single skin hatch cover plating",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "access_hatch_min_width"
+    print("PASS: test_access_hatch_rejects_single_skin_query")
+def test_access_hatch_rejects_unrelated_query():
+    """The access-hatch rule must NOT fire on unrelated queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="what is the engine oil capacity?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "access_hatch_min_width"
+    print("PASS: test_access_hatch_rejects_unrelated_query")
+# ---------------------------------------------------------------------------
 # Anchor gate tests (Fase E precision fix)
 # ---------------------------------------------------------------------------
 
@@ -906,5 +1043,16 @@ if __name__ == "__main__":
     # MVZ rule
     test_mvz_rule_matches_on_mvz_length_query_id()
     test_mvz_rule_does_not_match_on_freeboard_query()
+    # Build 8: single-skin + access hatch rules
+    test_match_single_skin_hatch_id()
+    test_match_single_skin_hatch_en()
+    test_single_skin_hatch_rejects_hatch_corrosion_query()
+    test_single_skin_hatch_rejects_hatch_deflection_query()
+    test_single_skin_hatch_rejects_unrelated_query()
+    test_match_access_hatch_width_id()
+    test_match_access_hatch_width_en()
+    test_access_hatch_rejects_hatch_corrosion_query()
+    test_access_hatch_rejects_single_skin_query()
+    test_access_hatch_rejects_unrelated_query()
     test_mvz_anchor_gate_rejects_without_anchor()
     print("\nAll 32 tests passed!")
