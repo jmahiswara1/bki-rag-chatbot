@@ -297,6 +297,30 @@ _RULES: list[LookupRule] = [
                        "access hatchway", "access hatch", "clear width"),
         context_note="Build 8: deterministic coverage for v3_access_hatch_width. Access hatchway clear width per Sec 17 A.1.10.",
     ),
+    LookupRule(
+        topic="tsc_definition",
+        parameter=None,
+        value_text="Sarat scantling (TSC) adalah sarat musim panas dalam meter, diukur dari sisi atas lunas (top of keel), atau nilai lebih besar yang ditetapkan sebagai \"scantling draught\" (Sec 1 H.2.9, p.24).",
+        value_text_en="The scantling draught (TSC) is the summer draught, in metres, measured from top of keel, or a greater value if such a value has been specified as 'scantling draught' (Sec 1 H.2.9, p.24).",
+        value_text_id="Sarat scantling (TSC) adalah sarat musim panas dalam meter, diukur dari sisi atas lunas (top of keel), atau nilai lebih besar yang ditetapkan sebagai \"scantling draught\" (Sec 1 H.2.9, p.24).",
+        value_num=None, unit=None,
+        section_no=1, paragraph_id="H.2.9", page_no=24,
+        source_quote="Draught, T, is the summer draught, in metres, measured from top of keel, or a greater value if such a value has been specified as 'scantling draught'.",
+        trigger_terms=("tsc", "sarat scantling", "sisi atas lunas", "top of keel", "titik ukur sarat"),
+        context_note="Build 9: deterministic coverage for v3_tsc_measure_id. Avoids 'scantling draught' alone to prevent over-fire on ship_length_l_definition.",
+    ),
+    LookupRule(
+        topic="aluminium_steel_galvanic_insulation",
+        parameter=None,
+        value_text="Untuk mencegah korosi galvanik, material insulasi non-higroskopis harus diaplikasikan di antara baja dan aluminium pada sambungan baut (Sec 2 E.5.2, p.44).",
+        value_text_en="To prevent galvanic corrosion, a non-hygroscopic insulation material shall be applied between steel and aluminium in a bolted connection (Sec 2 E.5.2, p.44).",
+        value_text_id="Untuk mencegah korosi galvanik, material insulasi non-higroskopis harus diaplikasikan di antara baja dan aluminium pada sambungan baut (Sec 2 E.5.2, p.44).",
+        value_num=None, unit=None,
+        section_no=2, paragraph_id="E.5.2", page_no=44,
+        source_quote="To prevent galvanic corrosion a non-hygroscopic insulation material shall be applied between steel and aluminium when a bolted connection is used.",
+        trigger_terms=("aluminium", "paduan aluminium", "galvanik", "korosi galvanik", "insulasi"),
+        context_note="Build 9: deterministic coverage for v3_alu_steel_galvanic_id. Requires aluminium/paduan aluminium trigger to avoid over-fire on v2 steel-only corrosion queries.",
+    ),
 ]
 
 
@@ -822,6 +846,86 @@ def test_access_hatch_rejects_single_skin_query():
     if match is not None:
         assert match.rule.topic != "access_hatch_min_width"
     print("PASS: test_access_hatch_rejects_single_skin_query")
+# Build 9: tsc_definition + aluminium_steel_galvanic_insulation tests
+# ---------------------------------------------------------------------------
+def test_match_tsc_definition_id():
+    """ID query on TSC measurement must match the new rule."""
+    match = match_lookup(
+        query_id="Di manakah letak pengukuran sarat scantling (TSC) dilakukan?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "tsc_definition"
+    assert match.rule.section_no == 1
+    assert match.rule.paragraph_id == "H.2.9"
+    assert match.rule.page_no == 24
+    assert "sisi atas lunas" in match.rule.value_text_id
+    print("PASS: test_match_tsc_definition_id")
+def test_tsc_definition_rejects_length_l_query():
+    """The TSC rule must NOT fire on Length L definition queries."""
+    match = match_lookup(
+        query_id="Bagaimana definisi panjang kapal L dalam aturan ini?",
+        query_en="",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "tsc_definition"
+    print("PASS: test_tsc_definition_rejects_length_l_query")
+def test_tsc_definition_rejects_v2_para_length_l():
+    """The TSC rule must NOT fire on v2_para_length_l_measure_id."""
+    match = match_lookup(
+        query_id="Pada garis air dan sarat mana pengukuran Panjang Aturan?",
+        query_en="",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "tsc_definition"
+    print("PASS: test_tsc_definition_rejects_v2_para_length_l")
+def test_match_alu_steel_galvanic_insulation_id():
+    """ID query on aluminium-steel insulation must match the new rule."""
+    match = match_lookup(
+        query_id="Pada sambungan struktur baut antara paduan aluminium dan baja, apa yang harus diaplikasikan untuk mencegah korosi galvanik?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "aluminium_steel_galvanic_insulation"
+    assert match.rule.section_no == 2
+    assert match.rule.paragraph_id == "E.5.2"
+    assert match.rule.page_no == 44
+    assert "insulasi" in match.rule.value_text_id
+    print("PASS: test_match_alu_steel_galvanic_insulation_id")
+def test_alu_steel_rejects_v2_cathodic_protection():
+    """The alu_steel rule must NOT fire on v2_cathodic_protection (galvanic anodes)."""
+    match = match_lookup(
+        query_id="",
+        query_en="What material for galvanic anodes in sea chest?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "aluminium_steel_galvanic_insulation"
+    print("PASS: test_alu_steel_rejects_v2_cathodic_protection")
+def test_alu_steel_rejects_v2_corrosion_addition_steel():
+    """The alu_steel rule must NOT fire on v2_corrosion_addition_steel_id."""
+    match = match_lookup(
+        query_id="Bagaimana penambahan korosi diterapkan?",
+        query_en="",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "aluminium_steel_galvanic_insulation"
+    print("PASS: test_alu_steel_rejects_v2_corrosion_addition_steel")
+def test_alu_steel_rejects_hatch_corrosion_query():
+    """The alu_steel rule must NOT fire on hatch_corrosion_addition queries."""
+    match = match_lookup(
+        query_id="",
+        query_en="corrosion addition tK for hatch covers in general for weather deck cargo hatches of all bulk carriers",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "aluminium_steel_galvanic_insulation"
+    print("PASS: test_alu_steel_rejects_hatch_corrosion_query")
 def test_access_hatch_rejects_unrelated_query():
     """The access-hatch rule must NOT fire on unrelated queries."""
     match = match_lookup(
@@ -1054,5 +1158,14 @@ if __name__ == "__main__":
     test_access_hatch_rejects_hatch_corrosion_query()
     test_access_hatch_rejects_single_skin_query()
     test_access_hatch_rejects_unrelated_query()
+    test_access_hatch_rejects_unrelated_query()
+    # Build 9: tsc_definition + aluminium_steel_galvanic_insulation tests
+    test_match_tsc_definition_id()
+    test_tsc_definition_rejects_length_l_query()
+    test_tsc_definition_rejects_v2_para_length_l()
+    test_match_alu_steel_galvanic_insulation_id()
+    test_alu_steel_rejects_v2_cathodic_protection()
+    test_alu_steel_rejects_v2_corrosion_addition_steel()
+    test_alu_steel_rejects_hatch_corrosion_query()
     test_mvz_anchor_gate_rejects_without_anchor()
-    print("\nAll 32 tests passed!")
+    print("\nAll 39 tests passed!")
