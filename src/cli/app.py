@@ -15,6 +15,7 @@ import sys
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import NestedCompleter
+from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.rule import Rule
 
@@ -37,14 +38,12 @@ def _parse_args(argv: list[str] | None = None) -> str:
 
 def _print_header(console: Console, mode: str) -> None:
     cfg = MODES[mode]
+    console.print(Rule(style="bold cyan"))
     console.print(
-        f"[bold]BKI Hull RAG[/bold]  mode={mode}  "
-        f"model={cfg.model}  rerank={cfg.rerank}"
+        f"[bold]BKI Hull RAG[/bold]  |  {mode}  |  {cfg.model}"
     )
-    console.print(
-        "[dim]exit: Ctrl-D, 'exit', or 'quit' | type /help for commands[/dim]"
-    )
-    console.print()
+    console.print("[dim]Ctrl-D exit  |  /help[/dim]")
+    console.print(Rule(style="bold cyan"))
 
 
 def _handle_mode_command(arg: str, state: AppState, console: Console) -> None:
@@ -147,7 +146,10 @@ def run(argv: list[str] | None = None) -> None:
         '/quit': None,
     })
     
-    session: PromptSession[str] = PromptSession("> ", completer=completer)
+    prompt_style = Style.from_dict({"prompt": "cyan"})
+    session: PromptSession[str] = PromptSession(
+        ">>> ", completer=completer, style=prompt_style,
+    )
 
     _print_header(console, mode)
 
@@ -221,4 +223,4 @@ def run(argv: list[str] | None = None) -> None:
             state.history.append({"role": "assistant", "content": result.answer})
             state.last_result = result
         
-        console.print(Rule(style="dim"))
+        console.print(Rule(style="bold cyan"))

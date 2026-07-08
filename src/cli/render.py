@@ -11,6 +11,7 @@ escaped. Only labels we own carry markup tags.
 from typing import Iterator
 from rich.console import Console
 from rich.live import Live
+from rich.rule import Rule
 from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
@@ -62,11 +63,11 @@ def _truncate_title(title: str) -> str:
         return title
     return title[: _TITLE_WIDTH - 1] + "\u2026"
 def _render_source_panel(sources: list, console: Console) -> None:
-    """Render a table of grounded chunks. Sources are model-derived and may
-    contain arbitrary characters; everything dynamic goes through Text
-    with markup=False (or str() for purely numeric fields)."""
+    """Render sources table with a Rule separator. Sources are model-derived
+    and may contain arbitrary characters; everything dynamic goes through
+    Text with markup=False (or str() for purely numeric fields)."""
+    console.print(Rule(f"Sources ({len(sources)})", style="dim cyan"))
     table = Table(
-        title=f"Sources ({len(sources)})",
         box=None,
         show_header=True,
         header_style="bold",
@@ -116,7 +117,7 @@ def _render_footer(result: ChainStreamResult, mode: str, console: Console) -> No
         parts.append(f"total={total_s:.1f}s")
     if result.rejected:
         parts.append(f"rejected: {result.reject_reason}")
-    console.print(f"[dim]--- {' | '.join(parts)} ---[/dim]")
+    console.print(Rule("  ".join(parts), style="dim cyan"))
 def render_turn(query: str, state: AppState, console: Console, history: list | None = None) -> ChainStreamResult:
     """Execute one REPL turn: stream the chain, render live, finalize.
 
@@ -168,11 +169,11 @@ def render_turn(query: str, state: AppState, console: Console, history: list | N
             language="unknown",
             timings={},
         )
-    # Final answer text. Use Text() because the content is
-    # model-derived and may contain '[' / ']' which would otherwise be
- # interpreted as rich markup.
+    # Final answer with Rule separator above. Use Text() because the
+    # content is model-derived and may contain '[' / ']' which would
+    # otherwise be interpreted as rich markup.
+    console.print(Rule("Answer", style="dim cyan"))
     console.print(Text(final.answer or ""))
-    console.print()
     # Source panel: WAJIB for grounded answers (sources non-kosong);
     # SKIP for calc stub and guardrail reject (sources == [] or rejected).
     if final.sources and not final.rejected:
