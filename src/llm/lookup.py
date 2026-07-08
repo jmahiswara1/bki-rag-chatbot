@@ -320,6 +320,38 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "0,0056",
         "lg",
     ),
+    # Build 10 (Bagian A): supply_deck_thickness requires thickness language,
+    # not just "kapal suplai" alone. Prevents misfire on location / position /
+    # ventilation / engine-room queries that mention "kapal suplai" incidentally.
+    "supply_deck_thickness": (
+        "tebal", "thickness", "ketebalan",
+        "pelat geladak", "deck plating",
+    ),
+    # Build 10 (Bagian A): tanker_strake_width requires strake / longitudinal
+    # bulkhead context, not just "tanker" / "kapal tanker" alone. Prevents
+    # misfire on dimension / STL / room queries that mention "tanker" incidentally.
+    "tanker_strake_width": (
+        "strake", "lebar strake", "0,1H", "1H",
+        "longitudinal bulkhead", "sekat memanjang",
+    ),
+    # Build 10 (Bagian A): aluminium_steel_galvanic_insulation requires
+    # galvanic/insulation context, not just "aluminium" / "paduan aluminium"
+    # alone. Prevents misfire on temperature / fire / core queries that mention
+    # aluminium incidentally.
+    "aluminium_steel_galvanic_insulation": (
+        "insulasi", "insulation", "isolasi",
+        "galvanik", "korosi galvanik", "galvanic corrosion",
+    ),
+    # Build 10 (Bagian A): bulwark_guardrail_min_height requires minimum
+    # height language. Prevents misfire on sill / door / compartment queries.
+    # Build 10 (Bagian A): bulwark_guardrail_min_height anchor kept
+    # equipment-specific ("bulwark"/"guard rail"/"railing"/"pagar pelindung")
+    # after regression on neg_deckhouse_height_id where generic "tinggi
+    # minimum"/"minimum" combined with en_query "height" + ID "tinggi" would
+    # have met MIN_TRIGGER_MATCHES=2. Anchor must stay minimal.
+    "bulwark_guardrail_min_height": (
+        "bulwark", "guard rail", "guardrail", "railing", "pagar pelindung",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
@@ -388,6 +420,24 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     "poisson_ratio_aluminium": (
         "baja",
         "steel",
+    ),
+    # Build 10 (Bagian A): safety EXCLUDE for the ship-type numeric rules.
+    "supply_deck_thickness": (
+        "lokasi", "posisi", "di mana", "pintu", "lubang", "cut-out",
+        "pipa udara", "ventilasi", "ruang mesin", "mesin", "compartment",
+        "hatch", "hatchway",
+    ),
+    "tanker_strake_width": (
+        "lokasi", "passageway", "STL", "submerged turret",
+        "under-deck", "under deck", "ruang",
+    ),
+    "aluminium_steel_galvanic_insulation": (
+        "suhu", "temperature", "kenaikan suhu", "tes api", "fire",
+        "api", "core temperature",
+    ),
+    "bulwark_guardrail_min_height": (
+        "sill", "ambang", "pintu", "door", "cut-out", "compartment",
+        "pintu akses", "opening",
     ),
 }
 # ---------------------------------------------------------------------------
