@@ -321,6 +321,26 @@ _RULES: list[LookupRule] = [
         trigger_terms=("aluminium", "paduan aluminium", "galvanik", "korosi galvanik", "insulasi"),
         context_note="Build 9: deterministic coverage for v3_alu_steel_galvanic_id. Requires aluminium/paduan aluminium trigger to avoid over-fire on v2 steel-only corrosion queries.",
     ),
+    LookupRule(
+        topic="supply_deck_thickness",
+        parameter=None,
+        value_text="The thickness of deck plating is not to be taken less than 8,0 mm (for pL >= 40 kN/m2)",
+        value_num=8.0, unit="mm",
+        section_no=29, paragraph_id="F.4", page_no=668,
+        source_quote="The thickness of deck plating is not to be taken less than 8,0 mm. In areas for the stowage of heavy cargoes the thickness of deck plating is to be suitably increased.",
+        trigger_terms=("supply vessel", "deck plating", "8,0", "mm", "kapal suplai", "tebal geladak"),
+        context_note="Build 10 (Bagian A): supply_deck_thickness misfire-guard.",
+    ),
+    LookupRule(
+        topic="tanker_strake_width",
+        parameter=None,
+        value_text="The top and bottom strakes of the longitudinal bulkheads are to have a width of not less than 0,1H",
+        value_num=0.1, unit="H",
+        section_no=24, paragraph_id="A.10.1.2", page_no=604,
+        source_quote="The top and bottom strakes of the longitudinal bulkheads are to have a width of not less than 0,1H, and their thickness is not to be less than: top strake of plating: tmin = 0,75 x deck thickness; bottom strake of plating: tmin = 0,75 x bottom thickness",
+        trigger_terms=("tanker", "strake", "longitudinal bulkhead", "0,1H", "lebar strake", "sekat memanjang"),
+        context_note="Build 10 (Bagian A): tanker_strake_width misfire-guard.",
+    ),
 ]
 
 
@@ -1108,6 +1128,157 @@ def test_anchor_gate_rejects_restricted_on_generic_modulus_query():
     assert match is None or match.rule.topic != "restricted_service_modulus_reduction"
     print("PASS: test_anchor_gate_rejects_restricted_on_generic_modulus_query")
 
+
+
+def test_match_supply_deck_thickness_id_correct_fire():
+    match = match_lookup(
+        query_id="Untuk kapal suplai (supply vessels), berapakah ketebalan pelat geladak minimum yang disyaratkan?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "supply_deck_thickness"
+    assert match.rule.value_num == 8.0
+    assert match.rule.unit == "mm"
+    print("PASS: test_match_supply_deck_thickness_id_correct_fire")
+
+
+def test_match_supply_deck_thickness_en_correct_fire():
+    match = match_lookup(
+        query_id="",
+        query_en="supply vessel deck plating thickness 8,0 mm minimum",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "supply_deck_thickness"
+    print("PASS: test_match_supply_deck_thickness_en_correct_fire")
+
+
+def test_supply_deck_thickness_rejects_engine_room_query():
+    match = match_lookup(
+        query_id="lokasi akses ruang mesin kapal suplai",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_supply_deck_thickness_rejects_engine_room_query")
+
+
+def test_supply_deck_thickness_rejects_ventilation_query():
+    match = match_lookup(
+        query_id="posisi pipa udara/ventilasi di geladak cuaca kapal suplai",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_supply_deck_thickness_rejects_ventilation_query")
+
+
+def test_match_tanker_strake_width_en_correct_fire():
+    match = match_lookup(
+        query_id="",
+        query_en="In tankers, what is the minimum required width for the top and bottom strakes of longitudinal bulkheads?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "tanker_strake_width"
+    print("PASS: test_match_tanker_strake_width_en_correct_fire")
+
+
+def test_match_tanker_strake_width_id_correct_fire():
+    match = match_lookup(
+        query_id="tanker lebar strake atas bawah sekat memanjang",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "tanker_strake_width"
+    print("PASS: test_match_tanker_strake_width_id_correct_fire")
+
+
+def test_tanker_strake_width_rejects_passageway_query():
+    match = match_lookup(
+        query_id="dimensi under-deck passageway tanker",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_tanker_strake_width_rejects_passageway_query")
+
+
+def test_tanker_strake_width_rejects_stl_room_query():
+    match = match_lookup(
+        query_id="lokasi ruang STL (Submerged Turret Loading) kapal tanker",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_tanker_strake_width_rejects_stl_room_query")
+
+
+def test_match_bulwark_guardrail_height_correct_fire_id():
+    match = match_lookup(
+        query_id="tinggi minimum bulwark atau guard rail berapa?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "bulwark_guardrail_min_height"
+    print("PASS: test_match_bulwark_guardrail_height_correct_fire_id")
+
+
+def test_match_bulwark_guardrail_height_correct_fire_en():
+    match = match_lookup(
+        query_id="",
+        query_en="minimum height of guard rail",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "bulwark_guardrail_min_height"
+    print("PASS: test_match_bulwark_guardrail_height_correct_fire_en")
+
+
+def test_bulwark_guardrail_rejects_sill_query():
+    match = match_lookup(
+        query_id="sill height bukaan akses enclosed superstructure",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_bulwark_guardrail_rejects_sill_query")
+
+
+def test_match_alu_steel_insulation_correct_fire_id():
+    match = match_lookup(
+        query_id="Pada sambungan struktur baut antara paduan aluminium dan baja, apa yang harus diaplikasikan untuk mencegah korosi galvanik?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "aluminium_steel_galvanic_insulation"
+    print("PASS: test_match_alu_steel_insulation_correct_fire_id")
+
+
+def test_match_alu_steel_insulation_correct_fire_id_alt():
+    match = match_lookup(
+        query_id="material insulasi apa yang diaplikasikan untuk mencegah korosi galvanik antara baja dan aluminium",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "aluminium_steel_galvanic_insulation"
+    print("PASS: test_match_alu_steel_insulation_correct_fire_id_alt")
+
+
+def test_alu_steel_insulation_rejects_fire_test_query():
+    match = match_lookup(
+        query_id="batas kenaikan suhu inti paduan aluminium saat tes api",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is None
+    print("PASS: test_alu_steel_insulation_rejects_fire_test_query")
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -1168,4 +1339,20 @@ if __name__ == "__main__":
     test_alu_steel_rejects_v2_corrosion_addition_steel()
     test_alu_steel_rejects_hatch_corrosion_query()
     test_mvz_anchor_gate_rejects_without_anchor()
-    print("\nAll 39 tests passed!")
+    # Build 10: misfire-guard tests
+    test_match_supply_deck_thickness_id_correct_fire()
+    test_match_supply_deck_thickness_en_correct_fire()
+    test_supply_deck_thickness_rejects_engine_room_query()
+    test_supply_deck_thickness_rejects_ventilation_query()
+    test_match_tanker_strake_width_en_correct_fire()
+    test_match_tanker_strake_width_id_correct_fire()
+    test_tanker_strake_width_rejects_passageway_query()
+    test_tanker_strake_width_rejects_stl_room_query()
+    test_match_bulwark_guardrail_height_correct_fire_id()
+    test_match_bulwark_guardrail_height_correct_fire_en()
+    test_bulwark_guardrail_rejects_sill_query()
+    test_match_alu_steel_insulation_correct_fire_id()
+    test_match_alu_steel_insulation_correct_fire_id_alt()
+    test_alu_steel_insulation_rejects_fire_test_query()
+    print("\nAll 53 tests passed!")
+
