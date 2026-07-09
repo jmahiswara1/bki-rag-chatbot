@@ -1,0 +1,29 @@
+{
+  "name": "bki-rag-tui",
+  "version": "1.0.0",
+  "description": "BKI RAG Chatbot - Terminal UI",
+  "type": "module",
+  "bin": {
+    "bki-chat": "./build/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.tsx",
+    "start": "node build/cli.js"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "cli-spinners": "^3.0.0",
+    "ink": "^7.1.0",
+    "ink-scroll-view": "^0.3.7",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.8.0"
+  }
+}
