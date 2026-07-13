@@ -1,0 +1,508 @@
+- id: v3_length_l_def_id
+  lang: id
+  category: rules_qa
+  question: Apa definisi "Length L" menurut BKI Rules for Hull?
+  coverage: uncovered
+  source_quote: The rule length L is the distance in metres, measured on the waterline at the scantling draught from the foreside
+    of stem to the after side of the rudder post, or the centre of the rudder stock if there is no rudder stock.
+  section_no: 1
+  paragraph_id: H.2.1
+  page_no: 22
+  must_include:
+  - sarat scantling
+  - linggi
+  known_fail: true
+- id: v3_mooring_current_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa kecepatan arus maksimum yang disyaratkan untuk penentuan tali tambat pada kapal dengan nilai Z lebih dari
+    2000?
+  coverage: uncovered
+  source_quote: 'The mooring lines as given here under are based on a maximum current speed of 1,0 m/s and the following maximum
+    wind speed vw [m/s]: vw = 25 - 0,002 . (A - 2000)'
+  section_no: 18
+  paragraph_id: F.4.2.1
+  page_no: 398
+  must_include:
+  - 1,0
+  - m/s
+- id: v3_bulwark_thick_l100_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Bagaimana ketentuan tebal pelat kubu-kubu (bulwark) untuk kapal dengan panjang (L) melebihi 100 meter?
+  coverage: uncovered
+  source_quote: Thickness of bulwark plating ... b = 0,65 (mm) for L > 100 m
+  section_no: 6
+  paragraph_id: K.1000
+  page_no: 191
+  must_include:
+  - 0,65
+- id: v3_hatch_tk_nonbulk_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa tambahan korosi (tK) yang disyaratkan untuk struktur internal dari penutup palka kulit ganda pada kapal
+    cuaca geladak kargo selain tipe kapal curah?
+  coverage: uncovered
+  source_quote: Weather deck cargo hatches of all other ship types - Internal structure of double skin hatch covers and closed
+    box girders - 1,0
+  section_no: 17
+  paragraph_id: B
+  page_no: 350
+  must_include:
+  - 1,0 mm
+- id: v3_box_keel_baseline_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa jarak vertikal minimum antara bagian terbawah lunas kotak (box keel) dengan garis dasar (baseline) jika
+    tidak berfungsi sebagai docking keel?
+  coverage: defer_no_numeric_in_pdf
+  source_quote: The same applies where the centreline box keel is located above the baseline at such a distance that it cannot
+    serve as a docking keel.
+  section_no: 32
+  paragraph_id: J
+  page_no: 658
+  must_include:
+  - tidak
+- id: v3_dredger_transverse_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Pada kapal keruk (dredgers), berapakah jarak maksimum yang diizinkan untuk transverses dasar (bottom transverses)
+    pada konstruksi dasar tunggal (single bottom) secara memanjang?
+  coverage: uncovered
+  source_quote: Distance of bottom transverses not to exceed 3,6 m
+  section_no: 32
+  paragraph_id: H
+  page_no: 647
+  must_include:
+  - 3,6
+- id: v3_tsc_measure_id
+  lang: id
+  category: rules_qa
+  question: Di manakah letak pengukuran sarat scantling (TSC) dilakukan?
+  coverage: uncovered
+  source_quote: Draught, T, is the summer draught, in metres, measured from top of keel
+  section_no: 1
+  paragraph_id: H.6.2
+  page_no: 24
+  must_include:
+  - sisi atas lunas
+- id: v3_weather_deck_def_id
+  lang: id
+  category: rules_qa
+  question: Apa definisi geladak cuaca (weather deck) menurut aturan BKI?
+  coverage: uncovered
+  source_quote: All free decks and parts of decks exposed to the sea are defined as weather deck
+  section_no: 1
+  paragraph_id: J.6.4
+  page_no: 25
+  must_include:
+  - cuaca
+- id: v3_doubling_plate_tank_id
+  lang: id
+  category: rules_qa
+  question: Apakah pelat ganda (doubling plates) diizinkan dipasang di dalam tangki untuk muatan cairan yang mudah terbakar?
+  coverage: uncovered
+  source_quote: Doubling plates ... shall not be fitted in tanks intended to carry flammable liquids, except for collar plates
+  section_no: 19
+  paragraph_id: B.2.5.3
+  page_no: 417
+  must_include:
+  - tidak
+  - pelat kerah
+  known_fail: true
+- id: v3_reh_normal_steel_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapakah tegangan luluh nominal atas (ReH) minimum yang disyaratkan untuk baja struktur lambung dengan kekuatan
+    normal (normal strength)?
+  coverage: uncovered
+  source_quote: Normal strength hull structural steel has a minimum nominal upper yield point ReH of 235 N/mm2 and tensile
+    strength Rm of 400-520 N/mm2
+  section_no: 2
+  paragraph_id: B.1.1
+  page_no: 31
+  must_include:
+  - '235'
+- id: v3_swash_perforation_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapa persentase luas area perforasi yang disyaratkan pada sekat berlubang (swash bulkhead) dibandingkan dengan
+    total luas sekat?
+  coverage: uncovered
+  source_quote: Perforated swash bulkhead plates ... total area of perforations shall be not less than 20% of the bulkhead
+    area
+  section_no: 11
+  paragraph_id: C.2
+  page_no: 247
+  must_include:
+  - 20%
+- id: v3_single_skin_hatch_id
+  lang: id
+  category: rules_qa
+  question: Berapakah ketebalan minimum dari pelat penutup palka kulit tunggal (single skin hatch covers)?
+  coverage: uncovered
+  source_quote: t = 6,5 . a + tK [mm] If project cargo is intended to be carried on a hatch cover tmin = 5,0 mm
+  section_no: 17
+  paragraph_id: B
+  page_no: 363
+  must_include:
+  - 6,5
+  - 5,0
+- id: v3_mvz_deck_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Pada zona vertikal utama di kapal penumpang, berapakah batas rata-rata panjang dan lebar maksimum yang diizinkan
+    pada setiap geladak?
+  coverage: uncovered
+  source_quote: The average length and width of main vertical zones on each deck shall generally not exceed 40 m
+  section_no: 22
+  paragraph_id: B.2.1
+  page_no: 489
+  must_include:
+  - '40'
+- id: v3_alu_steel_galvanic_id
+  lang: id
+  category: rules_qa
+  question: Apa yang harus diaplikasikan antara paduan aluminium dan baja untuk mencegah korosi galvanik?
+  coverage: covered
+  source_quote: Insulation shall be provided between aluminium alloy and steel to prevent galvanic corrosion
+  section_no: 2
+  paragraph_id: E.5.2
+  page_no: 44
+  must_include:
+  - insulasi
+- id: v3_proof_load_ref_id
+  lang: id
+  category: rules_qa
+  question: Di bagian manakah pedoman beban uji proof load (PL) untuk rantai jangkar stud link (stud link chain cables) dapat
+    ditemukan?
+  coverage: uncovered
+  source_quote: Chain cables ... proof load (PL) according to Rules for Materials (Pt.1, Vol.V) Sec.13 and Table 13.7
+  section_no: 18
+  paragraph_id: D.6
+  page_no: 391
+  must_include:
+  - '13.7'
+  known_fail: true
+- id: v3_vhhp_def_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Apa definisi dari jangkar dengan daya cengkeram sangat tinggi (Very High Holding Power / VHHP anchor)?
+  coverage: uncovered
+  source_quote: A 'very high holding power' anchor is an anchor with a holding power of at least four times that of an ordinary
+    stockless anchor of the same mass
+  section_no: 18
+  paragraph_id: C.5
+  page_no: 389
+  must_include:
+  - empat kali
+- id: v3_stainless_yield_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana cara menentukan tegangan luluh minimum untuk baja tahan karat (stainless steel) tipe austenitik dan
+    duplex?
+  coverage: uncovered
+  source_quote: For austenitic and duplex (austenitic-ferritic) stainless steel ReH = Rp0,2 [N/mm2] where Rp0,2 is the 0,2%
+    proof stress
+  section_no: 2
+  paragraph_id: D.1.7
+  page_no: 43
+  must_include:
+  - 0,2
+- id: v3_means_escape_id
+  lang: id
+  category: rules_qa
+  question: Pada kapal penumpang, berapakah jumlah minimum sarana jalan keluar (means of escape) yang harus disediakan dari
+    setiap ruang atau kelompok ruang?
+  coverage: uncovered
+  source_quote: At least two means of escape shall be provided from each space or group of spaces
+  section_no: 22
+  paragraph_id: D.2.1
+  page_no: 504
+  must_include:
+  - dua
+- id: v3_access_hatch_width_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Berapakah dimensi bersih (clear width) minimum untuk bukaan palka akses (access hatchways)?
+  coverage: uncovered
+  source_quote: Access hatchways shall have a clear width of at least 600 x 600 mm
+  section_no: 17
+  paragraph_id: A.10
+  page_no: 375
+  must_include:
+  - '600'
+- id: v3_supply_deck_thick_id
+  lang: id
+  category: lookup
+  expect_lookup: true
+  question: Untuk kapal suplai (supply vessels), berapakah ketebalan pelat geladak minimum yang disyaratkan?
+  coverage: uncovered
+  source_quote: For supply vessels, the thickness of deck plating is not to be taken less than 8,0 mm
+  section_no: 29
+  paragraph_id: F.4
+  page_no: 668
+  must_include:
+  - 8,0
+- id: v3_nominal_ice_pressure_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the nominal ice pressure (p0) used to determine the design ice pressure?
+  coverage: uncovered
+  source_quote: Nominal ice pressure p0 = 5.6 MPa
+  section_no: 15
+  paragraph_id: B.1.1
+  page_no: 320
+  must_include:
+  - '5.6'
+- id: v3_freeboard_deck_def_en
+  lang: en
+  category: rules_qa
+  question: How is the freeboard deck defined in the BKI rules?
+  coverage: uncovered
+  source_quote: Freeboard deck is the uppermost continuous deck
+  section_no: 1
+  paragraph_id: H.2.7
+  page_no: 23
+  must_include:
+  - uppermost
+- id: v3_coating_dft_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the minimum required dry film thickness of the coating for corrosion protection in underwater hull systems
+    without antifouling?
+  coverage: uncovered
+  source_quote: Minimum dry film thickness (DFT) of the coating system shall be 250 microns
+  section_no: 38
+  paragraph_id: B.2.4
+  page_no: 692
+  must_include:
+  - '250'
+- id: v3_collision_blkhd_barge_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: Where is the collision bulkhead required to be located on barges?
+  coverage: uncovered
+  source_quote: For barges, the collision bulkhead is to be located between 0,05Lcon and 0,08Lcon
+  section_no: 31
+  paragraph_id: C.3
+  page_no: 723
+  must_include:
+  - '0.05'
+  - '0.08'
+- id: v3_material_factor_k315_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the material factor (k) for higher strength hull structural steel with a nominal yield stress of 315 N/mm2?
+  coverage: uncovered
+  source_quote: Material factor k ReH[N/mm2] k ... 315 0,78 ... 355 0,72
+  section_no: 2
+  paragraph_id: B.2
+  page_no: 32
+  must_include:
+  - '0.78'
+- id: v3_side_scuttle_area_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the maximum area for round or oval openings to be officially defined as side scuttles according to the
+    rules?
+  coverage: uncovered
+  source_quote: Side scuttles are defined as being round or oval openings with an area not exceeding 0,16 m2
+  section_no: 22
+  paragraph_id: F.1.2
+  page_no: 463
+  must_include:
+  - '0.16'
+- id: v3_towing_winch_hold_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the holding capacity required for the towing winch on tugs in the first layer of the towrope?
+  coverage: uncovered
+  source_quote: The acting forces are to be calculated for 80% and 45% respectively of the rated breaking load of the chain
+    cable
+  section_no: 18
+  paragraph_id: F.5.2
+  page_no: 405
+  must_include:
+  - 80%
+- id: v3_iso_window_test_en
+  lang: en
+  category: rules_qa
+  expect_lookup: true
+  question: Which ISO standards must be met when testing windows and side scuttles?
+  coverage: uncovered
+  source_quote: Windows and side scuttles have to be tested in accordance with the respective ISO standards 1751 and 3903
+  section_no: 22
+  paragraph_id: E.4.6
+  page_no: 465
+  must_include:
+  - '1751'
+  - '3903'
+- id: v3_dredger_transverse_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: For single bottom longitudinally framed dredgers, what is the maximum general spacing for bottom transverses?
+  coverage: uncovered
+  source_quote: Distance of bottom transverses not to exceed 3.6 m
+  section_no: 32
+  paragraph_id: H
+  page_no: 647
+  must_include:
+  - '3.6'
+- id: v3_bottom_shell_thick_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum required thickness for bottom shell plating of a ship with a length of 50 meters or greater?
+  coverage: uncovered
+  source_quote: 'Ships with lengths L < 90 m The thickness of the bottom shell plating within 0,4L amidships is not to be
+    less than: tB1 = 1,9 . nf . a . pB . k + tK'
+  section_no: 6
+  paragraph_id: B.2.1
+  page_no: 168
+  must_include:
+  - square root
+  - k
+  known_fail: true
+- id: v3_tanker_strake_width_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: In tankers, what is the minimum required width for the top and bottom strakes of longitudinal bulkheads?
+  coverage: uncovered
+  source_quote: For tankers, the top and bottom strakes of the longitudinal bulkheads are to have a width of not less than
+    0,1H
+  section_no: 24
+  paragraph_id: A.10.1.2
+  page_no: 604
+  must_include:
+  - '0.1'
+- id: v3_bow_height_measure_en
+  lang: en
+  category: rules_qa
+  question: Where is the minimum bow height required to be measured according to ICLL Regulation 39?
+  coverage: uncovered
+  source_quote: According to ICLL, Regulation 39, a minimum bow height is required at the forward perpendicular
+  section_no: 16
+  paragraph_id: A.2.1
+  page_no: 334
+  must_include:
+  - forward perpendicular
+- id: v3_expansion_joints_en
+  lang: en
+  category: rules_qa
+  question: How many expansion joints are recommended in the bulwark for ships exceeding 60 meters in length?
+  coverage: uncovered
+  source_quote: An adequate number of expansion joints is to be provided in the bulwark. In longitudinal direction the stays
+    adjacent to the joints shall be spaced at a distance not greater than L/40
+  section_no: 6
+  paragraph_id: K
+  page_no: 192
+  must_include:
+  - l / 40
+- id: v3_hatch_tk_bulk_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the total corrosion addition (tK) required for hatch covers in general for weather deck cargo hatches
+    of all bulk carriers?
+  coverage: uncovered
+  source_quote: Weather deck cargo hatches of all bulk carriers, self-unloading bulk carriers, ore carriers and combination
+    carriers - Hatch covers in general - 2,0
+  section_no: 17
+  paragraph_id: B
+  page_no: 350
+  must_include:
+  - 2.0 mm
+- id: v3_bulwark_stay_modulus_en
+  lang: en
+  category: rules_qa
+  question: What is the required section modulus formula for bulwark stays effectively attached to the deck?
+  coverage: uncovered
+  source_quote: W = 4 . p . e . l2 [cm3] p = ps or pe as the case may be pmin = 15 kN/m2 e = spacing of stays [m] l = length
+    of stay [m]
+  section_no: 6
+  paragraph_id: K.80
+  page_no: 192
+  must_include:
+  - 4 · p · e · l²
+- id: v3_helicopter_skid_en
+  lang: en
+  category: rules_qa
+  question: For a helicopter lashed on deck, where does the wheel and/or skid force (P) act?
+  coverage: uncovered
+  source_quote: Wheel and/or skid force P acting at the points resulting from the lashing position and distribution of the
+    wheels and/or supports according to helicopter construction
+  section_no: 7
+  paragraph_id: C.2.1
+  page_no: 204
+  must_include:
+  - points
+  - lashing
+- id: v3_hatch_deflection_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the maximum allowed deflection for weather deck hatch covers under the design load pH?
+  coverage: uncovered
+  source_quote: The deflection f of weather deck hatch covers under the design load pH shall not exceed f = 0,0056 . lg [m]
+  section_no: 17
+  paragraph_id: B.2.2
+  page_no: 357
+  must_include:
+  - '0.0056'
+- id: v3_combustible_gasket_en
+  lang: en
+  category: rules_qa
+  question: Are combustible gaskets permitted in flanged ventilation duct connections within 600 mm of openings in "A" or
+    "B" class divisions?
+  coverage: uncovered
+  source_quote: Combustible gaskets are not permitted in flanged ventilation duct connections within 600 mm of openings in
+    A or B class divisions
+  section_no: 22
+  paragraph_id: C.5
+  page_no: 481
+  must_include:
+  - not permitted
+- id: v3_stockless_head_mass_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: For ordinary (stockless) anchors, what is the minimum required mass of the heads including pins and fittings?
+  coverage: uncovered
+  source_quote: The mass of the heads of patent (ordinary stockless) anchors, including pins and fittings, is not to be less
+    than 60% of the total mass of the anchor
+  section_no: 18
+  paragraph_id: C.3
+  page_no: 389
+  must_include:
+  - 60%
+- id: v3_towing_hook_force_en
+  lang: en
+  category: lookup
+  expect_lookup: true
+  question: What is the required test force (PL) for a towing hook on a tug if the design force (T) is less than or equal
+    to 500 kN?
+  coverage: uncovered
+  source_quote: Test force PL [kN] T <=500 2 . T
+  section_no: 27
+  paragraph_id: C Table 27.1
+  page_no: 628
+  must_include:
+  - '2.0'
