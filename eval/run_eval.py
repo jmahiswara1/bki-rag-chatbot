@@ -11,6 +11,7 @@ import argparse
 import re
 import sys
 import time
+import unicodedata
 
 import yaml
 
@@ -87,8 +88,15 @@ def _norm(s: str) -> str:
     the answer and to all keyword lists (must_include, must_not_contain,
     must_include_any) so multi-word phrases such as 'side shell' still match
     ('sideshell' on both sides).
+
+    Additionally applies unicode NFKC normalization and maps common
+    math-symbol variants (e.g. script-l U+2113 -> ASCII l) so that
+    notationally-equivalent answers are not penalised.
     """
-    return re.sub(r"\s+", "", s.lower().replace(",", "."))
+    s = unicodedata.normalize("NFKC", s)
+    s = s.lower().replace(",", ".")
+    s = s.translate({0x2113: ord("l")})
+    return re.sub(r"\s+", "", s)
 
 
 def eval_rules_qa(result, entry: dict) -> tuple[bool, str]:
