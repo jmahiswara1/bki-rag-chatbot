@@ -15,6 +15,7 @@ from rich.rule import Rule
 from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
+from src.cli.format import format_for_cli
 from src.cli.state import AppState
 from src.llm.chain import ChainStreamResult, chain_answer_stream
 from src.llm.modes import MODES
@@ -152,7 +153,7 @@ def render_turn(query: str, state: AppState, console: Console, history: list | N
                     in_stream = True
                 if payload:
                     accumulated.append(payload)
-                live.update(Text("".join(accumulated)))
+                live.update(Text(format_for_cli("".join(accumulated))))
             elif kind == "done":
                 final = payload
                 break
@@ -173,7 +174,7 @@ def render_turn(query: str, state: AppState, console: Console, history: list | N
     # content is model-derived and may contain '[' / ']' which would
     # otherwise be interpreted as rich markup.
     console.print(Rule("Answer", style="dim cyan"))
-    console.print(Text(final.answer or ""))
+    console.print(Text(format_for_cli(final.answer or "")))
     # Source panel: WAJIB for grounded answers (sources non-kosong);
     # SKIP for calc stub and guardrail reject (sources == [] or rejected).
     if final.sources and not final.rejected:
