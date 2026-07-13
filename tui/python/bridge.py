@@ -35,6 +35,7 @@ _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+from src.cli.format import format_for_cli
 from src.cli.state import AppState
 from src.llm.chain import chain_answer_stream
 
@@ -42,6 +43,11 @@ from src.llm.chain import chain_answer_stream
 _cancelled = False
 
 _EXCERPT_WIDTH = 120
+
+
+def _final_text(result) -> str:
+    """Return the answer text formatted for terminal display."""
+    return format_for_cli(getattr(result, "answer", "") or "")
 
 
 def _excerpt(text: str) -> str:
@@ -105,6 +111,7 @@ def handle_query(msg: dict, state: AppState) -> None:
                 emit({
                     "type": "done",
                     "answer": result.answer or "",
+                    "final": _final_text(result),
                     "sources": sources,
                     "language": result.language or "unknown",
                     "rejected": bool(result.rejected),

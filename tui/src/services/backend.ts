@@ -18,6 +18,7 @@ export interface Source {
 export interface DoneMessage {
   type: "done";
   answer: string;
+  final?: string;
   sources: Source[];
   language: string;
   rejected: boolean;

@@ -54,7 +54,7 @@ export default function App({ mode = "default" }: AppProps) {
       if (msg.type === "done") {
         const result: MessageData = {
           role: "assistant",
-          content: msg.answer,
+          content: msg.final || msg.answer,
           timestamp: Date.now(),
           sources: msg.sources,
           timings: msg.timings,
