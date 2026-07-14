@@ -352,6 +352,26 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     "bulwark_guardrail_min_height": (
         "bulwark", "guard rail", "guardrail", "railing", "pagar pelindung",
     ),
+    # Build 13: anchor_vhhp_max_mass requires mass-specific language.
+    # Prevents misfire on holding power / daya cengkeram queries that
+    # also mention VHHP. Bare "VHHP" is NOT an anchor — both mass and
+    # holding-power queries share the acronym.
+    "anchor_vhhp_max_mass": (
+        "maximum mass", "massa maksimum",
+        "vhhp anchor mass", "massa jangkar vhhp",
+        "exceed 1500", "1500 kg",
+    ),
+    # Build 13: anchor_hhp_mass_reduction requires reduction / percentage
+    # language. Prevents misfire on stockless head mass (60%) queries and
+    # on holding power queries. Bare "HHP" is NOT an anchor — multiple
+    # aspect queries share the acronym.
+    "anchor_hhp_mass_reduction": (
+        "reduced", "reduksi",
+        "percentage", "persen",
+        "bower", "bower anchor",
+        "75%",
+        "massa jangkar stockless",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
@@ -438,6 +458,22 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     "bulwark_guardrail_min_height": (
         "sill", "ambang", "pintu", "door", "cut-out", "compartment",
         "pintu akses", "opening",
+    ),
+    # Build 13: anchor mass rules must not fire on holding power queries
+    # that mention the same anchor type acronym (VHHP or HHP). The holding
+    # power aspect is handled by anchor_holding_power.
+    # Note: "holding power" and "daya cengkeram" are NOT excluded here
+    # because the anchor type name "High/Very High Holding Power" itself
+    # contains those phrases. Instead, holding-power-query discriminators
+    # are used: comparison language (times/kali), kN units, etc.
+    "anchor_vhhp_max_mass": (
+        "kali", "times", "two", "four", "dua", "empat",
+        "kN",
+    ),
+    "anchor_hhp_mass_reduction": (
+        "kali", "times", "two", "four", "dua", "empat",
+        "head", "kepala", "pins", "fittings",
+        "60%", "60",
     ),
 }
 # ---------------------------------------------------------------------------
