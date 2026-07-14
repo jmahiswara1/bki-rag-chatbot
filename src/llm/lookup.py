@@ -115,15 +115,32 @@ PARAM_TOKENS: dict[str, dict[str, list[str]]] = {
     },
     # Build 17: rudder force coefficient discrimination (c1 vs c4).
     # c1 = ship type (bulk carrier/tanker >50,000t), c4 = propeller jet position.
+    # Build 19: widened for paraphrase (pengangkut curah, away from propeller, etc.)
     "rudder_force_coefficient": {
         "c1": [
             "ship type", "bulk carrier", "tanker",
             "50000", "50 000", "tipe kapal", "jenis kapal",
+            "pengangkut curah", "kapal curah", "curah",
+            "koefisien tipe", "koefisien c1", "bulk",
+            "jenis lambung",
         ],
         "c4": [
             "propeller jet", "semburan baling",
             "outside", "di luar", "dalam propeller",
             "susunan kemudi", "rudder arrangement",
+            "away from propeller", "slipstream",
+            "away from the propeller", "positioned away",
+            "luar propeler", "jauh dari propeler",
+        ],
+    },
+    # Build 19: fatigue correction factor paraphrase tokens. Single-param rule
+    # (param=None) — all tokens act as context-bonus words earning +2 each.
+    "fatigue_correction_factor": {
+        "_": [
+            "beban berulang", "beban siklik",
+            "pengelasan", "koreksi lelah",
+            "cyclical loading", "repeated loading",
+            "cyclic", "cyclical",
         ],
     },
 }
@@ -423,6 +440,7 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     # Build 17: rudder force coefficients (c1, c4) — multi-param, discriminated
     # by PARAM_TOKENS. Anchor requires rudder + coefficient/parameter context.
     # Generics banned: bare "c1", bare "c4", bare "factor" alone.
+    # Build 19: widened for paraphrase (koefisien, slipstream, away from, etc.)
     "rudder_force_coefficient": (
         "rudder force coefficient",
         "faktor tipe kapal",
@@ -431,14 +449,28 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "rudder arrangement",
         "c1 c2 c3 c4",
         "rudder area",
+        "koefisien c1",
+        "koefisien c4",
+        "c1 coefficient",
+        "c4 coefficient",
+        "perhitungan kemudi",
+        "luas kemudi",
+        "away from propeller",
+        "slipstream",
     ),
     # Build 17: fatigue correction factor c (Sec 20 B.3.2.4).
     # Anchor requires fatigue + correction/correction context.
+    # Build 19: widened for paraphrase (koreksi lelah, beban berulang, cyclical)
     "fatigue_correction_factor": (
         "fatigue correction factor",
         "faktor koreksi fatik",
         "correction factor c",
         "faktor koreksi c",
+        "koreksi lelah",
+        "beban berulang",
+        "beban siklik",
+        "cyclical loading",
+        "repeated loading",
     ),
 }
 
