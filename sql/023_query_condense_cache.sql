@@ -14,4 +14,11 @@ CREATE TABLE IF NOT EXISTS query_condense_cache (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Grant access for PostgREST (service_role and anon).
+GRANT SELECT, INSERT ON query_condense_cache TO service_role;
+GRANT SELECT ON query_condense_cache TO anon;
+
+-- Notify PostgREST to reload its schema cache so the table is discoverable.
+SELECT pg_notify('pgrst', 'reload');
+
 COMMIT;
