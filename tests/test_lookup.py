@@ -341,6 +341,26 @@ _RULES: list[LookupRule] = [
         trigger_terms=("tanker", "strake", "longitudinal bulkhead", "0,1H", "lebar strake", "sekat memanjang"),
         context_note="Build 10 (Bagian A): tanker_strake_width misfire-guard.",
     ),
+    LookupRule(
+        topic="anchor_vhhp_max_mass",
+        parameter=None,
+        value_text="The VHHP anchor mass is generally not to exceed 1500 kg (Sec 18 C.5, p.389).",
+        value_num=1500, unit="kg",
+        section_no=18, paragraph_id="C.5", page_no=389,
+        source_quote="The VHHP anchor mass is generally not to exceed 1500 kg.",
+        trigger_terms=("VHHP", "maximum mass", "massa maksimum", "maksimum", "mass", "massa", "massa jangkar", "anchor mass", "1500 kg", "maximum"),
+        context_note="Build 13: anchor VHHP max mass.",
+    ),
+    LookupRule(
+        topic="anchor_hhp_mass_reduction",
+        parameter=None,
+        value_text="When HHP anchors are used as bower anchors, the mass of each anchor may be 75% of the mass required for ordinary stockless bower anchors in Table 18.2 (Sec 18 C.4, p.389).",
+        value_num=75, unit="%",
+        section_no=18, paragraph_id="C.4", page_no=389,
+        source_quote="When HHP anchors are used as bower anchors, the mass of each anchor may be 75% of the mass required for ordinary stockless bower anchors in the Table 18.2.",
+        trigger_terms=("HHP", "75%", "mass reduction", "reduksi massa", "bower", "stockless", "mass", "massa", "reduced", "reduksi", "percentage", "persen", "massa jangkar", "anchor mass"),
+        context_note="Build 13: HHP bower anchor mass reduction 75%.",
+    ),
 ]
 
 
@@ -1272,16 +1292,111 @@ def test_match_alu_steel_insulation_correct_fire_id_alt():
 
 def test_alu_steel_insulation_rejects_fire_test_query():
     match = match_lookup(
-        query_id="batas kenaikan suhu inti paduan aluminium saat tes api",
+        query_id="tes api suhu kenaikan suhu aluminium fire test",
         query_en="",
         rules=_RULES,
     )
     assert match is None
     print("PASS: test_alu_steel_insulation_rejects_fire_test_query")
 
+
 # ---------------------------------------------------------------------------
-# Runner
+# Build 13: anchor mass facts (VHHP 1500 kg, HHP 75% mass reduction)
 # ---------------------------------------------------------------------------
+
+def test_anchor_vhhp_max_mass_fires_on_mass_query_id():
+    match = match_lookup(
+        query_id="Berapa massa maksimum yang diizinkan untuk jangkar VHHP?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "anchor_vhhp_max_mass"
+    assert match.rule.value_num == 1500
+    assert match.rule.unit == "kg"
+    assert match.rule.section_no == 18
+    print("PASS: test_anchor_vhhp_max_mass_fires_on_mass_query_id")
+
+
+def test_anchor_vhhp_max_mass_fires_on_mass_query_en():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the maximum mass allowed for a VHHP anchor?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "anchor_vhhp_max_mass"
+    print("PASS: test_anchor_vhhp_max_mass_fires_on_mass_query_en")
+
+
+def test_anchor_vhhp_max_mass_rejects_holding_power_query():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the holding power of a VHHP anchor compared to a stockless anchor?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "anchor_vhhp_max_mass"
+    print("PASS: test_anchor_vhhp_max_mass_rejects_holding_power_query")
+
+
+def test_anchor_vhhp_max_mass_rejects_stockless_only_query():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the holding power of an ordinary stockless anchor?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "anchor_vhhp_max_mass"
+    print("PASS: test_anchor_vhhp_max_mass_rejects_stockless_only_query")
+
+
+def test_anchor_hhp_mass_reduction_fires_on_reduction_query_id():
+    match = match_lookup(
+        query_id="Menurut Section 18, berapa persen massa jangkar stockless yang menjadi massa minimum jangkar bower High Holding Power (HHP)?",
+        query_en="",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "anchor_hhp_mass_reduction"
+    assert match.rule.value_num == 75
+    assert match.rule.unit == "%"
+    assert match.rule.section_no == 18
+    print("PASS: test_anchor_hhp_mass_reduction_fires_on_reduction_query_id")
+
+
+def test_anchor_hhp_mass_reduction_fires_on_reduction_query_en():
+    match = match_lookup(
+        query_id="",
+        query_en="For High Holding Power (HHP) bower anchors, the mass of each anchor may be reduced to what percentage of the ordinary stockless bower anchor mass, per Section 18?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "anchor_hhp_mass_reduction"
+    print("PASS: test_anchor_hhp_mass_reduction_fires_on_reduction_query_en")
+
+
+def test_anchor_hhp_mass_reduction_rejects_holding_power_query():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the holding power of a High Holding Power anchor?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "anchor_hhp_mass_reduction"
+    print("PASS: test_anchor_hhp_mass_reduction_rejects_holding_power_query")
+
+
+def test_anchor_hhp_mass_reduction_rejects_head_mass_query():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the minimum mass of the heads of ordinary stockless anchors including pins and fittings?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "anchor_hhp_mass_reduction"
+    print("PASS: test_anchor_hhp_mass_reduction_rejects_head_mass_query")
+
 
 if __name__ == "__main__":
     test_match_forepeak_stringer_spacing()
@@ -1354,5 +1469,14 @@ if __name__ == "__main__":
     test_match_alu_steel_insulation_correct_fire_id()
     test_match_alu_steel_insulation_correct_fire_id_alt()
     test_alu_steel_insulation_rejects_fire_test_query()
-    print("\nAll 53 tests passed!")
+    # Build 13: anchor mass facts
+    test_anchor_vhhp_max_mass_fires_on_mass_query_id()
+    test_anchor_vhhp_max_mass_fires_on_mass_query_en()
+    test_anchor_vhhp_max_mass_rejects_holding_power_query()
+    test_anchor_vhhp_max_mass_rejects_stockless_only_query()
+    test_anchor_hhp_mass_reduction_fires_on_reduction_query_id()
+    test_anchor_hhp_mass_reduction_fires_on_reduction_query_en()
+    test_anchor_hhp_mass_reduction_rejects_holding_power_query()
+    test_anchor_hhp_mass_reduction_rejects_head_mass_query()
+    print("\nAll 61 tests passed!")
 
