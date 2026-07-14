@@ -1607,6 +1607,78 @@ def test_fatigue_c_rejects_rudder_query():
     print("PASS: test_fatigue_c_rejects_rudder_query")
 
 
+# ---------------------------------------------------------------------------
+# Build 19: rudder/fatigue paraphrase trigger coverage
+# ---------------------------------------------------------------------------
+
+def test_rudder_c1_paraphrase_id_fires():
+    match = match_lookup(
+        query_id="Berapa koefisien c1 untuk kapal pengangkut curah pada perhitungan luas kemudi?",
+        query_en="What is the c1 coefficient for bulk carriers in rudder area calculation?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "rudder_force_coefficient"
+    assert match.rule.parameter == "c1"
+    print("PASS: test_rudder_c1_paraphrase_id_fires")
+
+
+def test_rudder_c4_paraphrase_en_fires():
+    match = match_lookup(
+        query_id="",
+        query_en="What c4 value applies to a rudder positioned away from the propeller slipstream?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "rudder_force_coefficient"
+    assert match.rule.parameter == "c4"
+    print("PASS: test_rudder_c4_paraphrase_en_fires")
+
+
+def test_rudder_c1_anti_misfire_c4():
+    match = match_lookup(
+        query_id="Berapa koefisien c4 untuk kemudi di luar propeler?",
+        query_en="What is the c4 coefficient for rudder outside propeller?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.parameter == "c4"
+    print("PASS: test_rudder_c1_anti_misfire_c4")
+
+
+def test_rudder_paraphrase_anti_misfire_horn_shear():
+    match = match_lookup(
+        query_id="Berapa tegangan geser tanduk kemudi?",
+        query_en="What is the shear stress in the rudder horn?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "rudder_force_coefficient"
+    print("PASS: test_rudder_paraphrase_anti_misfire_horn_shear")
+
+
+def test_fatigue_c_paraphrase_id_fires():
+    match = match_lookup(
+        query_id="Berapa faktor c untuk koreksi lelah pada pengelasan dengan beban berulang?",
+        query_en="What is the factor c for fatigue correction in welding with repeated loading?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "fatigue_correction_factor"
+    print("PASS: test_fatigue_c_paraphrase_id_fires")
+
+
+def test_fatigue_c_paraphrase_en_fires():
+    match = match_lookup(
+        query_id="",
+        query_en="What correction factor c for welded connections under cyclical loading?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "fatigue_correction_factor"
+    print("PASS: test_fatigue_c_paraphrase_en_fires")
+
+
 if __name__ == "__main__":
     test_match_forepeak_stringer_spacing()
     test_match_tug_winch_drum()
@@ -1701,5 +1773,12 @@ if __name__ == "__main__":
     test_rudder_horn_shear_not_fires_rudder_coefficient()
     test_fatigue_c_fires_on_variable_stress_query()
     test_fatigue_c_rejects_rudder_query()
-    print("\nAll 73 tests passed!")
+    # Build 19: rudder/fatigue paraphrase coverage
+    test_rudder_c1_paraphrase_id_fires()
+    test_rudder_c4_paraphrase_en_fires()
+    test_rudder_c1_anti_misfire_c4()
+    test_rudder_paraphrase_anti_misfire_horn_shear()
+    test_fatigue_c_paraphrase_id_fires()
+    test_fatigue_c_paraphrase_en_fires()
+    print("\nAll 100 tests passed!")
 
