@@ -98,12 +98,33 @@ PARAM_TOKENS: dict[str, dict[str, list[str]]] = {
             "combination carrier", "combination carriers",
         ],
     },
+    # Build 15: depth_to_length_ratio paraphrase tokens. Single-param rule
+    # (param=None) — all tokens under the topic act as context-bonus words
+    # that earn +2 param_bonus each, pushing paraphrased queries past the
+    # MIN_TRIGGER_MATCHES=2 threshold when only 1 trigger term fires.
+    # Compound phrases prevent standalone activation from bare "samudra" or
+    # "ocean" — they require ratio-specific wording alongside ocean context.
+    "depth_to_length_ratio": {
+        "_": [
+            "perbandingan h l",
+            "height to length ratio",
+            "ocean going vessels",
+            "batas bawah perbandingan",
+            "lower bound for the depth",
+        ],
+    },
 }
 
 # Topics that have multiple parameter rows — must be disambiguated via
 # PARAM_TOKENS match. Single-parameter topics (null param or unique topic)
 # skip this check.
-_MULTI_PARAM_TOPICS: frozenset[str] = frozenset(PARAM_TOKENS.keys())
+# Build 15: depth_to_length_ratio added to allow PARAM_TOKENS-driven
+# param_bonus for paraphrased queries — it has a single row with param=None
+# but uses PARAM_TOKENS to boost context-word matches past the trigger
+# threshold.
+_MULTI_PARAM_TOPICS: frozenset[str] = frozenset(
+    list(PARAM_TOKENS.keys()) + ["depth_to_length_ratio"]
+)
 
 _PARAM_BONUS: int = 2
 
@@ -177,13 +198,20 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     ),
     # depth H >= L/n by range of service (Sec 1 A.1).
     # Generics banned: bare "depth" / bare "kedalaman" / bare "l" / bare "length".
+    # Build 15: widened for paraphrase queries (ocean-going, H/L, samudra).
     "depth_to_length_ratio": (
         "depth to length ratio",
+        "depth-to-length",
         "kedalaman terhadap panjang",
         "rasio kedalaman",
         "ratio of depth",
         "breadth to depth",
         "depth h",
+        "perbandingan h/l",
+        "perbandingan h l",
+        "ocean going",
+        "ocean-going",
+        "samudra",
     ),
     # main vertical zone max length/width on any deck (Sec 22 B.2.1).
     # Generics banned: bare "length" / bare "maximum" / bare "panjang maksimum".
@@ -276,9 +304,16 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     # query carries neither holding-power phrase, the anchor gate rejects
     # the rule. If HHP/VHHP acronym absent, param_bonus is 0 and the
     # multi-param check returns None — no silent default.
+    # Build 15: widened for paraphrase queries (daya jangkar, kali lipat,
+    # compared to, by what factor).
     "anchor_holding_power": (
         "holding power",
         "daya cengkeram",
+        "daya jangkar",
+        "kali lipat",
+        "by what factor",
+        "how many times",
+        "dibanding",
     ),
     # accommodation / superstructure deck min thickness (Sec 29 E.2).
     # Distinct from Sec 7 general deck plating (rules_deck_min_id).
@@ -612,8 +647,18 @@ def match_lookup(
 
         param_bonus = 0
         is_multi = rule.topic in _MULTI_PARAM_TOPICS
-        if is_multi and rule.parameter:
-            param_list = PARAM_TOKENS.get(rule.topic, {}).get(rule.parameter, [])
+        if is_multi:
+            param_list: list[str] = []
+            if rule.parameter:
+                param_list = PARAM_TOKENS.get(rule.topic, {}).get(rule.parameter, [])
+            else:
+                # Single-row topic with param=None (e.g. depth_to_length_ratio):
+                # collect ALL tokens across sub-keys as context-bonus words.
+                # Enables paraphrased queries to pass the trigger threshold even
+                # when only 1 trigger_term fires, by matching generic context
+                # tokens (e.g. "ocean-going", "samudra", "perbandingan").
+                for v in PARAM_TOKENS.get(rule.topic, {}).values():
+                    param_list.extend(v)
             for pt in param_list:
                 if _term_matches(search_text, pt):
                     param_bonus += _PARAM_BONUS
@@ -653,10 +698,13 @@ def match_lookup(
         return None
 
     # Multi-parameter topics: require at least one disambiguation token
+    # Skip for single-param topics added to _MULTI_PARAM_TOPICS purely for
+    # PARAM_TOKENS bonus (param=None, e.g. depth_to_length_ratio).
     if best[0].topic in _MULTI_PARAM_TOPICS and best[3] == 0:
-        # Default-path: if all candidates had param_bonus=0 (no material token
-        # matched), we already picked the default (alphabetical first) above.
-        # Skip the strict param-token requirement in that case.
-        return None
+        if best[0].parameter is not None:
+            # Default-path: if all candidates had param_bonus=0 (no material token
+            # matched), we already picked the default (alphabetical first) above.
+            # Skip the strict param-token requirement in that case.
+            return None
 
     return LookupMatch(rule=best[0], matched_terms=best[1], score=best[2])
