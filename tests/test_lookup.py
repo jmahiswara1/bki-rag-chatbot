@@ -385,6 +385,42 @@ _RULES: list[LookupRule] = [
         trigger_terms=("holding power", "daya cengkeram", "VHHP", "four times", "empat kali"),
         context_note="Discrete value: at least four times the holding power of ordinary stockless anchor.",
     ),
+    LookupRule(
+        topic="rudder_force_coefficient",
+        parameter="c1",
+        value_text="Faktor tipe kapal c1 = 0,9 untuk bulk carrier dan tanker >50.000t (Sec 14 A.100, p.280).",
+        value_text_en="Ship type factor c1 = 0.9 for bulk carriers and tankers >50,000t (Sec 14 A.100, p.280).",
+        value_text_id="Faktor tipe kapal c1 = 0,9 untuk bulk carrier dan tanker >50.000t (Sec 14 A.100, p.280).",
+        value_num=0.9, unit=None,
+        section_no=14, paragraph_id="A.100", page_no=280,
+        source_quote="c1 = factor for the ship type: = 1,0 in general = 0,9 for bulk carriers and tankers having a displacement of more than 50 000 ton = 1,7 for tugs and trawlers",
+        trigger_terms=("rudder force coefficient", "c1", "ship type factor", "faktor tipe kapal", "bulk carrier", "tanker", "50000", "50 000"),
+        context_note="Build 17: c1 = 0.9 for bulk carriers/tankers >50,000t.",
+    ),
+    LookupRule(
+        topic="rudder_force_coefficient",
+        parameter="c4",
+        value_text="Faktor susunan kemudi c4 = 1,5 untuk kemudi di luar propeller jet (Sec 14 A.4.3, p.281).",
+        value_text_en="Rudder arrangement factor c4 = 1.5 for rudders outside the propeller jet (Sec 14 A.4.3, p.281).",
+        value_text_id="Faktor susunan kemudi c4 = 1,5 untuk kemudi di luar propeller jet (Sec 14 A.4.3, p.281).",
+        value_num=1.5, unit=None,
+        section_no=14, paragraph_id="A.4.3", page_no=281,
+        source_quote="c4 = factor for the rudder arrangement: = 1,0 for rudders in the propeller jet = 1,5 for rudders outside the propeller jet",
+        trigger_terms=("rudder force coefficient", "c4", "rudder arrangement", "faktor susunan kemudi", "propeller jet", "di luar", "outside", "semburan"),
+        context_note="Build 17: c4 = 1.5 outside propeller jet.",
+    ),
+    LookupRule(
+        topic="fatigue_correction_factor",
+        parameter=None,
+        value_text="Faktor koreksi fatik c = 0,15 untuk sambungan las siklus tegangan variabel (Sec 20 B.3.2.4, p.446).",
+        value_text_en="Fatigue correction factor c = 0.15 for welded joints with variable stress cycles (Sec 20 B.3.2.4, p.446).",
+        value_text_id="Faktor koreksi fatik c = 0,15 untuk sambungan las siklus tegangan variabel (Sec 20 B.3.2.4, p.446).",
+        value_num=0.15, unit=None,
+        section_no=20, paragraph_id="B.3.2.4", page_no=446,
+        source_quote="c = 0 for welded joints subjected to constant stress cycles (stress range spectrum C) = 0,15 welded joints subjected to variable stress cycles (corresponding to stress range spectrum A or B)",
+        trigger_terms=("fatigue correction factor", "faktor koreksi fatik", "correction factor c", "faktor koreksi c", "0.15", "0,15", "variable stress", "tegangan variabel", "welded joints", "sambungan las"),
+        context_note="Build 17: c = 0.15 for welded joints with variable stress cycles.",
+    ),
 ]
 
 
@@ -1493,6 +1529,84 @@ def test_anchor_hhp_paraphrase_crossfire_vhhp_mass_rejected():
     print("PASS: test_anchor_hhp_paraphrase_crossfire_vhhp_mass_rejected")
 
 
+# ---------------------------------------------------------------------------
+# Build 17: rudder force coefficients (c1, c4) + fatigue correction factor
+# ---------------------------------------------------------------------------
+
+def test_rudder_c1_fires_on_bulk_carrier_query():
+    match = match_lookup(
+        query_id="Berapa faktor tipe kapal c1 untuk bulk carrier pada perhitungan kemudi?",
+        query_en="What is the ship type c1 factor for bulk carrier in rudder calculation?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "rudder_force_coefficient"
+    assert match.rule.parameter == "c1"
+    assert match.rule.value_num == 0.9
+    assert match.rule.section_no == 14
+    print("PASS: test_rudder_c1_fires_on_bulk_carrier_query")
+
+
+def test_rudder_c4_fires_on_outside_query():
+    match = match_lookup(
+        query_id="Berapa faktor susunan kemudi c4 untuk kemudi di luar semburan baling-baling?",
+        query_en="What is the rudder arrangement factor c4 for rudders outside the propeller jet?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "rudder_force_coefficient"
+    assert match.rule.parameter == "c4"
+    assert match.rule.value_num == 1.5
+    assert match.rule.section_no == 14
+    print("PASS: test_rudder_c4_fires_on_outside_query")
+
+
+def test_rudder_c1_rejects_c4_query():
+    match = match_lookup(
+        query_id="Berapa faktor susunan kemudi c4 untuk kemudi di luar semburan?",
+        query_en="What is the rudder arrangement factor c4 outside propeller jet?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.parameter == "c4"
+    print("PASS: test_rudder_c1_rejects_c4_query")
+
+
+def test_rudder_horn_shear_not_fires_rudder_coefficient():
+    match = match_lookup(
+        query_id="Berapa batas tegangan geser maksimum pada tanduk kemudi?",
+        query_en="What is the maximum shear stress limit in the rudder horn?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "rudder_force_coefficient"
+    print("PASS: test_rudder_horn_shear_not_fires_rudder_coefficient")
+
+
+def test_fatigue_c_fires_on_variable_stress_query():
+    match = match_lookup(
+        query_id="Berapa nilai faktor koreksi c untuk sambungan las yang mengalami siklus tegangan variabel?",
+        query_en="What is the correction factor c for welded joints experiencing variable stress cycles?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "fatigue_correction_factor"
+    assert match.rule.value_num == 0.15
+    assert match.rule.section_no == 20
+    print("PASS: test_fatigue_c_fires_on_variable_stress_query")
+
+
+def test_fatigue_c_rejects_rudder_query():
+    match = match_lookup(
+        query_id="Berapa faktor tipe kapal c1?",
+        query_en="What is the ship type factor c1?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "fatigue_correction_factor"
+    print("PASS: test_fatigue_c_rejects_rudder_query")
+
+
 if __name__ == "__main__":
     test_match_forepeak_stringer_spacing()
     test_match_tug_winch_drum()
@@ -1580,5 +1694,12 @@ if __name__ == "__main__":
     test_anchor_hhp_paraphrase_id_fires()
     test_anchor_hhp_paraphrase_crossfire_mass_reduction_rejected()
     test_anchor_hhp_paraphrase_crossfire_vhhp_mass_rejected()
-    print("\nAll 67 tests passed!")
+    # Build 17: rudder and fatigue factor tests
+    test_rudder_c1_fires_on_bulk_carrier_query()
+    test_rudder_c4_fires_on_outside_query()
+    test_rudder_c1_rejects_c4_query()
+    test_rudder_horn_shear_not_fires_rudder_coefficient()
+    test_fatigue_c_fires_on_variable_stress_query()
+    test_fatigue_c_rejects_rudder_query()
+    print("\nAll 73 tests passed!")
 
