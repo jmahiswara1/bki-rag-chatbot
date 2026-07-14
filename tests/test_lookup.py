@@ -361,6 +361,30 @@ _RULES: list[LookupRule] = [
         trigger_terms=("HHP", "75%", "mass reduction", "reduksi massa", "bower", "stockless", "mass", "massa", "reduced", "reduksi", "percentage", "persen", "massa jangkar", "anchor mass"),
         context_note="Build 13: HHP bower anchor mass reduction 75%.",
     ),
+    LookupRule(
+        topic="anchor_holding_power",
+        parameter="hhp",
+        value_text="Daya cengkeram minimum jangkar High Holding Power (HHP) paling sedikit dua kali jangkar stockless biasa dengan massa yang sama (Sec 18 C.4, p.389).",
+        value_text_en="The minimum holding power of a High Holding Power (HHP) anchor is at least twice that of an ordinary stockless anchor of the same mass (Sec 18 C.4, p.389).",
+        value_text_id="Daya cengkeram minimum jangkar High Holding Power (HHP) paling sedikit dua kali jangkar stockless biasa dengan massa yang sama (Sec 18 C.4, p.389).",
+        value_num=None, unit=None,
+        section_no=18, paragraph_id="C.4", page_no=389,
+        source_quote="A 'high holding power' anchor is an anchor with a holding power of at least twice that of an ordinary stockless anchor of the same mass.",
+        trigger_terms=("holding power", "daya cengkeram", "HHP", "two times", "twice", "dua kali", "kali lipat"),
+        context_note="Discrete value: at least twice the holding power of ordinary stockless anchor.",
+    ),
+    LookupRule(
+        topic="anchor_holding_power",
+        parameter="vhhp",
+        value_text="Daya cengkeram minimum jangkar Very High Holding Power (VHHP) paling sedikit empat kali jangkar stockless biasa dengan massa yang sama (Sec 18 C.5, p.389).",
+        value_text_en="The minimum holding power of a Very High Holding Power (VHHP) anchor is at least four times that of an ordinary stockless anchor of the same mass (Sec 18 C.5, p.389).",
+        value_text_id="Daya cengkeram minimum jangkar Very High Holding Power (VHHP) paling sedikit empat kali jangkar stockless biasa dengan massa yang sama (Sec 18 C.5, p.389).",
+        value_num=None, unit=None,
+        section_no=18, paragraph_id="C.5", page_no=389,
+        source_quote="A 'very high holding power' anchor is an anchor with a holding power of at least four times that of an ordinary stockless anchor of the same mass.",
+        trigger_terms=("holding power", "daya cengkeram", "VHHP", "four times", "empat kali"),
+        context_note="Discrete value: at least four times the holding power of ordinary stockless anchor.",
+    ),
 ]
 
 
@@ -1398,6 +1422,77 @@ def test_anchor_hhp_mass_reduction_rejects_head_mass_query():
     print("PASS: test_anchor_hhp_mass_reduction_rejects_head_mass_query")
 
 
+# ---------------------------------------------------------------------------
+# Build 15: paraphrase trigger coverage (depth/length ratio + HHP holding power)
+# ---------------------------------------------------------------------------
+
+def test_depth_ratio_paraphrase_id_fires():
+    match = match_lookup(
+        query_id="Berapa batas minimum perbandingan H/L untuk kapal samudra?",
+        query_en="What is the minimum height to length ratio for ocean ships?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "depth_to_length_ratio"
+    print("PASS: test_depth_ratio_paraphrase_id_fires")
+
+
+def test_depth_ratio_paraphrase_en_fires():
+    match = match_lookup(
+        query_id="What is the lower bound for the depth-to-length ratio for ocean-going vessels?",
+        query_en="What is the lower bound for the depth-to-length ratio for ocean-going vessels?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "depth_to_length_ratio"
+    print("PASS: test_depth_ratio_paraphrase_en_fires")
+
+
+def test_depth_ratio_anti_misfire_generic_ocean_query():
+    match = match_lookup(
+        query_id="Apa itu kapal samudra?",
+        query_en="What is an ocean-going ship?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "depth_to_length_ratio"
+    print("PASS: test_depth_ratio_anti_misfire_generic_ocean_query")
+
+
+def test_anchor_hhp_paraphrase_id_fires():
+    match = match_lookup(
+        query_id="Berapa kali lipat daya jangkar HHP dibanding jangkar stockless standar?",
+        query_en="By what factor does the HHP anchor holding power exceed the standard stockless anchor?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "anchor_holding_power"
+    assert match.rule.parameter == "hhp"
+    print("PASS: test_anchor_hhp_paraphrase_id_fires")
+
+
+def test_anchor_hhp_paraphrase_crossfire_mass_reduction_rejected():
+    match = match_lookup(
+        query_id="Berapa kali lipat pengurangan massa jangkar HHP?",
+        query_en="By what factor is the HHP anchor mass reduced?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "anchor_holding_power"
+    print("PASS: test_anchor_hhp_paraphrase_crossfire_mass_reduction_rejected")
+
+
+def test_anchor_hhp_paraphrase_crossfire_vhhp_mass_rejected():
+    match = match_lookup(
+        query_id="Berapa kali lipat massa jangkar VHHP yang diizinkan?",
+        query_en="By what factor is the VHHP anchor mass limited?",
+        rules=_RULES,
+    )
+    if match is not None:
+        assert match.rule.topic != "anchor_holding_power"
+    print("PASS: test_anchor_hhp_paraphrase_crossfire_vhhp_mass_rejected")
+
+
 if __name__ == "__main__":
     test_match_forepeak_stringer_spacing()
     test_match_tug_winch_drum()
@@ -1478,5 +1573,12 @@ if __name__ == "__main__":
     test_anchor_hhp_mass_reduction_fires_on_reduction_query_en()
     test_anchor_hhp_mass_reduction_rejects_holding_power_query()
     test_anchor_hhp_mass_reduction_rejects_head_mass_query()
-    print("\nAll 61 tests passed!")
+    # Build 15: paraphrase trigger coverage
+    test_depth_ratio_paraphrase_id_fires()
+    test_depth_ratio_paraphrase_en_fires()
+    test_depth_ratio_anti_misfire_generic_ocean_query()
+    test_anchor_hhp_paraphrase_id_fires()
+    test_anchor_hhp_paraphrase_crossfire_mass_reduction_rejected()
+    test_anchor_hhp_paraphrase_crossfire_vhhp_mass_rejected()
+    print("\nAll 67 tests passed!")
 
