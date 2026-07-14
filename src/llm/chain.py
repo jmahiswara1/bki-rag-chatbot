@@ -1,3 +1,5 @@
+import hashlib
+import re
 import sys
 import time
 from dataclasses import dataclass, field
@@ -6,6 +8,7 @@ from typing import Iterator
 from src.calc.engine import calculate
 from src.calc.registry import search_formulas, select_formula
 from src.core.config import settings
+from src.core.db import get_client
 from src.core.models import Intent, RetrievedChunk
 from src.llm import lookup as _lookup
 from src.llm import prompts
@@ -67,6 +70,78 @@ class ChainStreamResult:
     reject_reason: str = ""
     token_count: int = 0
     lookup_match: object = None
+
+
+# ---------------------------------------------------------------------------
+# Query condense cache — eliminates nondeterminism from _translate_condense.
+# GPU float-nondet on qwen2.5:3b-instruct (temp=0.0, seed=0) still produces
+# en_query variance across runs. Caching per (version, lang, mode, query_text)
+# makes retrieval fully deterministic across processes (TUI + main.py).
+# ---------------------------------------------------------------------------
+
+CONDENSE_CACHE_VERSION = 1
+
+_SQL_CACHE_GET = (
+    "SELECT en_query FROM query_condense_cache "
+    "WHERE query_hash = :hash AND condense_version = :ver"
+)
+_SQL_CACHE_PUT = (
+    "INSERT INTO query_condense_cache "
+    "(query_hash, normalized_query, language, mode, condense_version, en_query) "
+    "VALUES (:hash, :norm, :lang, :mode, :ver, :en_query) "
+    "ON CONFLICT (query_hash) DO NOTHING"
+)
+
+
+def _normalize_for_cache(text: str) -> str:
+    """Normalize query text for cache key: strip + collapse whitespace + casefold."""
+    return re.sub(r"\s+", " ", text.strip()).casefold()
+
+
+def _cache_hash(lang: str, mode: str, normalized: str) -> str:
+    raw = f"{CONDENSE_CACHE_VERSION}|{lang}|{mode}|{normalized}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _condense_cache_get(query: str, lang: str, mode: str) -> str | None:
+    """Return cached en_query or None on miss / Supabase error."""
+    try:
+        norm = _normalize_for_cache(query)
+        h = _cache_hash(lang, mode, norm)
+        client = get_client()
+        res = client.table("query_condense_cache") \
+            .select("en_query") \
+            .eq("query_hash", h) \
+            .eq("condense_version", CONDENSE_CACHE_VERSION) \
+            .execute()
+        if res.data and len(res.data) > 0:
+            return res.data[0]["en_query"]
+    except Exception:
+        pass
+    return None
+
+
+def _condense_cache_put(query: str, lang: str, mode: str, en_query: str) -> None:
+    """Store en_query in cache. Errors are silently ignored."""
+    try:
+        norm = _normalize_for_cache(query)
+        h = _cache_hash(lang, mode, norm)
+        client = get_client()
+        client.table("query_condense_cache").upsert({
+            "query_hash": h,
+            "normalized_query": norm,
+            "language": lang,
+            "mode": mode,
+            "condense_version": CONDENSE_CACHE_VERSION,
+            "en_query": en_query,
+        }, on_conflict="query_hash").execute()
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Pipeline
+# ---------------------------------------------------------------------------
 
 
 def _pre_answer_pipeline(
@@ -172,12 +247,12 @@ def _pre_answer_pipeline(
     # 4. translate + condense
     t = time.time()
     if mode == "default":
-        en_query = _translate_condense(query, history, temperature=mode_cfg.temperature)
+        en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     else:
         if lang == "en" and not history:
             en_query = query
         else:
-            en_query = _translate_condense(query, history, temperature=mode_cfg.temperature)
+            en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     timings["translate"] = time.time() - t
 
     # 4.5. lookup-first (before retrieval — deterministic short-circuit)
@@ -620,7 +695,7 @@ def _format_lookup_answer(match: _lookup.LookupMatch, lang: str) -> str:
 
 # --- existing chain helpers ---
 
-def _translate_condense(query, history, *, temperature) -> str:
+def _translate_condense(query, history, *, temperature, mode=None, lang=None) -> str:
     # Utility call: always fast_model + think=False (AGENTS.md hard rule).
     # Non-streaming; num_ctx is passed by client.chat default.
     # Pin temperature to 0.0: translate is a deterministic utility call
@@ -629,6 +704,13 @@ def _translate_condense(query, history, *, temperature) -> str:
     # showed 11/26 cases had en_query drift at temperature=0.1). The
     # HARD prompt rules ("Preserve formula symbols verbatim", etc.) prevent
     # topic-drift; low temperature is not the lever.
+    # When mode and lang are provided, the result is cached in Supabase
+    # (query_condense_cache) so identical query text always produces the
+    # same en_query across processes (TUI + main.py).
+    if mode is not None and lang is not None:
+        cached = _condense_cache_get(query, lang, mode)
+        if cached is not None:
+            return cached
     history = history or []  # accept None from direct callers (e.g. test scripts)
     # Deterministic ID->EN substitution for BKI domain phrases before the LLM
     # call. Keeps the corpus-verified terms (e.g. 'sekat tubrukan' ->
@@ -648,7 +730,10 @@ def _translate_condense(query, history, *, temperature) -> str:
         think=False,
     )
     result = _clean_one_liner(out)
-    return result if result else query_pre  # fall back to substituted query if LLM empty
+    en_query = result if result else query_pre  # fall back to substituted query if LLM empty
+    if mode is not None and lang is not None:
+        _condense_cache_put(query, lang, mode, en_query)
+    return en_query
 
 
 def _expand(en_query, *, temperature) -> list[str]:
