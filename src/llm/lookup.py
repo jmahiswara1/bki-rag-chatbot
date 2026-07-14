@@ -113,6 +113,19 @@ PARAM_TOKENS: dict[str, dict[str, list[str]]] = {
             "lower bound for the depth",
         ],
     },
+    # Build 17: rudder force coefficient discrimination (c1 vs c4).
+    # c1 = ship type (bulk carrier/tanker >50,000t), c4 = propeller jet position.
+    "rudder_force_coefficient": {
+        "c1": [
+            "ship type", "bulk carrier", "tanker",
+            "50000", "50 000", "tipe kapal", "jenis kapal",
+        ],
+        "c4": [
+            "propeller jet", "semburan baling",
+            "outside", "di luar", "dalam propeller",
+            "susunan kemudi", "rudder arrangement",
+        ],
+    },
 }
 
 # Topics that have multiple parameter rows — must be disambiguated via
@@ -407,6 +420,26 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "75%",
         "massa jangkar stockless",
     ),
+    # Build 17: rudder force coefficients (c1, c4) — multi-param, discriminated
+    # by PARAM_TOKENS. Anchor requires rudder + coefficient/parameter context.
+    # Generics banned: bare "c1", bare "c4", bare "factor" alone.
+    "rudder_force_coefficient": (
+        "rudder force coefficient",
+        "faktor tipe kapal",
+        "ship type factor",
+        "faktor susunan kemudi",
+        "rudder arrangement",
+        "c1 c2 c3 c4",
+        "rudder area",
+    ),
+    # Build 17: fatigue correction factor c (Sec 20 B.3.2.4).
+    # Anchor requires fatigue + correction/correction context.
+    "fatigue_correction_factor": (
+        "fatigue correction factor",
+        "faktor koreksi fatik",
+        "correction factor c",
+        "faktor koreksi c",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
@@ -509,6 +542,14 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "kali", "times", "two", "four", "dua", "empat",
         "head", "kepala", "pins", "fittings",
         "60%", "60",
+    ),
+    # Build 17: rudder_force_coefficient must not fire on other rudder
+    # aspect queries (plating radius, stock diameter, horn shear).
+    "rudder_force_coefficient": (
+        "plating radius", "plating radii", "pengelasan pelat",
+        "stock diameter", "diameter stock",
+        "horn shear", "shear stress", "tegangan geser",
+        "sole piece", "bracket",
     ),
 }
 # ---------------------------------------------------------------------------
