@@ -544,6 +544,7 @@
   question: What is the maximum mass allowed for a VHHP anchor?
   lang: en
   intent: rules_qa
+  expect_lookup: true
   expected_sources:
   - section_no: 18
   must_include:
@@ -552,6 +553,7 @@
   question: Berapa massa maksimum yang diizinkan untuk jangkar VHHP?
   lang: id
   intent: rules_qa
+  expect_lookup: true
   expected_sources:
   - section_no: 18
   must_include:
@@ -560,6 +562,7 @@
   question: For High Holding Power (HHP) bower anchors, the mass of each anchor may be reduced to what percentage of the ordinary stockless bower anchor mass, per Section 18?
   lang: en
   intent: rules_qa
+  expect_lookup: true
   expected_sources:
   - section_no: 18
   must_include:
@@ -568,6 +571,7 @@
   question: Menurut Section 18, berapa persen massa jangkar stockless yang menjadi massa minimum jangkar bower High Holding Power (HHP)?
   lang: id
   intent: rules_qa
+  expect_lookup: true
   expected_sources:
   - section_no: 18
   must_include:
