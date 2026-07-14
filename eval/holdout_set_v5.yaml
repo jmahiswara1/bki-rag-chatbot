@@ -1,0 +1,468 @@
+# Held-out eval set v5 (40 entries) - Build 18 measurement baseline.
+# Kunci jawaban + gate dari chunk PDF Supabase + verifikasi fitz.
+# Set ini TIDAK boleh dipakai tuning; murni alat ukur.
+# Distribusi: 24 in-corpus (12 ID + 12 EN) + 8 re-measure deterministik + 8 ooc.
+# 20 ID + 20 EN. Re-measure: Build 15 depth/length + HHP; Build 17 rudder c1/c4 + fatigue c.
+- id: v5_web_thick_formula_id
+  lang: id
+  category: lookup
+  question: Berapa rumus ketebalan web penumpu untuk konstruksi alas tunggal?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The web thickness is not to be less than t = h/100 + 3,0 [mm]
+  section_no: 8
+  paragraph_id: A.2.1.3
+  page_no: 208
+  must_include:
+  - 3,0
+- id: v5_web_thick_formula_en
+  lang: en
+  category: lookup
+  question: What is the web thickness formula for single bottom girders?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The web thickness is not to be less than t = h/100 + 3,0 [mm]
+  section_no: 8
+  paragraph_id: A.2.1.3
+  page_no: 208
+  must_include:
+  - '3.0'
+- id: v5_tripping_brackets_id
+  lang: id
+  category: rules_qa
+  question: Apa yang diperlukan untuk menstabilkan pelat hadap (face plates) balok
+    geladak?
+  coverage: uncovered
+  source_quote: Face plates are to be stiffened by tripping brackets according to
+    Section 3, H.3.5
+  section_no: 10
+  paragraph_id: B.120
+  page_no: 243
+  must_include:
+  - tripping
+- id: v5_tripping_brackets_en
+  lang: en
+  category: rules_qa
+  question: What is required to stabilize face plates of deck beams?
+  coverage: uncovered
+  source_quote: Face plates are to be stiffened by tripping brackets according to
+    Section 3, H.3.5
+  section_no: 10
+  paragraph_id: B.120
+  page_no: 243
+  must_include:
+  - tripping
+- id: v5_roll_coefficient_id
+  lang: id
+  category: lookup
+  question: Berapa koefisien periode oleng cr untuk kapal secara umum?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Tr = cr . B / sqrt(GM), cr = 0,78 in general, cr = 0,70 for tankers
+    in ballast, GM = 0,07 . B general, GM = 0,12 . B for tankers
+  section_no: 12
+  paragraph_id: E.1.2
+  page_no: 267
+  must_include:
+  - 0,78
+- id: v5_roll_coefficient_en
+  lang: en
+  category: lookup
+  question: What is the roll period coefficient cr for ships in general?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Tr = cr . B / sqrt(GM), cr = 0,78 in general, cr = 0,70 for tankers
+    in ballast
+  section_no: 12
+  paragraph_id: E.1.2
+  page_no: 267
+  must_include:
+  - '0.78'
+- id: v5_detached_tanks_id
+  lang: id
+  category: rules_qa
+  question: Bolehkah tangki bahan bakar minyak terpisah dipasang di ruang muat?
+  coverage: uncovered
+  source_quote: Detached oil fuel tanks should not be installed in cargo holds
+  section_no: 12
+  paragraph_id: E.2.1
+  page_no: 267
+  must_include:
+  - tidak
+- id: v5_detached_tanks_en
+  lang: en
+  category: rules_qa
+  question: Are detached oil fuel tanks permitted in cargo holds?
+  coverage: uncovered
+  source_quote: Detached oil fuel tanks should not be installed in cargo holds
+  section_no: 12
+  paragraph_id: E.2.1
+  page_no: 267
+  must_include:
+  - should not
+- id: v5_ice_self_propelled_id
+  lang: id
+  category: rules_qa
+  question: Apakah notasi kelas es ES dapat diberikan kepada kapal tanpa propulsi
+    sendiri?
+  coverage: uncovered
+  source_quote: The ice class notations ES1-ES4 can only be assigned to self-propelled
+    ships
+  section_no: 15
+  paragraph_id: A.1.4
+  page_no: 313
+  must_include:
+  - self-propelled
+- id: v5_ice_self_propelled_en
+  lang: en
+  category: rules_qa
+  question: Can ice class notations ES be assigned to non-self-propelled ships?
+  coverage: uncovered
+  source_quote: The ice class notations ES1-ES4 can only be assigned to self-propelled
+    ships
+  section_no: 15
+  paragraph_id: A.1.4
+  page_no: 313
+  must_include:
+  - self-propelled
+- id: v5_ice_uiwl_id
+  lang: id
+  category: rules_qa
+  question: Apa yang membatasi sarat dan trim kapal saat berlayar di es?
+  coverage: uncovered
+  source_quote: The draught and trim, limited by the UIWL, shall not be exceeded when
+    the ship is navigating in ice
+  section_no: 15
+  paragraph_id: A.3.1
+  page_no: 314
+  must_include:
+  - UIWL
+- id: v5_ice_uiwl_en
+  lang: en
+  category: rules_qa
+  question: What limits the draught and trim when navigating in ice?
+  coverage: uncovered
+  source_quote: The draught and trim, limited by the UIWL, shall not be exceeded when
+    the ship is navigating in ice
+  section_no: 15
+  paragraph_id: A.3.1
+  page_no: 314
+  must_include:
+  - UIWL
+- id: v5_wind_load_id
+  lang: id
+  category: lookup
+  question: Berapa tekanan angin desain pwi yang bekerja pada dinding deckhouse?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: pwi = 1,0 [kN/m2]
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 340
+  must_include:
+  - 1,0
+- id: v5_wind_load_en
+  lang: en
+  category: lookup
+  question: What is the design wind pressure pwi acting on deckhouse walls?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: pwi = 1,0 [kN/m2]
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 340
+  must_include:
+  - '1.0'
+- id: v5_breakwater_id
+  lang: id
+  category: lookup
+  question: Mulai dari posisi membujur berapakah pemecah gelombang (breakwater) harus
+    dipasang?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: If cargo is intended to be carried on deck forward of x/L >= 0,3 a
+    breakwater is to be fitted
+  section_no: 16
+  paragraph_id: F.4.2.5
+  page_no: 342
+  must_include:
+  - 0,3
+- id: v5_breakwater_en
+  lang: en
+  category: lookup
+  question: From what longitudinal position is a breakwater required on deck?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: If cargo is intended to be carried on deck forward of x/L >= 0,3 a
+    breakwater is to be fitted
+  section_no: 16
+  paragraph_id: F.4.2.5
+  page_no: 342
+  must_include:
+  - '0.3'
+- id: v5_fillet_throat_id
+  lang: id
+  category: lookup
+  question: Berapa ketebalan throat maksimum las sudut (fillet weld) relatif terhadap
+    tebal pelat?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The throat thickness of fillet welds shall not exceed 0,7 times the
+    lesser thickness of the parts to be connected
+  section_no: 19
+  paragraph_id: B.3
+  page_no: 422
+  must_include:
+  - 0,7
+- id: v5_fillet_throat_en
+  lang: en
+  category: lookup
+  question: What is the maximum fillet weld throat thickness relative to plate thickness?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The throat thickness of fillet welds shall not exceed 0,7 times the
+    lesser thickness of the parts to be connected
+  section_no: 19
+  paragraph_id: B.3
+  page_no: 422
+  must_include:
+  - '0.7'
+- id: v5_bend_radius_id
+  lang: id
+  category: lookup
+  question: Berapa jari-jari dalam minimum untuk pelat dengan tebal maksimum 4 mm?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'Table 19.1 Minimum inner bending radius r: for plate thickness t
+    <= 4 mm, minimum inner bending radius r is 2t'
+  section_no: 19
+  paragraph_id: B.2.7.3
+  page_no: 418
+  must_include:
+  - '4'
+- id: v5_bend_radius_en
+  lang: en
+  category: lookup
+  question: What is the minimum inner bending radius for plate thickness up to 4 mm?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'Table 19.1 Minimum inner bending radius r: for plate thickness t
+    <= 4 mm, minimum inner bending radius r is 2t'
+  section_no: 19
+  paragraph_id: B.2.7.3
+  page_no: 418
+  must_include:
+  - '4'
+- id: v5_propeller_post_id
+  lang: id
+  category: lookup
+  question: Berapa rumus dimensi tiang baling-baling (propeller post) penampang persegi?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'The scantlings of rectangular solid propeller posts: l = 1,4 . L
+    + 90 [mm], b = 1,6 . L + 15 [mm]'
+  section_no: 13
+  paragraph_id: C.2.5
+  page_no: 271
+  must_include:
+  - 1,4
+- id: v5_propeller_post_en
+  lang: en
+  category: lookup
+  question: What are the scantling formulas for a rectangular solid propeller post?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'The scantlings of rectangular solid propeller posts: l = 1,4 . L
+    + 90 [mm], b = 1,6 . L + 15 [mm]'
+  section_no: 13
+  paragraph_id: C.2.5
+  page_no: 271
+  must_include:
+  - '1.4'
+- id: v5_pillars_girders_id
+  lang: id
+  category: rules_qa
+  question: Di manakah pilar (pillars) harus ditempatkan secara struktural?
+  coverage: uncovered
+  source_quote: Pillars shall be provided in line with double bottom girders and/or
+    floors or as close thereto as possible
+  section_no: 10
+  paragraph_id: C.1.5
+  page_no: 244
+  must_include:
+  - girders
+- id: v5_pillars_girders_en
+  lang: en
+  category: rules_qa
+  question: Where must pillars be located structurally?
+  coverage: uncovered
+  source_quote: Pillars shall be provided in line with double bottom girders and/or
+    floors or as close thereto as possible
+  section_no: 10
+  paragraph_id: C.1.5
+  page_no: 244
+  must_include:
+  - girders
+- id: v5_para_depth_ratio_id
+  lang: id
+  category: lookup
+  question: Berapa syarat minimum depth H terhadap panjang L untuk daerah pelayaran
+    samudra?
+  coverage: covered
+  expect_lookup: true
+  source_quote: The Rules apply to seagoing steel ships classed A100 whose breadth
+    to depth ratio B/H does not exceed L/16 + 1
+  section_no: 1
+  paragraph_id: A.1
+  page_no: 17
+  must_include:
+  - L/16
+- id: v5_para_depth_ratio_en
+  lang: en
+  category: lookup
+  question: What minimum depth H must a ship have relative to length L for ocean service?
+  coverage: covered
+  expect_lookup: true
+  source_quote: The Rules apply to seagoing steel ships classed A100 whose breadth
+    to depth ratio B/H does not exceed L/16 + 1
+  section_no: 1
+  paragraph_id: A.1
+  page_no: 17
+  must_include:
+  - L/16
+- id: v5_para_hhp_id
+  lang: id
+  category: lookup
+  question: Berapa besar daya cengkeram jangkar HHP jika dibandingkan dengan jangkar
+    stockless biasa?
+  coverage: covered
+  expect_lookup: true
+  source_quote: A high holding power anchor is an anchor with a holding power of at
+    least twice that of an ordinary stockless anchor of the same mass
+  section_no: 18
+  paragraph_id: C.4
+  page_no: 389
+  must_include:
+  - dua kali
+- id: v5_para_hhp_en
+  lang: en
+  category: lookup
+  question: How does an HHP anchor grip compare to a standard stockless anchor?
+  coverage: covered
+  expect_lookup: true
+  source_quote: A high holding power anchor is an anchor with a holding power of at
+    least twice that of an ordinary stockless anchor of the same mass
+  section_no: 18
+  paragraph_id: C.4
+  page_no: 389
+  must_include:
+  - twice
+- id: v5_para_rudder_c1_id
+  lang: id
+  category: lookup
+  question: Berapa koefisien c1 untuk kapal pengangkut curah pada perhitungan luas
+    kemudi?
+  coverage: covered
+  expect_lookup: true
+  source_quote: c1 = 0,9 for bulk carriers and tankers having a displacement of more
+    than 50 000 ton
+  section_no: 14
+  paragraph_id: A.100
+  page_no: 280
+  must_include:
+  - 0,9
+- id: v5_para_rudder_c4_en
+  lang: en
+  category: lookup
+  question: What c4 value applies to a rudder positioned away from the propeller slipstream?
+  coverage: covered
+  expect_lookup: true
+  source_quote: c4 = 1,5 for rudders outside the propeller jet
+  section_no: 14
+  paragraph_id: A.4.3
+  page_no: 281
+  must_include:
+  - '1.5'
+- id: v5_para_fatigue_c_id
+  lang: id
+  category: lookup
+  question: Berapa faktor c untuk koreksi lelah pada pengelasan dengan beban berulang?
+  coverage: covered
+  expect_lookup: true
+  source_quote: c = 0,15 welded joints subjected to variable stress cycles (stress
+    range spectrum A or B)
+  section_no: 20
+  paragraph_id: B.3.2.4
+  page_no: 446
+  must_include:
+  - 0,15
+- id: v5_para_fatigue_c_en
+  lang: en
+  category: lookup
+  question: What correction factor c applies to welded connections under cyclical
+    loading?
+  coverage: covered
+  expect_lookup: true
+  source_quote: c = 0.15 welded joints subjected to variable stress cycles (stress
+    range spectrum A or B)
+  section_no: 20
+  paragraph_id: B.3.2.4
+  page_no: 446
+  must_include:
+  - '0.15'
+- id: v5_ooc_comms_radio_id
+  lang: id
+  category: rules_qa
+  question: Berapa frekuensi radio VHF marine channel 16?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v5_ooc_comms_radio_en
+  lang: en
+  category: rules_qa
+  question: What is the VHF marine channel 16 frequency?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v5_ooc_lifeboat_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas minimum sekoci penolong menurut SOLAS?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v5_ooc_lifeboat_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum lifeboat capacity according to SOLAS?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v5_ooc_crane_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas angkat minimum crane dek kapal kargo?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v5_ooc_crane_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum lifting capacity for a cargo ship deck crane?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v5_ooc_ac_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas pendingin minimum sistem HVAC kapal?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v5_ooc_ac_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum cooling capacity for a ship HVAC system?
+  coverage: ooc
+  must_include:
+  - context is insufficient
