@@ -1,0 +1,479 @@
+# Held-out eval set v4 (40 entries) - Build 14 measurement baseline.
+# Kunci jawaban + gate diturunkan dari chunk PDF di Supabase + verifikasi fitz.
+# Set ini TIDAK boleh dipakai untuk tuning; murni alat ukur kemajuan.
+# Distribusi: 28 in-corpus + 8 ooc + 4 parafrase. Balance 20 ID + 20 EN.
+# Semua in-corpus entri memiliki source_quote verbatim dari chunk Supabase, diverifikasi via PyMuPDF/fitz.
+- id: v4_tank_tmin_formula_id
+  lang: id
+  category: lookup
+  question: Berapa tebal minimum semua struktur tangki menurut Section 12?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The thickness of all tank structures is not to be less than the following
+    minimum value tmin = 5,5 + 0,02 L [mm]
+  section_no: 12
+  paragraph_id: A.7.4
+  page_no: 259
+  must_include:
+  - 5,5
+- id: v4_tank_tmin_formula_en
+  lang: en
+  category: lookup
+  question: What is the minimum thickness formula for all tank structures in Section
+    12?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The thickness of all tank structures is not to be less than the following
+    minimum value tmin = 5,5 + 0,02 L [mm]
+  section_no: 12
+  paragraph_id: A.7.4
+  page_no: 259
+  must_include:
+  - '5.5'
+- id: v4_tank_fuel_spillage_id
+  lang: id
+  category: rules_qa
+  question: Di manakah tangki bahan bakar minyak tidak boleh ditempatkan menurut aturan
+    BKI?
+  coverage: uncovered
+  source_quote: No oil fuel tank is to be situated where spillage or leakage there
+    from can constitute a fire or explosion hazard by falling on heated surfaces
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 258
+  must_include:
+  - heated surfaces
+- id: v4_tank_fuel_spillage_en
+  lang: en
+  category: rules_qa
+  question: Where shall oil fuel tanks not be situated according to BKI rules?
+  coverage: uncovered
+  source_quote: No oil fuel tank is to be situated where spillage or leakage there
+    from can constitute a fire or explosion hazard by falling on heated surfaces
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 258
+  must_include:
+  - heated surfaces
+- id: v4_tank_watertight_bulkhead_id
+  lang: id
+  category: rules_qa
+  question: Apa ketentuan kekuatan sekat tangki yang juga berfungsi sebagai sekat
+    kedap air?
+  coverage: uncovered
+  source_quote: Where a tank bulkhead forms part of a watertight bulkhead, its strength
+    is not to be less than required by Section 11
+  section_no: 12
+  paragraph_id: A.4.4
+  page_no: 257
+  must_include:
+  - Section 11
+- id: v4_tank_watertight_bulkhead_en
+  lang: en
+  category: rules_qa
+  question: What strength requirement applies when a tank bulkhead also serves as
+    a watertight bulkhead?
+  coverage: uncovered
+  source_quote: Where a tank bulkhead forms part of a watertight bulkhead, its strength
+    is not to be less than required by Section 11
+  section_no: 12
+  paragraph_id: A.4.4
+  page_no: 257
+  must_include:
+  - Section 11
+- id: v4_sole_piece_modulus_id
+  lang: id
+  category: lookup
+  question: Berapa rumus modulus penampang sole piece terhadap sumbu z menurut Section
+    13?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The section modulus of the sole piece related to the z-axis is not
+    to be less than Wz = B1 . x . k / 80 [cm3]
+  section_no: 13
+  paragraph_id: C.80
+  page_no: 271
+  must_include:
+  - '80'
+- id: v4_sole_piece_modulus_en
+  lang: en
+  category: lookup
+  question: What is the section modulus formula for the sole piece about the z-axis
+    per Section 13?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The section modulus of the sole piece related to the z-axis is not
+    to be less than Wz = B1 . x . k / 80 [cm3]
+  section_no: 13
+  paragraph_id: C.80
+  page_no: 271
+  must_include:
+  - '80'
+- id: v4_rudder_horn_shear_id
+  lang: id
+  category: lookup
+  question: Berapa batas tegangan geser maksimum pada tanduk kemudi (rudder horn)?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: At no cross section of the rudder horn the shear stress is to exceed
+    the value t <= 48/k [N/mm2]
+  section_no: 13
+  paragraph_id: C.4.6
+  page_no: 273
+  must_include:
+  - '48'
+- id: v4_rudder_horn_shear_en
+  lang: en
+  category: lookup
+  question: What is the maximum shear stress limit in the rudder horn?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: At no cross section of the rudder horn the shear stress is to exceed
+    the value t <= 48/k [N/mm2]
+  section_no: 13
+  paragraph_id: C.4.6
+  page_no: 273
+  must_include:
+  - '48'
+- id: v4_stem_hooks_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana pelat linggi dan bulbous bows harus diperkuat?
+  coverage: uncovered
+  source_quote: Plate stems and bulbous bows have to be stiffened by fore-hooks and/or
+    cant frames
+  section_no: 13
+  paragraph_id: B.2.3
+  page_no: 269
+  must_include:
+  - fore-hooks
+- id: v4_stem_hooks_en
+  lang: en
+  category: rules_qa
+  question: How must plate stems and bulbous bows be stiffened?
+  coverage: uncovered
+  source_quote: Plate stems and bulbous bows have to be stiffened by fore-hooks and/or
+    cant frames
+  section_no: 13
+  paragraph_id: B.2.3
+  page_no: 269
+  must_include:
+  - fore-hooks
+- id: v4_rudder_c1_factor_id
+  lang: id
+  category: lookup
+  question: Berapa faktor tipe kapal c1 untuk bulk carrier pada perhitungan kemudi?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: c1 = factor for the ship type = 1,0 in general = 0,9 for bulk carriers
+    and tankers having a displacement of more than 50000 ton
+  section_no: 14
+  paragraph_id: A.100
+  page_no: 280
+  must_include:
+  - 0,9
+- id: v4_rudder_c1_factor_en
+  lang: en
+  category: lookup
+  question: What is the ship type factor c1 for bulk carriers in rudder calculations?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: c1 = factor for the ship type = 1,0 in general = 0,9 for bulk carriers
+    and tankers having a displacement of more than 50000 ton
+  section_no: 14
+  paragraph_id: A.100
+  page_no: 280
+  must_include:
+  - '0.9'
+- id: v4_rudder_c4_factor_id
+  lang: id
+  category: lookup
+  question: Berapa faktor susunan kemudi c4 untuk kemudi di luar semburan baling-baling?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: c4 = factor for the rudder arrangement = 1,0 for rudders in the propeller
+    jet = 1,5 for rudders outside the propeller jet
+  section_no: 14
+  paragraph_id: A.4.3
+  page_no: 281
+  must_include:
+  - 1,5
+- id: v4_rudder_c4_factor_en
+  lang: en
+  category: lookup
+  question: What is the rudder arrangement factor c4 for rudders outside the propeller
+    jet?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: c4 = factor for the rudder arrangement = 1,0 for rudders in the propeller
+    jet = 1,5 for rudders outside the propeller jet
+  section_no: 14
+  paragraph_id: A.4.3
+  page_no: 281
+  must_include:
+  - '1.5'
+- id: v4_ice_class_h0_id
+  lang: id
+  category: lookup
+  question: Berapa ketebalan es desain h0 untuk notasi kelas es ES2?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Table 15.5 Ice thickness h0 and design height h. ES2 h0 = 0,6 m
+  section_no: 15
+  paragraph_id: B.44
+  page_no: 321
+  must_include:
+  - 0,6
+- id: v4_ice_class_h0_en
+  lang: en
+  category: lookup
+  question: What is the design ice thickness h0 for ice class notation ES2?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Table 15.5 Ice thickness h0 and design height h. ES2 h0 = 0,6 m
+  section_no: 15
+  paragraph_id: B.44
+  page_no: 321
+  must_include:
+  - '0.6'
+- id: v4_ice_eff_length_id
+  lang: id
+  category: lookup
+  question: Berapa panjang efektif untuk shell plating dengan sistem konstruksi memanjang
+    pada penguatan es?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Table 15.8 Effective length. Shell Longitudinal 1,7 x frame spacing
+  section_no: 15
+  paragraph_id: B.3.3
+  page_no: 322
+  must_include:
+  - 1,7
+- id: v4_ice_eff_length_en
+  lang: en
+  category: lookup
+  question: What is the effective length for shell plating with longitudinal framing
+    in ice strengthening?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Table 15.8 Effective length. Shell Longitudinal 1,7 x frame spacing
+  section_no: 15
+  paragraph_id: B.3.3
+  page_no: 322
+  must_include:
+  - '1.7'
+- id: v4_deckhouse_coaming_id
+  lang: id
+  category: lookup
+  question: Berapa tinggi coaming minimum untuk bagian tetap deckhouse di geladak
+    cuaca?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: For the fixed part of the deckhouse on the weather deck, a coaming
+    height of 380 mm is to be observed
+  section_no: 16
+  paragraph_id: E.1.3
+  page_no: 338
+  must_include:
+  - '380'
+- id: v4_deckhouse_coaming_en
+  lang: en
+  category: lookup
+  question: What is the minimum coaming height for the fixed part of a deckhouse on
+    the weather deck?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: For the fixed part of the deckhouse on the weather deck, a coaming
+    height of 380 mm is to be observed
+  section_no: 16
+  paragraph_id: E.1.3
+  page_no: 338
+  must_include:
+  - '380'
+- id: v4_deckhouse_water_pressure_id
+  lang: id
+  category: lookup
+  question: Berapa tekanan air minimum pwa di tepi bawah dinding depan deckhouse?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The water pressure is not to be less than pwa = 25 [kN/m2] at the
+    lower edge of the front wall
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 340
+  must_include:
+  - '25'
+- id: v4_deckhouse_water_pressure_en
+  lang: en
+  category: lookup
+  question: What is the minimum water pressure pwa at the lower edge of the deckhouse
+    front wall?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The water pressure is not to be less than pwa = 25 [kN/m2] at the
+    lower edge of the front wall
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 340
+  must_include:
+  - '25'
+- id: v4_fatigue_sn_curve_id
+  lang: id
+  category: rules_qa
+  question: Apa hubungan log(N) untuk kurva S-N fatik menurut Section 20?
+  coverage: uncovered
+  source_quote: The S-N curves represent section wise linear relationships between
+    log and log (N) log (N) = 7,0 + m . Q
+  section_no: 20
+  paragraph_id: B.22
+  page_no: 444
+  must_include:
+  - 7,0
+- id: v4_fatigue_sn_curve_en
+  lang: en
+  category: rules_qa
+  question: What is the log(N) relationship for S-N fatigue curves per Section 20?
+  coverage: uncovered
+  source_quote: The S-N curves represent section wise linear relationships between
+    log and log (N) log (N) = 7,0 + m . Q
+  section_no: 20
+  paragraph_id: B.22
+  page_no: 444
+  must_include:
+  - '7.0'
+- id: v4_fatigue_c_factor_id
+  lang: id
+  category: lookup
+  question: Berapa nilai faktor koreksi c untuk sambungan las yang mengalami siklus
+    tegangan variabel?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: c = 0,15 welded joints subjected to variable stress cycles
+  section_no: 20
+  paragraph_id: B.3.2.4
+  page_no: 446
+  must_include:
+  - 0,15
+- id: v4_fatigue_c_factor_en
+  lang: en
+  category: lookup
+  question: What is the correction factor c for welded joints subjected to variable
+    stress cycles?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: c = 0,15 welded joints subjected to variable stress cycles
+  section_no: 20
+  paragraph_id: B.3.2.4
+  page_no: 446
+  must_include:
+  - '0.15'
+- id: v4_ooc_engine_power_id
+  lang: id
+  category: rules_qa
+  question: Berapa daya keluaran minimum mesin induk untuk kapal kargo 5000 GT?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v4_ooc_engine_power_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum main engine power output for a 5000 GT cargo ship?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v4_ooc_radar_range_id
+  lang: id
+  category: rules_qa
+  question: Berapa jarak deteksi minimum radar navigasi X-band?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v4_ooc_radar_range_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum detection range for X-band navigation radar?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v4_ooc_fire_pump_capacity_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas minimum pompa pemadam kebakaran utama?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v4_ooc_fire_pump_capacity_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum capacity for the main fire pump?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v4_ooc_crew_cert_id
+  lang: id
+  category: rules_qa
+  question: Apa sertifikasi minimum yang diperlukan untuk nahkoda kapal niaga?
+  coverage: ooc
+  must_include:
+  - tidak
+- id: v4_ooc_crew_cert_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum certification required for a merchant ship master?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+- id: v4_para_depth_ratio_id
+  lang: id
+  category: lookup
+  question: Berapa batas minimum perbandingan H/L untuk kapal samudra?
+  coverage: covered
+  expect_lookup: true
+  source_quote: The Rules apply to seagoing steel ships classed A100 whose breadth
+    to depth ratio B/H does not exceed L/16 + 1
+  section_no: 1
+  paragraph_id: A.1
+  page_no: 17
+  must_include:
+  - L/16
+- id: v4_para_depth_ratio_en
+  lang: en
+  category: lookup
+  question: What is the lower bound for the depth-to-length ratio for ocean-going
+    vessels?
+  coverage: covered
+  expect_lookup: true
+  source_quote: The Rules apply to seagoing steel ships classed A100 whose breadth
+    to depth ratio B/H does not exceed L/16 + 1
+  section_no: 1
+  paragraph_id: A.1
+  page_no: 17
+  must_include:
+  - L/16
+- id: v4_para_anchor_hhp_id
+  lang: id
+  category: lookup
+  question: Berapa kali lipat daya jangkar HHP dibanding jangkar stockless standar?
+  coverage: covered
+  expect_lookup: true
+  source_quote: A high holding power anchor is an anchor with a holding power of at
+    least twice that of an ordinary stockless anchor of the same mass
+  section_no: 18
+  paragraph_id: C.4
+  page_no: 389
+  must_include:
+  - dua kali
+- id: v4_para_anchor_hhp_en
+  lang: en
+  category: lookup
+  question: By what factor does HHP anchor holding power exceed standard stockless
+    anchor?
+  coverage: covered
+  expect_lookup: true
+  source_quote: A high holding power anchor is an anchor with a holding power of at
+    least twice that of an ordinary stockless anchor of the same mass
+  section_no: 18
+  paragraph_id: C.4
+  page_no: 389
+  must_include:
+  - twice
