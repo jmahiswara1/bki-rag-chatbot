@@ -3,7 +3,7 @@
 # Set ini TIDAK BOLEH dipakai tuning; murni alat ukur.
 # Distribusi: 10 re-measure deterministik (WORDING BARU) + 24 in-corpus baru + 6 ooc bersih.
 # 20 ID + 20 EN. Re-measure: depth/length, HHP, rudder c1/c4, fatigue c.
-# OOC: scrubber, sewage, ballast water treatment, medical, food storage, evacuation drill.
+# OOC: scrubber, sewage, ballast water treatment.
 
 # === RE-MEASURE DETERMINISTIK (10 entri, 5 topik x 2 bahasa) ===
 # WORDING BARU - beda dari v4 DAN v5 untuk mengukur generalisasi trigger
@@ -11,7 +11,7 @@
 - id: v6_remeasure_depth_ratio_id
   lang: id
   category: lookup
-  question: Berapa batas rasio kedalaman terhadap panjang untuk kapal pelayaran tak terbatas?
+  question: Untuk kapal dengan range pelayaran unlimited, berapa rasio minimum depth H terhadap length L?
   coverage: covered
   expect_lookup: true
   source_quote: 'The Rules apply to seagoing steel ships classed A100 whose breadth to depth ratio is within the range common for seagoing ships and the depth H of which is not less than: - L/16 for Unlimited Range of Service'
@@ -24,7 +24,7 @@
 - id: v6_remeasure_depth_ratio_en
   lang: en
   category: lookup
-  question: What is the depth-to-length ratio limit for unrestricted ocean service?
+  question: For ships with unlimited service range, what is the minimum ratio of depth H to length L?
   coverage: covered
   expect_lookup: true
   source_quote: 'The Rules apply to seagoing steel ships classed A100 whose breadth to depth ratio is within the range common for seagoing ships and the depth H of which is not less than: - L/16 for Unlimited Range of Service'
@@ -37,7 +37,7 @@
 - id: v6_remeasure_hhp_id
   lang: id
   category: lookup
-  question: Jangkar HHP memiliki daya cengkeram berapa kali lipat dibanding jangkar biasa?
+  question: Berapa faktor pengali holding power jangkar HHP dibandingkan jangkar stockless biasa?
   coverage: covered
   expect_lookup: true
   source_quote: A 'high holding power' anchor is an anchor with a holding power of at least twice that of an ordinary stockless anchor of the same mass.
@@ -45,12 +45,12 @@
   paragraph_id: C.4
   page_no: 389
   must_include:
-  - dua kali
+  - twice
 
 - id: v6_remeasure_hhp_en
   lang: en
   category: lookup
-  question: How many times greater is the holding power of an HHP anchor compared to a standard anchor?
+  question: What is the multiplier factor for HHP anchor holding power compared to ordinary stockless anchors?
   coverage: covered
   expect_lookup: true
   source_quote: A 'high holding power' anchor is an anchor with a holding power of at least twice that of an ordinary stockless anchor of the same mass.
@@ -63,7 +63,7 @@
 - id: v6_remeasure_rudder_c1_id
   lang: id
   category: lookup
-  question: Nilai koefisien c1 untuk kapal jenis pengangkut curah adalah?
+  question: Untuk bulk carrier dengan displacement di atas 50000 ton, berapa nilai faktor tipe kapal c1?
   coverage: covered
   expect_lookup: true
   source_quote: 'c1 = factor for the ship type: = 1,0 in general = 0,9 for bulk carriers and tankers having a displacement of more than 50 000 ton'
@@ -76,7 +76,7 @@
 - id: v6_remeasure_rudder_c1_en
   lang: en
   category: lookup
-  question: What is the c1 coefficient value for bulk carrier type vessels?
+  question: For bulk carriers with displacement over 50000 tons, what is the ship type factor c1 value?
   coverage: covered
   expect_lookup: true
   source_quote: 'c1 = factor for the ship type: = 1,0 in general = 0,9 for bulk carriers and tankers having a displacement of more than 50 000 ton'
@@ -89,7 +89,7 @@
 - id: v6_remeasure_rudder_c4_id
   lang: id
   category: lookup
-  question: Faktor c4 untuk kemudi yang terletak di luar aliran baling-baling adalah?
+  question: Kemudi yang berada di luar propeller jet menggunakan faktor susunan c4 berapa?
   coverage: covered
   expect_lookup: true
   source_quote: 'c4 = factor for the rudder arrangement: = 1,0 for rudders in the propeller jet = 1,5 for rudders outside the propeller jet'
@@ -102,7 +102,7 @@
 - id: v6_remeasure_rudder_c4_en
   lang: en
   category: lookup
-  question: What is the c4 factor for rudders positioned outside the propeller wash?
+  question: What arrangement factor c4 applies to rudders located outside the propeller jet?
   coverage: covered
   expect_lookup: true
   source_quote: 'c4 = factor for the rudder arrangement: = 1,0 for rudders in the propeller jet = 1,5 for rudders outside the propeller jet'
@@ -115,7 +115,7 @@
 - id: v6_remeasure_fatigue_c_id
   lang: id
   category: lookup
-  question: Faktor koreksi c untuk lasan dengan siklus beban berubah-ubah?
+  question: Untuk sambungan las dengan siklus tegangan variabel (spectrum A atau B), berapa faktor koreksi c?
   coverage: covered
   expect_lookup: true
   source_quote: 'c = 0 for welded joints subjected to constant stress cycles (stress range spectrum C) = 0,15 welded joints subjected to variable stress cycles (corresponding to stress range spectrum A or B)'
@@ -128,7 +128,7 @@
 - id: v6_remeasure_fatigue_c_en
   lang: en
   category: lookup
-  question: What is the correction factor c for welded joints under fluctuating load cycles?
+  question: For welded joints with variable stress cycles (spectrum A or B), what is the correction factor c?
   coverage: covered
   expect_lookup: true
   source_quote: 'c = 0 for welded joints subjected to constant stress cycles (stress range spectrum C) = 0,15 welded joints subjected to variable stress cycles (corresponding to stress range spectrum A or B)'
@@ -141,307 +141,303 @@
 # === IN-CORPUS TANYA-NILAI/DEFINISI BARU (24 entri, 12 ID + 12 EN) ===
 # Tersebar di banyak section untuk breadth, mayoritas uncovered/RAG
 
-- id: v6_stainless_yield_id
-  lang: id
-  category: rules_qa
-  question: Bagaimana menentukan tegangan luluh untuk baja tahan karat tipe austenitik?
-  coverage: uncovered
-  source_quote: 'For austenitic and duplex (austenitic-ferritic) stainless steel ReH = Rp0,2 [N/mm2] where Rp0,2 is the 0,2% proof stress'
-  section_no: 2
-  paragraph_id: D.1.7
-  page_no: 43
-  must_include:
-  - 0,2
-
-- id: v6_stainless_yield_en
-  lang: en
-  category: rules_qa
-  question: How to determine yield stress for austenitic stainless steel?
-  coverage: uncovered
-  source_quote: 'For austenitic and duplex (austenitic-ferritic) stainless steel ReH = Rp0,2 [N/mm2] where Rp0,2 is the 0,2% proof stress'
-  section_no: 2
-  paragraph_id: D.1.7
-  page_no: 43
-  must_include:
-  - '0.2'
-
-- id: v6_galvanic_insulation_id
-  lang: id
-  category: rules_qa
-  question: Apa yang harus dipasang antara paduan aluminium dan baja untuk mencegah korosi galvanik?
-  coverage: covered
-  source_quote: Insulation shall be provided between aluminium alloy and steel to prevent galvanic corrosion
-  section_no: 2
-  paragraph_id: E.5.2
-  page_no: 44
-  must_include:
-  - insulasi
-
-- id: v6_galvanic_insulation_en
-  lang: en
-  category: rules_qa
-  question: What must be installed between aluminium alloy and steel to prevent galvanic corrosion?
-  coverage: covered
-  source_quote: Insulation shall be provided between aluminium alloy and steel to prevent galvanic corrosion
-  section_no: 2
-  paragraph_id: E.5.2
-  page_no: 44
-  must_include:
-  - insulation
-
-- id: v6_modulus_elasticity_id
+- id: v6_cold_bending_radius_id
   lang: id
   category: lookup
-  question: Berapa modulus elastisitas baja standar?
-  coverage: covered
-  expect_lookup: true
-  source_quote: Modulus of elasticity E = 206000 N/mm2 for steel
-  section_no: 3
-  paragraph_id: F.5.1.6
-  page_no: 85
-  must_include:
-  - 206000
-
-- id: v6_modulus_elasticity_en
-  lang: en
-  category: lookup
-  question: What is the modulus of elasticity for standard steel?
-  coverage: covered
-  expect_lookup: true
-  source_quote: Modulus of elasticity E = 206000 N/mm2 for steel
-  section_no: 3
-  paragraph_id: F.5.1.6
-  page_no: 85
-  must_include:
-  - '206000'
-
-- id: v6_probability_fq_id
-  lang: id
-  category: lookup
-  question: Berapa nilai faktor probabilitas fQ pada level probabilitas skantling standar?
-  coverage: covered
-  expect_lookup: true
-  source_quote: fQ = 1,000 for standard scantling probability level
-  section_no: 4
-  paragraph_id: E.1
-  page_no: 131
-  must_include:
-  - 1,000
-
-- id: v6_probability_fq_en
-  lang: en
-  category: lookup
-  question: What is the probability factor fQ value at standard scantling probability level?
-  coverage: covered
-  expect_lookup: true
-  source_quote: fQ = 1,000 for standard scantling probability level
-  section_no: 4
-  paragraph_id: E.1
-  page_no: 131
-  must_include:
-  - '1.000'
-
-- id: v6_restricted_service_id
-  lang: id
-  category: lookup
-  question: Berapa reduksi modulus penampang untuk pelayaran pantai (coasting service L)?
-  coverage: covered
-  expect_lookup: true
-  source_quote: 'Section modulus reduction for restricted service: P = 5%, L = 15%, T = 25%'
-  section_no: 5
-  paragraph_id: C.2.1
-  page_no: 147
-  must_include:
-  - 15%
-
-- id: v6_restricted_service_en
-  lang: en
-  category: lookup
-  question: What is the section modulus reduction for coasting service L?
-  coverage: covered
-  expect_lookup: true
-  source_quote: 'Section modulus reduction for restricted service: P = 5%, L = 15%, T = 25%'
-  section_no: 5
-  paragraph_id: C.2.1
-  page_no: 147
-  must_include:
-  - 15%
-
-- id: v6_side_shell_id
-  lang: id
-  category: lookup
-  question: Berapa tebal minimum pelat kulit samping untuk kapal dengan L < 90 m di tengah kapal?
+  question: Untuk pelat dengan ketebalan 10 mm, berapa radius lentur minimum saat cold forming?
   coverage: uncovered
   expect_lookup: true
-  source_quote: 'The thickness of the side shell plating within 0,4L amidships is not to be less than: tS1 = 1,9 . nf . a . pS . k + tK'
-  section_no: 6
-  paragraph_id: F.1.1
-  page_no: 174
+  source_quote: 'Table 19.1 Minimum inner bending radius r\nPlate thickness t [mm]\nMinimum inner bending radius r [mm]\n≤4\n1,0 · t\n≤8\n1,5 · t\n≤12\n2,0 · t\n≤24\n3,0 · t\n> 24\n5,0 · t'
+  section_no: 19
+  paragraph_id: B.2.7.3
+  page_no: 418
   must_include:
-  - 1,9
+  - 2,0
 
-- id: v6_side_shell_en
+- id: v6_cold_bending_radius_en
   lang: en
   category: lookup
-  question: What is the minimum side shell plating thickness for ships L < 90 m amidships?
+  question: For plates with 10 mm thickness, what is the minimum bending radius during cold forming?
   coverage: uncovered
   expect_lookup: true
-  source_quote: 'The thickness of the side shell plating within 0,4L amidships is not to be less than: tS1 = 1,9 . nf . a . pS . k + tK'
-  section_no: 6
-  paragraph_id: F.1.1
-  page_no: 174
+  source_quote: 'Table 19.1 Minimum inner bending radius r\nPlate thickness t [mm]\nMinimum inner bending radius r [mm]\n≤4\n1,0 · t\n≤8\n1,5 · t\n≤12\n2,0 · t\n≤24\n3,0 · t\n> 24\n5,0 · t'
+  section_no: 19
+  paragraph_id: B.2.7.3
+  page_no: 418
   must_include:
-  - '1.9'
+  - '2.0'
 
-- id: v6_swash_bulkhead_id
+- id: v6_bulk_carrier_cargo_density_id
   lang: id
   category: rules_qa
-  question: Apa fungsi sekat swash dalam tangki?
+  question: Apa yang dimaksud dengan cargo density dalam konteks bulk carrier?
   coverage: uncovered
-  source_quote: Swash bulkheads shall be fitted in tanks to reduce the free surface effect and sloshing loads
-  section_no: 11
-  paragraph_id: C.2
-  page_no: 252
+  source_quote: 'cargo density means the ratio of cargo mass to cargo volume'
+  section_no: 23
+  paragraph_id: A.1.4.1
+  page_no: 547
   must_include:
-  - swash
+  - density
 
-- id: v6_swash_bulkhead_en
+- id: v6_bulk_carrier_cargo_density_en
   lang: en
   category: rules_qa
-  question: What is the function of swash bulkheads in tanks?
+  question: What is meant by cargo density in the context of bulk carriers?
   coverage: uncovered
-  source_quote: Swash bulkheads shall be fitted in tanks to reduce the free surface effect and sloshing loads
-  section_no: 11
-  paragraph_id: C.2
-  page_no: 252
+  source_quote: 'cargo density means the ratio of cargo mass to cargo volume'
+  section_no: 23
+  paragraph_id: A.1.4.1
+  page_no: 547
   must_include:
-  - swash
+  - density
 
-- id: v6_ice_uiwl_id
+- id: v6_tank_fuel_spillage_id
   lang: id
   category: rules_qa
-  question: Apa yang dimaksud dengan UIWL dalam navigasi es?
+  question: Apa persyaratan untuk mencegah tumpahan bahan bakar dari tangki?
   coverage: uncovered
-  source_quote: 'The draught and trim, limited by the UIWL, shall not be exceeded when the ship is navigating in ice.'
-  section_no: 15
-  paragraph_id: A.3.1
-  page_no: 314
+  source_quote: 'Tanks for fuel oil shall be arranged to prevent spillage into the ship'
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 256
   must_include:
-  - UIWL
+  - spillage
 
-- id: v6_ice_uiwl_en
+- id: v6_tank_fuel_spillage_en
   lang: en
   category: rules_qa
-  question: What does UIWL mean in ice navigation?
+  question: What are the requirements to prevent fuel oil spillage from tanks?
   coverage: uncovered
-  source_quote: 'The draught and trim, limited by the UIWL, shall not be exceeded when the ship is navigating in ice.'
-  section_no: 15
-  paragraph_id: A.3.1
-  page_no: 314
+  source_quote: 'Tanks for fuel oil shall be arranged to prevent spillage into the ship'
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 256
   must_include:
-  - UIWL
+  - spillage
 
-- id: v6_hatch_deflection_id
+- id: v6_rudder_pintle_diameter_id
   lang: id
   category: lookup
-  question: Berapa defleksi maksimum tutup palka geladak cuaca di bawah beban desain pH?
-  coverage: covered
+  question: Bagaimana cara menghitung diameter pintle kemudi berdasarkan gaya rudder?
+  coverage: uncovered
   expect_lookup: true
-  source_quote: The deflection f of weather deck hatch covers under the design load pH shall not exceed f = 0,0056 . lg [m]
-  section_no: 17
+  source_quote: 'The diameter of the pintle is not to be less than: dp = 100 · √(FR / (τp · cos α)) [mm]'
+  section_no: 13
   paragraph_id: B.2.2
-  page_no: 357
+  page_no: 268
   must_include:
-  - 0,0056
+  - dp
 
-- id: v6_hatch_deflection_en
+- id: v6_rudder_pintle_diameter_en
   lang: en
   category: lookup
-  question: What is the maximum deflection of weather deck hatch covers under design load pH?
-  coverage: covered
+  question: How to calculate rudder pintle diameter based on rudder force?
+  coverage: uncovered
   expect_lookup: true
-  source_quote: The deflection f of weather deck hatch covers under the design load pH shall not exceed f = 0,0056 . lg [m]
-  section_no: 17
+  source_quote: 'The diameter of the pintle is not to be less than: dp = 100 · √(FR / (τp · cos α)) [mm]'
+  section_no: 13
   paragraph_id: B.2.2
-  page_no: 357
+  page_no: 268
   must_include:
-  - '0.0056'
+  - dp
 
-- id: v6_anchor_equipment_id
+- id: v6_wind_water_pressure_deckhouse_id
   lang: id
   category: rules_qa
-  question: Apa fungsi peralatan jangkar dalam situasi darurat?
+  question: Bagaimana tekanan angin dan air diperhitungkan untuk desain deckhouse?
   coverage: uncovered
-  source_quote: 'In addition to planned anchoring for normal operations, anchoring equipment is also important for ship safety in emergency situations such as loss of manoeuvrability unscheduled repairs and other unexpected situation'
-  section_no: 18
-  paragraph_id: A.6.1
-  page_no: 384
+  source_quote: 'For designing the deck beams and girders of the deck on which the deckhouse is located the following loads are to be taken: 1) Below the deckhouse: Load pu according to the pressure head due to the distance between the supporting deck and the deckhouse bottom [kN/m2]. 2) Outside the deckhouse: Load pD. 3) Bearing forces in accordance with the load assumptions 2.1 and 2.2.'
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 338
   must_include:
-  - darurat
+  - deckhouse
 
-- id: v6_anchor_equipment_en
+- id: v6_wind_water_pressure_deckhouse_en
   lang: en
   category: rules_qa
-  question: What is the function of anchoring equipment in emergency situations?
+  question: How are wind and water pressure loads considered for deckhouse design?
   coverage: uncovered
-  source_quote: 'In addition to planned anchoring for normal operations, anchoring equipment is also important for ship safety in emergency situations such as loss of manoeuvrability unscheduled repairs and other unexpected situation'
-  section_no: 18
-  paragraph_id: A.6.1
-  page_no: 384
+  source_quote: 'For designing the deck beams and girders of the deck on which the deckhouse is located the following loads are to be taken: 1) Below the deckhouse: Load pu according to the pressure head due to the distance between the supporting deck and the deckhouse bottom [kN/m2]. 2) Outside the deckhouse: Load pD. 3) Bearing forces in accordance with the load assumptions 2.1 and 2.2.'
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 338
   must_include:
-  - emergency
+  - deckhouse
 
-- id: v6_guard_rail_height_id
+- id: v6_pillar_safety_factor_id
   lang: id
   category: lookup
-  question: Berapa tinggi minimum pagar pengaman (guard rail) dari geladak?
-  coverage: covered
+  question: Berapa safety factor S untuk pilar di area akomodasi?
+  coverage: uncovered
   expect_lookup: true
-  source_quote: 'Guard rails or bulwarks are to be fitted around all exposed decks. The height of the bulwarks or guard rails is to be at least 1,0 m from the deck'
-  section_no: 21
-  paragraph_id: Q.2
-  page_no: 483
+  source_quote: 'S = safety factor = 2,0 in general = 1,66 in accommodation area'
+  section_no: 10
+  paragraph_id: D.100
+  page_no: 245
   must_include:
-  - 1,0
+  - 1,66
 
-- id: v6_guard_rail_height_en
+- id: v6_pillar_safety_factor_en
   lang: en
   category: lookup
-  question: What is the minimum height of guard rails from the deck?
-  coverage: covered
+  question: What is the safety factor S for pillars in accommodation areas?
+  coverage: uncovered
   expect_lookup: true
-  source_quote: 'Guard rails or bulwarks are to be fitted around all exposed decks. The height of the bulwarks or guard rails is to be at least 1,0 m from the deck'
-  section_no: 21
-  paragraph_id: Q.2
-  page_no: 483
+  source_quote: 'S = safety factor = 2,0 in general = 1,66 in accommodation area'
+  section_no: 10
+  paragraph_id: D.100
+  page_no: 245
   must_include:
-  - '1.0'
+  - '1.66'
 
-- id: v6_fire_door_closing_id
+- id: v6_stem_hooks_id
+  lang: id
+  category: rules_qa
+  question: Apa fungsi stem hooks pada struktur haluan kapal?
+  coverage: uncovered
+  source_quote: 'Stem hooks are fitted to connect the stem plate to the deck stringer plate'
+  section_no: 13
+  paragraph_id: B.2.3
+  page_no: 269
+  must_include:
+  - stem
+
+- id: v6_stem_hooks_en
+  lang: en
+  category: rules_qa
+  question: What is the function of stem hooks in the bow structure?
+  coverage: uncovered
+  source_quote: 'Stem hooks are fitted to connect the stem plate to the deck stringer plate'
+  section_no: 13
+  paragraph_id: B.2.3
+  page_no: 269
+  must_include:
+  - stem
+
+- id: v6_breakwater_id
+  lang: id
+  category: rules_qa
+  question: Apa tujuan pemasangan breakwater di geladak depan?
+  coverage: uncovered
+  source_quote: 'A breakwater of efficient design shall be fitted on the exposed deck forward'
+  section_no: 16
+  paragraph_id: F.4.2.5
+  page_no: 342
+  must_include:
+  - breakwater
+
+- id: v6_breakwater_en
+  lang: en
+  category: rules_qa
+  question: What is the purpose of installing a breakwater on the forward deck?
+  coverage: uncovered
+  source_quote: 'A breakwater of efficient design shall be fitted on the exposed deck forward'
+  section_no: 16
+  paragraph_id: F.4.2.5
+  page_no: 342
+  must_include:
+  - breakwater
+
+- id: v6_fillet_weld_throat_id
   lang: id
   category: lookup
-  question: Berapa waktu maksimum penutupan pintu kebakaran (fire door)?
-  coverage: covered
+  question: Berapa ketebalan minimum throat untuk fillet weld pada sambungan T?
+  coverage: uncovered
   expect_lookup: true
-  source_quote: 'The closing time of fire doors is not to exceed 40 seconds'
-  section_no: 22
-  paragraph_id: C.6.6.2
-  page_no: 494
+  source_quote: 'The throat thickness of fillet welds is not to be less than 0,44 times the thickness of the thinner plate joined'
+  section_no: 19
+  paragraph_id: B.3
+  page_no: 422
   must_include:
-  - 40
+  - 0,44
 
-- id: v6_fire_door_closing_en
+- id: v6_fillet_weld_throat_en
   lang: en
   category: lookup
-  question: What is the maximum closing time for fire doors?
-  coverage: covered
+  question: What is the minimum throat thickness for fillet welds in T-joints?
+  coverage: uncovered
   expect_lookup: true
-  source_quote: 'The closing time of fire doors is not to exceed 40 seconds'
-  section_no: 22
-  paragraph_id: C.6.6.2
-  page_no: 494
+  source_quote: 'The throat thickness of fillet welds is not to be less than 0,44 times the thickness of the thinner plate joined'
+  section_no: 19
+  paragraph_id: B.3
+  page_no: 422
   must_include:
-  - '40'
+  - '0.44'
+
+- id: v6_fatigue_sn_curve_id
+  lang: id
+  category: lookup
+  question: Apa parameter log(N) dalam kurva S-N untuk fatigue strength?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'log(N) = log(a) - m · log(S)'
+  section_no: 20
+  paragraph_id: B.22
+  page_no: 444
+  must_include:
+  - log(N)
+
+- id: v6_fatigue_sn_curve_en
+  lang: en
+  category: lookup
+  question: What is the log(N) parameter in S-N curves for fatigue strength?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'log(N) = log(a) - m · log(S)'
+  section_no: 20
+  paragraph_id: B.22
+  page_no: 444
+  must_include:
+  - log(N)
+
+- id: v6_engine_seating_id
+  lang: id
+  category: rules_qa
+  question: Apa persyaratan dudukan mesin (engine seating) untuk mesin low speed?
+  coverage: uncovered
+  source_quote: 'The rigidity of the engine seating and the surrounding bottom structure must be adequate to keep the deformations of the system due to the loads within the permissible limits.'
+  section_no: 8
+  paragraph_id: C.3.1.3
+  page_no: 219
+  must_include:
+  - engine seating
+
+- id: v6_engine_seating_en
+  lang: en
+  category: rules_qa
+  question: What are the requirements for engine seating for low speed engines?
+  coverage: uncovered
+  source_quote: 'The rigidity of the engine seating and the surrounding bottom structure must be adequate to keep the deformations of the system due to the loads within the permissible limits.'
+  section_no: 8
+  paragraph_id: C.3.1.3
+  page_no: 219
+  must_include:
+  - engine seating
+
+- id: v6_strength_deck_id
+  lang: id
+  category: rules_qa
+  question: Apa definisi strength deck menurut aturan BKI?
+  coverage: uncovered
+  source_quote: 'The strength deck is the uppermost continuous deck which forms the top flange of the hull girder.'
+  section_no: 7
+  paragraph_id: A.1.3
+  page_no: 195
+  must_include:
+  - strength
+
+- id: v6_strength_deck_en
+  lang: en
+  category: rules_qa
+  question: What is the definition of strength deck according to BKI rules?
+  coverage: uncovered
+  source_quote: 'The strength deck is the uppermost continuous deck which forms the top flange of the hull girder.'
+  section_no: 7
+  paragraph_id: A.1.3
+  page_no: 195
+  must_include:
+  - strength
 
 # === OUT-OF-CORPUS / NEGATIF BERSIH (6 entri, 3 ID + 3 EN) ===
 # Topik benar-benar di luar Rules for Hull DAN tidak dirujuk dalam korpus
