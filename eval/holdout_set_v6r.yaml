@@ -1,0 +1,495 @@
+# Held-out eval set v6r (40 entries) - Build 22 source-integrity revision of v6.
+# Ini revisi INSTRUMEN EVALUASI v6, bukan held-out set independen baru.
+# Overlap dengan v6 memang disengaja (koreksi source_quote/gate/replacement).
+# Semua source_quote DITURUNKAN ULANG dari chunk PDF Supabase diverifikasi fitz.
+# Distribusi: 10 re-measure + 24 in-corpus + 6 negative (scrubber/sewage=clean OOC; ballast=unanswerable_in_context).
+# 20 ID + 20 EN.
+
+# === RE-MEASURE DETERMINISTIK (10 entri) - KEEP, source verified ===
+
+- id: v6_remeasure_depth_ratio_id
+  lang: id
+  category: lookup
+  question: Untuk kapal dengan range pelayaran unlimited, berapa rasio minimum depth H terhadap length L?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'The Rules apply to seagoing steel ships classed A100 whose breadth to depth ratio is within the range common for seagoing ships and the depth H of which is not less than: - L/16 for Unlimited Range of Service'
+  section_no: 1
+  paragraph_id: A.1
+  page_no: 17
+  must_include:
+  - L/16
+
+- id: v6_remeasure_depth_ratio_en
+  lang: en
+  category: lookup
+  question: For ships with unlimited service range, what is the minimum ratio of depth H to length L?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'The Rules apply to seagoing steel ships classed A100 whose breadth to depth ratio is within the range common for seagoing ships and the depth H of which is not less than: - L/16 for Unlimited Range of Service'
+  section_no: 1
+  paragraph_id: A.1
+  page_no: 17
+  must_include:
+  - L/16
+
+- id: v6_remeasure_hhp_id
+  lang: id
+  category: lookup
+  question: Berapa faktor pengali holding power jangkar HHP dibandingkan jangkar stockless biasa?
+  coverage: covered
+  expect_lookup: true
+  source_quote: A 'high holding power' anchor is an anchor with a holding power of at least twice that of an ordinary stockless anchor of the same mass.
+  section_no: 18
+  paragraph_id: C.4
+  page_no: 389
+  must_include:
+  - twice
+
+- id: v6_remeasure_hhp_en
+  lang: en
+  category: lookup
+  question: What is the multiplier factor for HHP anchor holding power compared to ordinary stockless anchors?
+  coverage: covered
+  expect_lookup: true
+  source_quote: A 'high holding power' anchor is an anchor with a holding power of at least twice that of an ordinary stockless anchor of the same mass.
+  section_no: 18
+  paragraph_id: C.4
+  page_no: 389
+  must_include:
+  - twice
+
+- id: v6_remeasure_rudder_c1_id
+  lang: id
+  category: lookup
+  question: Untuk bulk carrier dengan displacement di atas 50000 ton, berapa nilai faktor tipe kapal c1?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'c1 = factor for the ship type: = 1,0 in general = 0,9 for bulk carriers and tankers having a displacement of more than 50 000 ton'
+  section_no: 14
+  paragraph_id: A.100
+  page_no: 280
+  must_include:
+  - 0,9
+
+- id: v6_remeasure_rudder_c1_en
+  lang: en
+  category: lookup
+  question: For bulk carriers with displacement over 50000 tons, what is the ship type factor c1 value?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'c1 = factor for the ship type: = 1,0 in general = 0,9 for bulk carriers and tankers having a displacement of more than 50 000 ton'
+  section_no: 14
+  paragraph_id: A.100
+  page_no: 280
+  must_include:
+  - '0.9'
+
+- id: v6_remeasure_rudder_c4_id
+  lang: id
+  category: lookup
+  question: Kemudi yang berada di luar propeller jet menggunakan faktor susunan c4 berapa?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'c4 = factor for the rudder arrangement: = 1,0 for rudders in the propeller jet = 1,5 for rudders outside the propeller jet'
+  section_no: 14
+  paragraph_id: A.4.3
+  page_no: 281
+  must_include:
+  - 1,5
+
+- id: v6_remeasure_rudder_c4_en
+  lang: en
+  category: lookup
+  question: What arrangement factor c4 applies to rudders located outside the propeller jet?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'c4 = factor for the rudder arrangement: = 1,0 for rudders in the propeller jet = 1,5 for rudders outside the propeller jet'
+  section_no: 14
+  paragraph_id: A.4.3
+  page_no: 281
+  must_include:
+  - '1.5'
+
+- id: v6_remeasure_fatigue_c_id
+  lang: id
+  category: lookup
+  question: Untuk sambungan las dengan siklus tegangan variabel (spectrum A atau B), berapa faktor koreksi c?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'c = 0 for welded joints subjected to constant stress cycles (stress range spectrum C) = 0,15 welded joints subjected to variable stress cycles (corresponding to stress range spectrum A or B)'
+  section_no: 20
+  paragraph_id: B.3.2.4
+  page_no: 446
+  must_include:
+  - 0,15
+
+- id: v6_remeasure_fatigue_c_en
+  lang: en
+  category: lookup
+  question: For welded joints with variable stress cycles (spectrum A or B), what is the correction factor c?
+  coverage: covered
+  expect_lookup: true
+  source_quote: 'c = 0 for welded joints subjected to constant stress cycles (stress range spectrum C) = 0,15 welded joints subjected to variable stress cycles (corresponding to stress range spectrum A or B)'
+  section_no: 20
+  paragraph_id: B.3.2.4
+  page_no: 446
+  must_include:
+  - '0.15'
+
+# === IN-CORPUS BARU - KEEP (source verified) ===
+
+- id: v6_cold_bending_radius_id
+  lang: id
+  category: lookup
+  question: Untuk pelat dengan ketebalan 10 mm, berapa radius lentur minimum saat cold forming?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'Table 19.1 Minimum inner bending radius r: Plate thickness <=12 mm, r = 2,0 x t'
+  section_no: 19
+  paragraph_id: B.2.7.3
+  page_no: 418
+  must_include:
+  - 2,0
+
+- id: v6_cold_bending_radius_en
+  lang: en
+  category: lookup
+  question: For plates with 10 mm thickness, what is the minimum bending radius during cold forming?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: 'Table 19.1 Minimum inner bending radius r: Plate thickness <=12 mm, r = 2,0 x t'
+  section_no: 19
+  paragraph_id: B.2.7.3
+  page_no: 418
+  must_include:
+  - '2.0'
+
+- id: v6_bulk_carrier_cargo_density_id
+  lang: id
+  category: rules_qa
+  question: Apa yang dimaksud dengan cargo density dalam konteks bulk carrier?
+  coverage: uncovered
+  source_quote: For ships occasionally or regularly carrying heavy cargo such as iron ore phosphate and not intended to get the notation BULK CARRIER or ORE CARRIER strengthenings according to the following regulations are recommended
+  section_no: 23
+  paragraph_id: A.1.4.1
+  page_no: 547
+  must_include:
+  - density
+
+- id: v6_bulk_carrier_cargo_density_en
+  lang: en
+  category: rules_qa
+  question: What is meant by cargo density in the context of bulk carriers?
+  coverage: uncovered
+  source_quote: For ships occasionally or regularly carrying heavy cargo such as iron ore phosphate and not intended to get the notation BULK CARRIER or ORE CARRIER strengthenings according to the following regulations are recommended
+  section_no: 23
+  paragraph_id: A.1.4.1
+  page_no: 547
+  must_include:
+  - density
+
+# === IN-CORPUS BARU - CORRECT (source verified, metadata fixed) ===
+
+- id: v6_tank_fuel_spillage_id
+  lang: id
+  category: rules_qa
+  question: Apa persyaratan untuk mencegah tumpahan bahan bakar dari tangki?
+  coverage: uncovered
+  source_quote: No oil fuel tank is to be situated where spillage or leakage there from can constitute a fire or explosion hazard by falling on heated surfaces.
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 258
+  must_include:
+  - tumpahan
+
+- id: v6_tank_fuel_spillage_en
+  lang: en
+  category: rules_qa
+  question: What are the requirements to prevent fuel oil spillage from tanks?
+  coverage: uncovered
+  source_quote: No oil fuel tank is to be situated where spillage or leakage there from can constitute a fire or explosion hazard by falling on heated surfaces.
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 258
+  must_include:
+  - spillage
+
+- id: v6_wind_water_pressure_deckhouse_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana tekanan angin dan air diperhitungkan untuk desain deckhouse?
+  coverage: uncovered
+  source_quote: 'For designing the deck beams and girders of the deck on which the deckhouse is located the following loads are to be taken: 1) Below the deckhouse: Load pu; 2) Outside the deckhouse: Load pD; 3) Bearing forces'
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 340
+  must_include:
+  - deckhouse
+
+- id: v6_wind_water_pressure_deckhouse_en
+  lang: en
+  category: rules_qa
+  question: How are wind and water pressure loads considered for deckhouse design?
+  coverage: uncovered
+  source_quote: 'For designing the deck beams and girders of the deck on which the deckhouse is located the following loads are to be taken: 1) Below the deckhouse: Load pu; 2) Outside the deckhouse: Load pD; 3) Bearing forces'
+  section_no: 16
+  paragraph_id: E.3.2
+  page_no: 340
+  must_include:
+  - deckhouse
+
+- id: v6_pillar_safety_factor_id
+  lang: id
+  category: lookup
+  question: Berapa safety factor S untuk pilar di area akomodasi?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: S = safety factor = 2,0 in general = 1,66 in accommodation area
+  section_no: 10
+  paragraph_id: D.100
+  page_no: 245
+  must_include:
+  - 1,66
+
+- id: v6_pillar_safety_factor_en
+  lang: en
+  category: lookup
+  question: What is the safety factor S for pillars in accommodation areas?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: S = safety factor = 2,0 in general = 1,66 in accommodation area
+  section_no: 10
+  paragraph_id: D.100
+  page_no: 245
+  must_include:
+  - '1.66'
+
+- id: v6r_fore_hooks_id
+  lang: id
+  category: rules_qa
+  question: Apa yang digunakan untuk memperkuat plate stems dan bulbous bows?
+  coverage: uncovered
+  source_quote: Plate stems and bulbous bows have to be stiffened by fore-hooks and/or cant frames. In case of large and long bulbous bows, see Section 9, A.5.3.3.
+  section_no: 13
+  paragraph_id: B.2.3
+  page_no: 269
+  must_include:
+  - fore-hooks
+
+- id: v6r_fore_hooks_en
+  lang: en
+  category: rules_qa
+  question: What is used to stiffen plate stems and bulbous bows?
+  coverage: uncovered
+  source_quote: Plate stems and bulbous bows have to be stiffened by fore-hooks and/or cant frames. In case of large and long bulbous bows, see Section 9, A.5.3.3.
+  section_no: 13
+  paragraph_id: B.2.3
+  page_no: 269
+  must_include:
+  - fore-hooks
+
+- id: v6_breakwater_id
+  lang: id
+  category: rules_qa
+  question: Apa tujuan pemasangan breakwater di geladak depan?
+  coverage: uncovered
+  source_quote: If cargo is intended to be carried on deck forward of x/L = 0,85 a breakwater or an equivalent protecting structure is to be fitted
+  section_no: 16
+  paragraph_id: F.4.2.5
+  page_no: 342
+  must_include:
+  - breakwater
+
+- id: v6_breakwater_en
+  lang: en
+  category: rules_qa
+  question: What is the purpose of installing a breakwater on the forward deck?
+  coverage: uncovered
+  source_quote: If cargo is intended to be carried on deck forward of x/L = 0,85 a breakwater or an equivalent protecting structure is to be fitted
+  section_no: 16
+  paragraph_id: F.4.2.5
+  page_no: 342
+  must_include:
+  - breakwater
+
+- id: v6_fatigue_sn_curve_id
+  lang: id
+  category: lookup
+  question: Apa parameter log(N) dalam kurva S-N untuk fatigue strength?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The S-N curves represent section wise linear relationships between log and log(N) = 7,0 + m . Q
+  section_no: 20
+  paragraph_id: B.22
+  page_no: 444
+  must_include:
+  - log(N)
+
+- id: v6_fatigue_sn_curve_en
+  lang: en
+  category: lookup
+  question: What is the log(N) parameter in S-N curves for fatigue strength?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: The S-N curves represent section wise linear relationships between log and log(N) = 7,0 + m . Q
+  section_no: 20
+  paragraph_id: B.22
+  page_no: 444
+  must_include:
+  - log(N)
+
+- id: v6_engine_seating_id
+  lang: id
+  category: rules_qa
+  question: Apa persyaratan dudukan mesin (engine seating) untuk mesin low speed?
+  coverage: uncovered
+  source_quote: The rigidity of the engine seating and the surrounding bottom structure must be adequate to keep the deformations of the system due to the loads within the permissible limits.
+  section_no: 8
+  paragraph_id: C.3.1.3
+  page_no: 219
+  must_include:
+  - engine seating
+
+- id: v6_engine_seating_en
+  lang: en
+  category: rules_qa
+  question: What are the requirements for engine seating for low speed engines?
+  coverage: uncovered
+  source_quote: The rigidity of the engine seating and the surrounding bottom structure must be adequate to keep the deformations of the system due to the loads within the permissible limits.
+  section_no: 8
+  paragraph_id: C.3.1.3
+  page_no: 219
+  must_include:
+  - engine seating
+
+- id: v6_strength_deck_id
+  lang: id
+  category: rules_qa
+  question: Apa definisi strength deck menurut aturan BKI?
+  coverage: uncovered
+  source_quote: The strength deck is the uppermost continuous deck which forms the top flange of the hull girder
+  section_no: 7
+  paragraph_id: A.1.3
+  page_no: 195
+  must_include:
+  - strength
+
+- id: v6_strength_deck_en
+  lang: en
+  category: rules_qa
+  question: What is the definition of strength deck according to BKI rules?
+  coverage: uncovered
+  source_quote: The strength deck is the uppermost continuous deck which forms the top flange of the hull girder
+  section_no: 7
+  paragraph_id: A.1.3
+  page_no: 195
+  must_include:
+  - strength
+
+# === IN-CORPUS BARU - REPLACE (source invalid, replaced with verified topics) ===
+# Replacement mapping: fillet_weld_throat pair -> cofferdam_separation pair
+#                      rudder_pintle_diameter pair -> ventilation_duct pair
+
+- id: v6r_cofferdam_separation_id
+  lang: id
+  category: rules_qa
+  question: Bagaimana tangki bahan bakar minyak harus dipisahkan dari tangki untuk cairan lain?
+  coverage: uncovered
+  source_quote: Fuel oil tanks are to be separated from tanks for lubricating oil, hydraulic oil, thermal oil, vegetable oil, feed water, condensate water and potable water by cofferdams.
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 258
+  must_include:
+  - cofferdam
+
+- id: v6r_cofferdam_separation_en
+  lang: en
+  category: rules_qa
+  question: How must fuel oil tanks be separated from tanks for other liquids?
+  coverage: uncovered
+  source_quote: Fuel oil tanks are to be separated from tanks for lubricating oil, hydraulic oil, thermal oil, vegetable oil, feed water, condensate water and potable water by cofferdams.
+  section_no: 12
+  paragraph_id: A.5.2.1
+  page_no: 258
+  must_include:
+  - cofferdams
+
+- id: v6r_ventilation_duct_id
+  lang: id
+  category: lookup
+  question: Berapa luas penampang bebas minimum saluran ventilasi yang menembus sekat kelas A?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Where ventilation ducts with a free cross-sectional area not exceeding 0,02 m2 pass through A class divisions the openings shall be lined with steel sheet sleeves
+  section_no: 22
+  paragraph_id: B.9.8.1
+  page_no: 498
+  must_include:
+  - 0,02
+
+- id: v6r_ventilation_duct_en
+  lang: en
+  category: lookup
+  question: What is the minimum free cross-sectional area for ventilation ducts penetrating A class divisions?
+  coverage: uncovered
+  expect_lookup: true
+  source_quote: Where ventilation ducts with a free cross-sectional area not exceeding 0,02 m2 pass through A class divisions the openings shall be lined with steel sheet sleeves
+  section_no: 22
+  paragraph_id: B.9.8.1
+  page_no: 498
+  must_include:
+  - '0.02'
+
+# === NEGATIVE / UNANSWERABLE-IN-CONTEXT (6 entri) ===
+# scrubber + sewage = clean OOC (0 chunks verified). ballast = unanswerable_in_context (topic present but specific rate not in PDF)
+
+- id: v6_ooc_scrubber_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas minimum sistem scrubber untuk pembersihan gas buang?
+  coverage: ooc
+  must_include:
+  - tidak
+
+- id: v6_ooc_scrubber_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum capacity for ship exhaust gas scrubber systems?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+
+- id: v6_ooc_sewage_id
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas minimum sistem pengolahan limbah kapal?
+  coverage: ooc
+  must_include:
+  - tidak
+
+- id: v6_ooc_sewage_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum capacity for ship sewage treatment systems?
+  coverage: ooc
+  must_include:
+  - context is insufficient
+
+- id: v6_ooc_ballast_id
+  lang: id
+  category: rules_qa
+  question: Berapa laju pertukaran air balas minimum menurut konvensi BWM?
+  coverage: unanswerable_in_context
+  source_quote: Ballast water exchange referenced in Sec 5 A.4.4.1 but specific minimum exchange rate value not present in BKI Rules for Hull PDF
+  must_include:
+  - tidak
+
+- id: v6_ooc_ballast_en
+  lang: en
+  category: rules_qa
+  question: What is the minimum ballast water exchange rate according to BWM Convention?
+  coverage: unanswerable_in_context
+  source_quote: Ballast water exchange referenced in Sec 5 A.4.4.1 but specific minimum exchange rate value not present in BKI Rules for Hull PDF
+  must_include:
+  - not possible to determine
