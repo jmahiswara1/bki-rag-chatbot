@@ -276,27 +276,29 @@ class TestCondenseCache:
             "breakwater di GELADAK DEPAN kapal",
             "breakwater on the dock"
         )
-        assert "forward deck" in r
+        assert "on the forward deck" in r
+        assert "dock" not in r
 
     def test_whitespace_variant_trigger(self):
         r = canonicalize_condensed_query(
             "breakwater di  geladak  depan  kapal",
             "breakwater on the dock"
         )
-        assert "forward deck" in r
+        assert "on the forward deck" in r
+        assert "dock" not in r
 
-    def test_v2_cached_bad_bulwark_not_used(self):
-        """Version 3 hash ≠ version 2 hash, so v2 cached rows are misses."""
+    def test_v2_v3_cached_bad_rows_stale_with_v4(self):
+        """v2 and v3 cached rows are misses under v4."""
         q = "Apa persyaratan tinggi bulwark di geladak depan?"
         norm = _normalize_for_cache(q)
-        v2_hash = hashlib.sha256(
-            f"2|id|default|{norm}".encode()
-        ).hexdigest()
-        v3_hash = _cache_hash("id", "default", norm)
-        assert v2_hash != v3_hash
+        v2_hash = hashlib.sha256(f"2|id|default|{norm}".encode()).hexdigest()
+        v3_hash = hashlib.sha256(f"3|id|default|{norm}".encode()).hexdigest()
+        v4_hash = _cache_hash("id", "default", norm)
+        assert v2_hash != v4_hash
+        assert v3_hash != v4_hash
 
-    def test_v3_miss_hit_identical(self):
-        """Cache miss produces canonical output; cache hit returns same."""
+    def test_v4_miss_hit_identical(self):
+        """Cache v4: miss produces canonical 'on the forward deck'; hit returns same."""
         orig = "Apa persyaratan tinggi bulwark di geladak depan?"
         en_raw = "what are the height requirements for bulwark on the dock"
         en_canon = canonicalize_condensed_query(orig, en_raw)
@@ -323,19 +325,21 @@ class TestCondenseCache:
                 orig, [], temperature=0.0, mode="default", lang="id"
             )
             assert r_miss == r_hit
-            assert "forward deck" in r_miss
+            assert "on the forward deck" in r_miss
+            assert "in front of" not in r_miss
+            assert "dock" not in r_miss
             assert "bulwark" in r_miss
             assert "bilge keel" not in r_miss
 
     def test_cache_hit_bad_en_query_stale_with_version_bump(self):
-        """v2 cached rows are misses under v3 (query kept 'geladak depan' pure)."""
+        """v3 cached rows with bad semantics are misses under v4."""
         q = "Apa tujuan pemasangan breakwater di geladak depan?"
         norm = _normalize_for_cache(q)
-        old_hash = hashlib.sha256(
-            f"2|id|default|{norm}".encode()
+        v3_hash = hashlib.sha256(
+            f"3|id|default|{norm}".encode()
         ).hexdigest()
         current_hash = _cache_hash("id", "default", _normalize_for_cache(q))
-        assert old_hash != current_hash
+        assert v3_hash != current_hash
 
     def test_cache_hit_identical_to_miss(self):
         """Cache put stores same value that miss returns."""
@@ -409,7 +413,44 @@ class TestCondenseCache:
             assert result == "live result from LLM"
             mock_chat.assert_called_once()
 
-    def test_non_deck_query_unchanged_1(self):
+    def test_semantic_breakwater_on_forward_deck_not_in_front(self):
+        """'in front of the dock' + geladak depan → exactly 'on the forward deck'."""
+        r = canonicalize_condensed_query(
+            "Apa tujuan pemasangan breakwater di geladak depan?",
+            "what is the purpose of installing a breakwater in front of the dock"
+        )
+        assert "on the forward deck" in r
+        assert "in front of" not in r
+        assert "dock" not in r
+        assert "breakwater" in r
+
+    def test_semantic_in_front_of_forward_deck_fixed(self):
+        """LLM produced 'in front of the forward deck' → must become 'on the forward deck'."""
+        r = canonicalize_condensed_query(
+            "Apa tujuan pemasangan breakwater di geladak depan?",
+            "what is the purpose of installing a breakwater in front of the forward deck"
+        )
+        assert "on the forward deck" in r
+        assert "in front of" not in r
+
+    def test_semantic_bulwark_on_forward_deck(self):
+        r = canonicalize_condensed_query(
+            "Apa persyaratan tinggi bulwark di geladak depan?",
+            "what are the height requirements for bulwark on the dock"
+        )
+        assert "on the forward deck" in r
+        assert "dock" not in r
+        assert "bulwark" in r
+        assert "bilge keel" not in r
+
+    def test_semantic_di_depan_dermaga_stays_intact(self):
+        """'di depan dermaga' without geladak depan → 'in front of the dock' intact."""
+        r = canonicalize_condensed_query(
+            "apa yang berada di depan dermaga?",
+            "what is located in front of the dock"
+        )
+        assert "in front of the dock" in r
+        assert "forward deck" not in r
         """Technical query without geladak depan → canonicalization is a no-op."""
         r = canonicalize_condensed_query(
             "berapa ketebalan minimum pelat lambung untuk kapal tanker?",
