@@ -79,7 +79,7 @@ class ChainStreamResult:
 # makes retrieval fully deterministic across processes (TUI + main.py).
 # ---------------------------------------------------------------------------
 
-CONDENSE_CACHE_VERSION = 2
+CONDENSE_CACHE_VERSION = 3
 
 _SQL_CACHE_GET = (
     "SELECT en_query FROM query_condense_cache "
@@ -140,8 +140,60 @@ def _condense_cache_put(query: str, lang: str, mode: str, en_query: str) -> None
 
 
 # ---------------------------------------------------------------------------
-# Pipeline
+# Post-condense canonicalization — deterministic locale fix after LLM condense.
+# Build 25: geladak depan → forward deck is moved OUT of pre-LLM glossary
+# into this source-aware post-pass. The LLM receives pure Indonesian so it
+# does not get confused by mixed ID/EN input (which was the trigger for
+# bulwark → bilge keel hallucination). After the LLM produces an English
+# condensed query, we scan the ORIGINAL query for the phrase "geladak depan"
+# and, if found, fix up location expressions the LLM may have hallucinated
+# (e.g. "on the dock", "in front of the deck") to "forward deck".
 # ---------------------------------------------------------------------------
+
+# Regex that matches common LLM location mistranslations for geladak depan.
+# These are the hallmarks of the qwen2.5:3b "dock" / "in front of" fallacy.
+# The pattern is intentionally narrow to avoid overwriting correct EN uses.
+_GELADAK_DEPAN_TRIGGER = re.compile(r"\bgeladak\s+depan\b", re.IGNORECASE)
+
+_DOCK_FALLACY = re.compile(
+    r"\b"
+    r"(?P<prefix>on|at|in\s+front\s+of|in)\s+"
+    r"(?P<loc>the\s+)?d[eo]ck\b"
+    r"(?P<suffix>\s+(area|region|zone|plate|plating|level|surface))?"
+    r"\b",
+    re.IGNORECASE,
+)
+
+_FRONT_DECK_FALLACY = re.compile(
+    r"\bin\s+front\s+of\s+(the\s+)?deck\b",
+    re.IGNORECASE,
+)
+
+_ALREADY_FORWARD_DECK = re.compile(
+    r"\bforward\s+deck\b",
+    re.IGNORECASE,
+)
+
+
+def canonicalize_condensed_query(original_query: str, en_query: str) -> str:
+    """Deterministic post-condense canonicalization for geladak depan locale.
+
+    Only activates when the original Indonesian query contains the exact
+    phrase 'geladak depan'. Without this trigger the en_query is returned
+    untouched — no global word replacement, no topic-noun scan.
+
+    When triggered, replaces LLM hallucination patterns (on the dock, at
+    the dock, in front of the deck) with the canonical 'forward deck'.
+    Already-correct 'forward deck' is left unchanged (idempotent).
+    """
+    if not _GELADAK_DEPAN_TRIGGER.search(original_query):
+        return en_query
+
+    out = en_query
+    if not _ALREADY_FORWARD_DECK.search(out):
+        out = _DOCK_FALLACY.sub(r"\g<prefix> the forward deck\g<suffix>", out)
+        out = _FRONT_DECK_FALLACY.sub("forward deck", out)
+    return out
 
 
 def _pre_answer_pipeline(
@@ -710,7 +762,7 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     if mode is not None and lang is not None:
         cached = _condense_cache_get(query, lang, mode)
         if cached is not None:
-            return cached
+            return canonicalize_condensed_query(query, cached)
     history = history or []  # accept None from direct callers (e.g. test scripts)
     # Deterministic ID->EN substitution for BKI domain phrases before the LLM
     # call. Keeps the corpus-verified terms (e.g. 'sekat tubrukan' ->
@@ -731,6 +783,7 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     )
     result = _clean_one_liner(out)
     en_query = result if result else query_pre  # fall back to substituted query if LLM empty
+    en_query = canonicalize_condensed_query(query, en_query)
     if mode is not None and lang is not None:
         _condense_cache_put(query, lang, mode, en_query)
     return en_query

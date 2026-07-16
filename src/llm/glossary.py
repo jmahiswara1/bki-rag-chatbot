@@ -25,7 +25,6 @@ GLOSSARY = (
     ("gading besar", "web frame"),
     ("senta sisi", "stringer"),
     ("senta", "stringer"),
-    ("geladak depan", "forward deck"),
     ("pelat geladak", "deck plating"),
     ("pelat dek", "deck plating"),
     ("gading", "frame"),
