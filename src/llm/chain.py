@@ -79,7 +79,7 @@ class ChainStreamResult:
 # makes retrieval fully deterministic across processes (TUI + main.py).
 # ---------------------------------------------------------------------------
 
-CONDENSE_CACHE_VERSION = 3
+CONDENSE_CACHE_VERSION = 4
 
 _SQL_CACHE_GET = (
     "SELECT en_query FROM query_condense_cache "
@@ -152,24 +152,32 @@ def _condense_cache_put(query: str, lang: str, mode: str, en_query: str) -> None
 
 # Regex that matches common LLM location mistranslations for geladak depan.
 # These are the hallmarks of the qwen2.5:3b "dock" / "in front of" fallacy.
-# The pattern is intentionally narrow to avoid overwriting correct EN uses.
+# Each pattern matches the ENTIRE locative phrase so we can replace it with
+# the canonical "on the forward deck" — not just swap the noun while keeping
+# the wrong preposition.
+
 _GELADAK_DEPAN_TRIGGER = re.compile(r"\bgeladak\s+depan\b", re.IGNORECASE)
 
-_DOCK_FALLACY = re.compile(
-    r"\b"
-    r"(?P<prefix>on|at|in\s+front\s+of|in)\s+"
-    r"(?P<loc>the\s+)?d[eo]ck\b"
-    r"(?P<suffix>\s+(area|region|zone|plate|plating|level|surface))?"
-    r"\b",
+# Preposition + "the dock" (captures: on/at/in front of/in + the dock)
+_DOCK_PHRASE = re.compile(
+    r"\b(?:in\s+front\s+of|on|at|in)\s+(?:the\s+)?[dw]ock\b",
     re.IGNORECASE,
 )
 
-_FRONT_DECK_FALLACY = re.compile(
-    r"\bin\s+front\s+of\s+(the\s+)?deck\b",
+# "in front of the deck" (deck without "forward" qualifier)
+_FRONT_DECK_PHRASE = re.compile(
+    r"\bin\s+front\s+of\s+(?:the\s+)?deck\b",
     re.IGNORECASE,
 )
 
-_ALREADY_FORWARD_DECK = re.compile(
+# "in front of the forward deck" — prep is correct (in front of) but
+# semantically wrong vs original "di geladak depan" which means ON the deck
+_FRONT_FWD_DECK = re.compile(
+    r"\bin\s+front\s+of\s+(?:the\s+)?forward\s+deck\b",
+    re.IGNORECASE,
+)
+
+_FORWARD_DECK = re.compile(
     r"\bforward\s+deck\b",
     re.IGNORECASE,
 )
@@ -182,17 +190,21 @@ def canonicalize_condensed_query(original_query: str, en_query: str) -> str:
     phrase 'geladak depan'. Without this trigger the en_query is returned
     untouched — no global word replacement, no topic-noun scan.
 
-    When triggered, replaces LLM hallucination patterns (on the dock, at
-    the dock, in front of the deck) with the canonical 'forward deck'.
-    Already-correct 'forward deck' is left unchanged (idempotent).
+    When triggered, replaces entire locative phrases that the LLM may have
+    hallucinated (on/at/in front of the dock, in front of the deck) with
+    the canonical 'on the forward deck'. Already-correct 'on the forward deck'
+    or 'on forward deck' is left unchanged (idempotent).
     """
     if not _GELADAK_DEPAN_TRIGGER.search(original_query):
         return en_query
 
     out = en_query
-    if not _ALREADY_FORWARD_DECK.search(out):
-        out = _DOCK_FALLACY.sub(r"\g<prefix> the forward deck\g<suffix>", out)
-        out = _FRONT_DECK_FALLACY.sub("forward deck", out)
+    if _FRONT_FWD_DECK.search(out):
+        out = _FRONT_FWD_DECK.sub("on the forward deck", out)
+    elif _FRONT_DECK_PHRASE.search(out):
+        out = _FRONT_DECK_PHRASE.sub("on the forward deck", out)
+    elif _DOCK_PHRASE.search(out) and not _FORWARD_DECK.search(out):
+        out = _DOCK_PHRASE.sub("on the forward deck", out)
     return out
 
 
