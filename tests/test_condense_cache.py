@@ -154,3 +154,106 @@ class TestCondenseCache:
                 assert result == "live en query"
                 mock_get.assert_not_called()
                 mock_put.assert_not_called()
+
+    def test_cache_hit_stale_version_miss(self):
+        """Old-version cache rows are ignored; hit only on matching version."""
+        old_hash = hashlib.sha256(
+            f"1|id|default|apa tujuan pemasangan breakwater di forward deck?".encode()
+        ).hexdigest()
+        new_hash = _cache_hash(
+            "id", "default",
+            _normalize_for_cache("apa tujuan pemasangan breakwater di forward deck?")
+        )
+        assert old_hash != new_hash
+
+    def test_cache_version_bump_changes_hash(self):
+        """After version bump, same text/lang/mode produces a different hash."""
+        q = "Apa tujuan pemasangan breakwater di geladak depan?"
+        norm = _normalize_for_cache(q)
+        h_current = _cache_hash("id", "default", norm)
+        old = f"1|id|default|{norm}"
+        h_old = hashlib.sha256(old.encode()).hexdigest()
+        assert h_current != h_old
+
+    def test_cache_miss_with_forward_deck_glossary(self):
+        """Cache miss -> glossary applied -> en_query has 'forward deck'."""
+        with patch("src.llm.chain._condense_cache_get") as mock_get, \
+             patch("src.llm.chain._condense_cache_put") as mock_put, \
+             patch("src.llm.chain.chat") as mock_chat, \
+             patch("src.llm.chain._clean_one_liner") as mock_clean:
+            mock_get.return_value = None
+            mock_chat.return_value = "what is the purpose of installing a breakwater on the forward deck"
+            mock_clean.return_value = "what is the purpose of installing a breakwater on the forward deck"
+
+            result = _translate_condense(
+                "Apa tujuan pemasangan breakwater di geladak depan?",
+                [], temperature=0.0, mode="default", lang="id"
+            )
+            assert "forward deck" in result
+            assert "in front of" not in result
+            mock_put.assert_called_once()
+
+    def test_cache_hit_bad_en_query_stale_with_version_bump(self):
+        """Old-version cache row with bad en_query is a miss due to version mismatch."""
+        q = "Apa tujuan pemasangan breakwater di geladak depan?"
+        old_hash = hashlib.sha256(
+            f"1|id|default|{_normalize_for_cache(q)}".encode()
+        ).hexdigest()
+        current_hash = _cache_hash("id", "default", _normalize_for_cache(q))
+        assert old_hash != current_hash
+
+    def test_cache_hit_identical_to_miss(self):
+        """Cache put stores same value that miss returns."""
+        en_query = "what is the purpose of installing a breakwater on the forward deck"
+        with patch("src.llm.chain._condense_cache_get") as mock_get, \
+             patch("src.llm.chain._condense_cache_put") as mock_put:
+            mock_get.return_value = None
+
+            with patch("src.llm.chain.chat") as mock_chat, \
+                 patch("src.llm.chain._clean_one_liner") as mock_clean:
+                mock_chat.return_value = en_query
+                mock_clean.return_value = en_query
+
+                result_miss = _translate_condense(
+                    "Apa tujuan pemasangan breakwater di geladak depan?",
+                    [], temperature=0.0, mode="default", lang="id"
+                )
+                stored = mock_put.call_args[0][3]
+                assert result_miss == en_query
+                assert stored == en_query
+
+    def test_idempotent_condense_cache(self):
+        """Double call with same query: first miss stores, second hit returns same."""
+        en_query = "what is the purpose of installing a breakwater on the forward deck"
+        call_count = 0
+
+        def fake_get(q, lang, mode):
+            nonlocal call_count
+            if call_count == 0:
+                return None
+            return en_query
+
+        captured = {}
+
+        def fake_put(q, lang, mode, eq):
+            captured["stored"] = eq
+
+        with patch("src.llm.chain._condense_cache_get", side_effect=fake_get), \
+             patch("src.llm.chain._condense_cache_put", side_effect=fake_put), \
+             patch("src.llm.chain.chat") as mock_chat, \
+             patch("src.llm.chain._clean_one_liner") as mock_clean:
+            mock_chat.return_value = en_query
+            mock_clean.return_value = en_query
+
+            r1 = _translate_condense(
+                "Apa tujuan pemasangan breakwater di geladak depan?",
+                [], temperature=0.0, mode="default", lang="id"
+            )
+            call_count = 1
+            r2 = _translate_condense(
+                "Apa tujuan pemasangan breakwater di geladak depan?",
+                [], temperature=0.0, mode="default", lang="id"
+            )
+            assert r1 == r2
+            assert "forward deck" in r1
+            assert "forward deck" in r2

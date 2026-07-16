@@ -88,6 +88,70 @@ def test_engsel_to_hinged():
     print("PASS: test_engsel_to_hinged")
 
 
+def test_geladak_depan_to_forward_deck():
+    out = apply_glossary("Apa tujuan pemasangan breakwater di geladak depan?")
+    assert "forward deck" in out
+    assert "in front of" not in out
+    print("PASS: test_geladak_depan_to_forward_deck")
+
+
+def test_geladak_depan_casefold():
+    out = apply_glossary("breakwater di GELADAK DEPAN kapal")
+    assert "forward deck" in out
+    assert "GELADAK" not in out
+    print("PASS: test_geladak_depan_casefold")
+
+
+def test_geladak_depan_whitespace():
+    out = apply_glossary("breakwater di  geladak  depan  kapal")
+    assert "geladak depan" not in out
+    print("PASS: test_geladak_depan_whitespace")
+
+
+def test_di_depan_dermaga_not_forward_deck():
+    out = apply_glossary("apa yang berada di depan dermaga?")
+    assert "forward deck" not in out
+    assert "depan" in out
+    print("PASS: test_di_depan_dermaga_not_forward_deck")
+
+
+def test_di_depan_kapal_not_forward_deck():
+    out = apply_glossary("struktur di depan kapal")
+    assert "forward deck" not in out
+    assert "depan" in out
+    print("PASS: test_di_depan_kapal_not_forward_deck")
+
+
+def test_forward_deck_en_unchanged():
+    out = apply_glossary("what is the purpose of a breakwater on the forward deck")
+    assert "forward deck" in out
+    assert len(out) == len("what is the purpose of a breakwater on the forward deck")
+    print("PASS: test_forward_deck_en_unchanged")
+
+
+def test_idempotent_geladak_depan():
+    first = apply_glossary("pemasangan breakwater di geladak depan kapal")
+    second = apply_glossary(first)
+    assert first == second
+    print("PASS: test_idempotent_geladak_depan")
+
+
+def test_unrelated_technical_query_unchanged_1():
+    q = "berapa ketebalan minimum pelat lambung untuk kapal tanker?"
+    out = apply_glossary(q)
+    assert "forward deck" not in out
+    assert "aft deck" not in out
+    print("PASS: test_unrelated_technical_query_unchanged_1")
+
+
+def test_unrelated_technical_query_unchanged_2():
+    q = "apa persyaratan sistem bilga untuk kapal penumpang?"
+    out = apply_glossary(q)
+    assert "forward deck" not in out
+    assert "aft deck" not in out
+    print("PASS: test_unrelated_technical_query_unchanged_2")
+
+
 if __name__ == "__main__":
     test_bare_tinggi_not_freeboard()
     test_tinggi_bebas_to_freeboard()
@@ -103,4 +167,13 @@ if __name__ == "__main__":
     test_modulus_penampang_to_section_modulus()
     test_penampang_alone_to_section()
     test_engsel_to_hinged()
-    print("\nAll 14 tests passed!")
+    test_geladak_depan_to_forward_deck()
+    test_geladak_depan_casefold()
+    test_geladak_depan_whitespace()
+    test_di_depan_dermaga_not_forward_deck()
+    test_di_depan_kapal_not_forward_deck()
+    test_forward_deck_en_unchanged()
+    test_idempotent_geladak_depan()
+    test_unrelated_technical_query_unchanged_1()
+    test_unrelated_technical_query_unchanged_2()
+    print(f"\nAll {len([f for f in dir() if f.startswith('test_')])} tests passed!")
