@@ -88,24 +88,30 @@ def test_engsel_to_hinged():
     print("PASS: test_engsel_to_hinged")
 
 
-def test_geladak_depan_to_forward_deck():
+def test_geladak_depan_no_longer_substituted():
+    # Build 25: geladak depan removed from pre-LLM glossary to avoid
+    # mixed ID/EN input that triggers bulwark→bilge keel hallucination.
+    # Post-condense canonicalization handles this deterministically instead.
     out = apply_glossary("Apa tujuan pemasangan breakwater di geladak depan?")
-    assert "forward deck" in out
-    assert "in front of" not in out
-    print("PASS: test_geladak_depan_to_forward_deck")
+    assert "geladak depan" in out
+    assert "forward deck" not in out
+    print("PASS: test_geladak_depan_no_longer_substituted")
 
 
-def test_geladak_depan_casefold():
+def test_geladak_depan_casefold_no_longer_substituted():
     out = apply_glossary("breakwater di GELADAK DEPAN kapal")
-    assert "forward deck" in out
-    assert "GELADAK" not in out
-    print("PASS: test_geladak_depan_casefold")
+    assert "geladak depan" in out.lower()
+    assert "forward deck" not in out
+    print("PASS: test_geladak_depan_casefold_no_longer_substituted")
 
 
-def test_geladak_depan_whitespace():
+def test_geladak_depan_whitespace_no_longer_substituted():
     out = apply_glossary("breakwater di  geladak  depan  kapal")
-    assert "geladak depan" not in out
-    print("PASS: test_geladak_depan_whitespace")
+    # geladak depan is no longer in glossary; confirm phrase is still in output
+    assert "geladak" in out
+    assert "depan" in out
+    assert "forward deck" not in out
+    print("PASS: test_geladak_depan_whitespace_no_longer_substituted")
 
 
 def test_di_depan_dermaga_not_forward_deck():
@@ -130,9 +136,11 @@ def test_forward_deck_en_unchanged():
 
 
 def test_idempotent_geladak_depan():
+    # geladak depan is no longer in glossary; still idempotent
     first = apply_glossary("pemasangan breakwater di geladak depan kapal")
     second = apply_glossary(first)
     assert first == second
+    assert "geladak depan" in first
     print("PASS: test_idempotent_geladak_depan")
 
 
@@ -167,9 +175,9 @@ if __name__ == "__main__":
     test_modulus_penampang_to_section_modulus()
     test_penampang_alone_to_section()
     test_engsel_to_hinged()
-    test_geladak_depan_to_forward_deck()
-    test_geladak_depan_casefold()
-    test_geladak_depan_whitespace()
+    test_geladak_depan_no_longer_substituted()
+    test_geladak_depan_casefold_no_longer_substituted()
+    test_geladak_depan_whitespace_no_longer_substituted()
     test_di_depan_dermaga_not_forward_deck()
     test_di_depan_kapal_not_forward_deck()
     test_forward_deck_en_unchanged()

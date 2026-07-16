@@ -119,7 +119,7 @@ _TRANSLATIONS: dict[str, str] = {
 }
 
 
-def _fake_translate(query, history, *, temperature) -> str:
+def _fake_translate(query, history, *, temperature, mode=None, lang=None) -> str:
     return _TRANSLATIONS.get(query, query)
 
 
@@ -284,7 +284,7 @@ def test_chain_lookup_ambiguous_fire_door_falls_back():
     with patch.multiple(
         "src.llm.chain",
         _get_lookup_rules=lambda: list(_FIXTURE_RULES),
-            _translate_condense=lambda q, h, *, temperature: q,
+                _translate_condense=lambda q, h, *, temperature, mode=None, lang=None: q,
         retrieve_context=fake_retrieve,
         _answer=fake_answer,
         _answer_fallback_non_stream=fake_answer,
