@@ -79,7 +79,7 @@ class ChainStreamResult:
 # makes retrieval fully deterministic across processes (TUI + main.py).
 # ---------------------------------------------------------------------------
 
-CONDENSE_CACHE_VERSION = 1
+CONDENSE_CACHE_VERSION = 2
 
 _SQL_CACHE_GET = (
     "SELECT en_query FROM query_condense_cache "
