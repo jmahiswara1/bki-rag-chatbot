@@ -18,6 +18,7 @@ from src.llm.intent import classify, classify_with_llm
 from src.llm.language import detect_language
 from src.llm.modes import MODES
 from src.retrieval.query import retrieve_context
+from src.retrieval.table_selector import select_table_row
 
 
 @dataclass
@@ -54,6 +55,7 @@ class PipelineState:
     short_circuit_msg: str = ""
     is_pre_answer_only: bool = False
     lookup_match: object = None
+    table_evidence: str = ""  # selected table row evidence for context
 
 
 @dataclass
@@ -374,6 +376,26 @@ def _pre_answer_pipeline(
     )
     timings["retrieve"] = time.time() - t
 
+    # 6.5. deterministic table-row selection (when top source is a table)
+    table_evidence = ""
+    if en_query and candidates and any(c.content_type == "table" for c in candidates[:3]):
+        en_lower = en_query.lower()
+        has_numeric = any(ch.isdigit() for ch in en_lower)
+        if has_numeric:
+            for c in candidates:
+                if c.content_type != "table":
+                    continue
+                tag = f"[Sec {c.section_no}"
+                if c.paragraph_id:
+                    tag += f" | {c.paragraph_id}"
+                if c.table_no:
+                    tag += f" | Table {c.table_no}"
+                tag += f" | p.{c.page_start}]" if c.page_start == c.page_end else f" | pp.{c.page_start}-{c.page_end}]"
+                sel = select_table_row(c.content, en_query, "en", table_ref=tag)
+                if sel.selected:
+                    table_evidence = f"\n[TABLE ROW SELECTED from {tag}]\nCondition: {sel.reason}\nRow: {sel.row_text}\nValue: {sel.value_text}\n"
+                    break
+
     # 7. guardrail (default only)
     rejected = False
     reject_reason = ""
@@ -407,6 +429,7 @@ def _pre_answer_pipeline(
         mode_cfg=mode_cfg,
         short_circuit_msg=short_circuit_msg,
         is_pre_answer_only=is_pre_answer_only,
+        table_evidence=table_evidence,
     )
 
 
@@ -445,6 +468,7 @@ def chain_answer(
         temperature=state.mode_cfg.temperature,
         think=False,
         answer_style=state.mode_cfg.answer_style,
+        table_evidence=state.table_evidence,
     )
     state.timings["answer"] = time.time() - t
     return ChainResult(
@@ -506,7 +530,9 @@ def chain_answer_stream(
         return
 
     yield ("status", "answer_streaming")
-    messages = _build_answer_messages(query, state.candidates, state.lang, answer_style=state.mode_cfg.answer_style)
+    messages = _build_answer_messages(query, state.candidates, state.lang,
+                                       answer_style=state.mode_cfg.answer_style,
+                                       table_evidence=state.table_evidence)
     accumulated: list[str] = []
     t_stream = time.time()
     try:
@@ -593,7 +619,9 @@ def _stream_from_state(
         return
 
     yield ("status", "answer_streaming")
-    messages = _build_answer_messages(query, state.candidates, state.lang, answer_style=state.mode_cfg.answer_style)
+    messages = _build_answer_messages(query, state.candidates, state.lang,
+                                       answer_style=state.mode_cfg.answer_style,
+                                       table_evidence=state.table_evidence)
     accumulated: list[str] = []
     t_stream = time.time()
     try:
@@ -894,6 +922,7 @@ def _build_answer_messages(
     chunks: list[RetrievedChunk],
     language: str,
     answer_style: str = "detailed",
+    table_evidence: str = "",
 ) -> list[dict]:
     """Build a FRESH messages list for one _answer call.
 
@@ -901,7 +930,7 @@ def _build_answer_messages(
     accumulation of history. With num_ctx=8192 on a 4GB-VRAM box, accidental
     accumulation would silently truncate the system prompt or context window.
     """
-    context = prompts.build_context(chunks)
+    context = prompts.build_context(chunks, table_evidence=table_evidence)
     style = prompts.answer_style_instruction(answer_style)
     target = _language_name(language)
     if language == "id":
@@ -943,6 +972,7 @@ def _answer(
     model, temperature,
     think: bool = False,
     answer_style: str = "detailed",
+    table_evidence: str = "",
 ) -> str:
     """Final user-facing answer with empty-response safeguard.
 
@@ -951,12 +981,12 @@ def _answer(
     generation glitch), retries ONCE with the same payload before returning
     a clear fallback. Never returns a silent empty string.
     """
-    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style)
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence)
     out = chat(model, messages, temperature=temperature, think=think)
     if out and out.strip():
         return out
 
-    # Single retry. qwen3.5:4b occasionally returns "" on the first call after
+    # Single retry. qwen2.5:3b occasionally returns "" on the first call after
     # heavy prior load; the second call usually succeeds without changing the
     # prompt. If still empty, log and return an explicit fallback.
     print(
@@ -964,6 +994,26 @@ def _answer(
         f"(model={model} lang={language} chunks={len(chunks)})",
         file=sys.stderr,
         flush=True,
+    )
+    messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence)
+    out2 = chat(model, messages_retry, temperature=temperature, think=think)
+    if out2 and out2.strip():
+        return out2
+
+    print(
+        f"  [chain._answer] ERROR: empty content after retry, returning fallback",
+        file=sys.stderr,
+        flush=True,
+    )
+    if language == "id":
+        return (
+            "Maaf, model gagal menghasilkan jawaban dari konteks yang tersedia. "
+            "Silakan coba ulang atau ajukan pertanyaan yang lebih spesifik "
+            "(berdasarkan BKI Rules for Hull 2026)."
+        )
+    return (
+        "Sorry, the model failed to produce an answer from the available context. "
+        "Please try again or rephrase your question (BKI Rules for Hull 2026)."
     )
     messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style)
     out2 = chat(model, messages_retry, temperature=temperature, think=think)

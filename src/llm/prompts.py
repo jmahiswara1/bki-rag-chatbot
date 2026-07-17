@@ -47,9 +47,11 @@ EXPAND_SYSTEM = (
 )
 
 
-def build_context(chunks) -> str:
+def build_context(chunks, table_evidence: str = "") -> str:
     # Render retrieved chunks into a citable context block.
     parts = []
+    if table_evidence:
+        parts.append(table_evidence)
     for c in chunks:
         tag = f"[Sec {c.section_no} {c.section_title}"
         if c.paragraph_id:
