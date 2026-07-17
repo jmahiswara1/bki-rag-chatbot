@@ -376,25 +376,29 @@ def _pre_answer_pipeline(
     )
     timings["retrieve"] = time.time() - t
 
-    # 6.5. deterministic table-row selection (when top source is a table)
+    # 6.5. deterministic table-row selection (safe: semantic + unit + numeric gates)
     table_evidence = ""
-    if en_query and candidates and any(c.content_type == "table" for c in candidates[:3]):
-        en_lower = en_query.lower()
-        has_numeric = any(ch.isdigit() for ch in en_lower)
-        if has_numeric:
-            for c in candidates:
-                if c.content_type != "table":
-                    continue
-                tag = f"[Sec {c.section_no}"
-                if c.paragraph_id:
-                    tag += f" | {c.paragraph_id}"
-                if c.table_no:
-                    tag += f" | Table {c.table_no}"
-                tag += f" | p.{c.page_start}]" if c.page_start == c.page_end else f" | pp.{c.page_start}-{c.page_end}]"
-                sel = select_table_row(c.content, en_query, "en", table_ref=tag)
-                if sel.selected:
-                    table_evidence = f"\n[TABLE ROW SELECTED from {tag}]\nCondition: {sel.reason}\nRow: {sel.row_text}\nValue: {sel.value_text}\n"
-                    break
+    if en_query and candidates:
+        table_candidates = [(i, c) for i, c in enumerate(candidates) if c.content_type == "table"]
+        safe_selections = []
+        for rank, c in table_candidates:
+            tag = f"[Sec {c.section_no}"
+            if c.paragraph_id:
+                tag += f" | {c.paragraph_id}"
+            if c.table_no:
+                tag += f" | Table {c.table_no}"
+            tag += f" | p.{c.page_start}]" if c.page_start == c.page_end else f" | pp.{c.page_start}-{c.page_end}]"
+            sel = select_table_row(c.content, en_query, "en", table_ref=tag)
+            if sel.selected:
+                safe_selections.append((rank, sel))
+        if len(safe_selections) == 1:
+            sel = safe_selections[0][1]
+            table_evidence = (
+                f"\n[TABLE ROW SELECTED from {sel.table_ref}]\n"
+                f"Condition: {sel.reason}\n"
+                f"Row: {sel.row_text}\n"
+                f"Value: {sel.value_text}\n"
+            )
 
     # 7. guardrail (default only)
     rejected = False
