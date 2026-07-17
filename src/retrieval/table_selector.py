@@ -3,6 +3,12 @@
 Safety-gated: semantic topic check → unit normalization → numeric match.
 Categorical/text matching disabled — reserved for future design.
 No LLM, no table/topic hardcodes.
+
+Build 30: explicit predicate objects with two-sided (compound) range support.
+A row condition is parsed into a Predicate (lower/upper bounds + inclusivity,
+or an equality point). Selection evaluates the query value against BOTH
+bounds; overlapping bounded ranges, gaps, duplicate ranges, and ambiguous
+columns all fall back instead of speculating.
 """
 import re
 from dataclasses import dataclass
@@ -89,16 +95,22 @@ _DIMENSION_MAP = {
     "n/mm2": "pressure", "n/mm²": "pressure",
     "deg": "angle", "°c": "temperature", "celsius": "temperature",
     "kn": "force", "n": "force",
-    "dwt": "mass",
+    "dwt": "mass", "tdw": "mass",
 }
 
 
 def _extract_unit(s: str) -> Optional[str]:
     s = s.lower().strip()
     # Find units in brackets, or as word token, or paired with a number.
-    m = re.search(r"\[(mm|cm|m|%|t|deg|kg|kn|n|dwt)\]", s)
+    m = re.search(r"\[(mm|cm|m|%|t|deg|kg|kn|n|dwt|tdw)\]", s)
     if m:
-        return m.group(1)
+        u = m.group(1)
+        return "dwt" if u == "tdw" else u
+    # Parenthesized units, e.g. "Thickness (mm)" (corpus attested in Sec 39)
+    m = re.search(r"\((mm|cm|m|%|t|deg|kg|kn|n|dwt|tdw)\)", s)
+    if m:
+        u = m.group(1)
+        return "dwt" if u == "tdw" else u
     m = re.search(r"\b(n/mm[²2]|°c|inch)\b", s)
     if m:
         raw = m.group(1).lower()
@@ -207,6 +219,214 @@ def _semantic_overlap(query_text: str, table_header_text: str) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════
+# Explicit row predicates (Build 30)
+# ═══════════════════════════════════════════════════════════════════
+
+_NUM = r"\d+(?:[.,]\d+)?"
+_VAR = r"[a-z_][a-z0-9_]*"
+
+
+@dataclass
+class Predicate:
+    """Explicit row predicate with two-sided bound support.
+
+    lower/upper hold numeric bounds; lower_inc/upper_inc mark inclusivity.
+    eq holds an equality point (bare-number rows). raw keeps the verbatim
+    cell text for provenance/evidence.
+    """
+    raw: str
+    lower: Optional[float] = None
+    lower_inc: bool = False
+    upper: Optional[float] = None
+    upper_inc: bool = False
+    eq: Optional[float] = None
+
+    @property
+    def is_point(self) -> bool:
+        return self.eq is not None
+
+    @property
+    def is_compound(self) -> bool:
+        return self.lower is not None and self.upper is not None
+
+    def contains(self, v: float) -> bool:
+        if self.eq is not None:
+            return abs(v - self.eq) < 1e-6
+        if self.lower is None and self.upper is None:
+            return False
+        if self.lower is not None:
+            if self.lower_inc:
+                if v < self.lower - 1e-9:
+                    return False
+            else:
+                if v <= self.lower + 1e-9:
+                    return False
+        if self.upper is not None:
+            if self.upper_inc:
+                if v > self.upper + 1e-9:
+                    return False
+            else:
+                if v >= self.upper - 1e-9:
+                    return False
+        return True
+
+    def describe(self) -> str:
+        if self.eq is not None:
+            return f"= {self.eq}"
+        lo = f"{'[' if self.lower_inc else '('}" \
+             f"{self.lower if self.lower is not None else '-inf'}"
+        hi = f"{self.upper if self.upper is not None else '+inf'}" \
+             f"{']' if self.upper_inc else ')'}"
+        return f"{lo}, {hi}"
+
+
+def _parse_row_predicate(cell: str) -> Optional[Predicate]:
+    """Parse a condition cell into a Predicate; None if ambiguous/malformed.
+
+    Supported grammar (unicode-normalized, lowercase):
+      a < x ≤ b        compound with explicit variable
+      > a ≤ b          two-operator, no variable
+      a < x            reverse single bound
+      [x] op v         single bound with optional variable prefix
+      v or less/more   textual bounds
+      v                bare number → equality point
+    Rejected (None): contradictory bounds, mixed directions, '!=',
+    multiple numbers without operators, non-numeric text.
+    """
+    c = _norm(cell).strip()
+    if not c:
+        return None
+    p = Predicate(raw=cell)
+
+    # a < x ≤ b (explicit variable)
+    m = re.fullmatch(rf"({_NUM})\s*(<=|<|>=|>)\s*{_VAR}\s*(<=|<|>=|>)\s*({_NUM})", c)
+    if m:
+        a, op1, op2, b = m.groups()
+        a = _parse_num(a)
+        b = _parse_num(b)
+        if a is None or b is None:
+            return None
+        if op1 in ("<", "<=") and op2 in ("<", "<="):
+            p.lower, p.lower_inc = a, op1 == "<="
+            p.upper, p.upper_inc = b, op2 == "<="
+        elif op1 in (">", ">=") and op2 in (">", ">="):
+            p.lower, p.lower_inc = b, op2 == ">="
+            p.upper, p.upper_inc = a, op1 == ">="
+        else:
+            return None  # mixed directions
+        if p.lower > p.upper:
+            return None  # contradictory
+        return p
+
+    # a < x (reverse single bound)
+    m = re.fullmatch(rf"({_NUM})\s*(<=|<|>=|>)\s*{_VAR}", c)
+    if m:
+        a, op = m.groups()
+        a = _parse_num(a)
+        if a is None:
+            return None
+        if op == "<":
+            p.lower, p.lower_inc = a, False
+        elif op == "<=":
+            p.lower, p.lower_inc = a, True
+        elif op == ">":
+            p.upper, p.upper_inc = a, False
+        elif op == ">=":
+            p.upper, p.upper_inc = a, True
+        return p
+
+    # op v op v (two operators, no variable) e.g. "> 100000 ≤ 150000"
+    m = re.fullmatch(rf"(<=|<|>=|>)\s*({_NUM})\s+(<=|<|>=|>)\s*({_NUM})", c)
+    if m:
+        op1, a, op2, b = m.groups()
+        a = _parse_num(a)
+        b = _parse_num(b)
+        if a is None or b is None:
+            return None
+        bounds = []
+        for op, val in ((op1, a), (op2, b)):
+            if op in ("<", "<="):
+                bounds.append(("upper", val, op == "<="))
+            else:
+                bounds.append(("lower", val, op == ">="))
+        lowers = [x for x in bounds if x[0] == "lower"]
+        uppers = [x for x in bounds if x[0] == "upper"]
+        if len(lowers) != 1 or len(uppers) != 1:
+            return None
+        p.lower, p.lower_inc = lowers[0][1], lowers[0][2]
+        p.upper, p.upper_inc = uppers[0][1], uppers[0][2]
+        if p.lower > p.upper:
+            return None
+        return p
+
+    # textual suffixes: "40 or less", "75 or more"
+    stripped = re.sub(rf"^{_VAR}\s*", "", c)
+    for to, kind in (("or less", "upper_inc"), ("or fewer", "upper_inc"),
+                     ("or below", "upper_exc"), ("or more", "lower_inc"),
+                     ("or greater", "lower_inc"), ("or above", "lower_exc")):
+        if to in stripped:
+            v = _parse_num(stripped.split(to)[0].strip())
+            if v is None:
+                return None
+            if kind == "upper_inc":
+                p.upper, p.upper_inc = v, True
+            elif kind == "upper_exc":
+                p.upper, p.upper_inc = v, False
+            elif kind == "lower_inc":
+                p.lower, p.lower_inc = v, True
+            else:
+                p.lower, p.lower_inc = v, False
+            return p
+
+    # [x] op v
+    m = re.fullmatch(rf"(<=|>=|!=|<|>|=)\s*({_NUM})", stripped)
+    if m:
+        op, v = m.groups()
+        v = _parse_num(v)
+        if v is None:
+            return None
+        if op == "<=":
+            p.upper, p.upper_inc = v, True
+        elif op == "<":
+            p.upper, p.upper_inc = v, False
+        elif op == ">=":
+            p.lower, p.lower_inc = v, True
+        elif op == ">":
+            p.lower, p.lower_inc = v, False
+        elif op == "=":
+            p.eq = v
+        else:
+            return None  # '!=' unsupported
+        return p
+
+    # bare number → equality
+    v = _parse_num(c)
+    if v is not None:
+        p.eq = v
+        return p
+    return None
+
+
+def _parse_row_cond(cell: str):
+    """Legacy adapter: reduce a predicate to a single (op, value) pair.
+
+    Kept for backward compatibility with the single-threshold path and the
+    existing table parser. Compound predicates collapse to their upper bound
+    (same behavior as Build 29's lossy compound branch).
+    """
+    p = _parse_row_predicate(cell)
+    if p is None:
+        return None, None
+    if p.eq is not None:
+        return "=", p.eq
+    if p.upper is not None:
+        return ("<=", p.upper) if p.upper_inc else ("<", p.upper)
+    if p.lower is not None:
+        return (">=", p.lower) if p.lower_inc else (">", p.lower)
+    return None, None
+
+
+# ═══════════════════════════════════════════════════════════════════
 # Condition parsing
 # ═══════════════════════════════════════════════════════════════════
 
@@ -246,36 +466,8 @@ def _parse_query_condition(query: str, lang: str):
     return op, val1, None, unit
 
 
-def _parse_row_cond(cell: str):
-    c = _norm(cell)
-    # Strip leading variable prefix: "T <= 500" → "<= 500"
-    stripped = re.sub(r"^[a-z_][a-z0-9_]*\s*", "", c)
-    
-    text_ops = [("or less", "<="), ("or fewer", "<="), ("or below", "<"),
-                ("or more", ">="), ("or greater", ">="), ("or above", ">")]
-    for to, so in text_ops:
-        if to in stripped:
-            v = _parse_num(stripped.split(to)[0].strip())
-            return so, v
-    for op in [">=", "<=", "!=", "<", ">", "="]:
-        if stripped.startswith(op):
-            return op, _parse_num(stripped[len(op):].strip())
-    # Compound: "500 < T <= 1500" → try both bounds, use the <= as primary
-    m_compound = re.search(r"(\S+)\s*<\s*[a-z_]+\s*<=\s*(\d+[.,]?\d*)", c)
-    if m_compound:
-        return "<=", _parse_num(m_compound.group(2))
-    # Single inequality with variable: "T <= 500" → strip variable, retry
-    stripped2 = re.sub(r"^.*?([<>=]+)\s*", r"\1", c)
-    for op in [">=", "<=", "!=", "<", ">", "="]:
-        if stripped2.startswith(op):
-            return op, _parse_num(stripped2[len(op):].strip())
-    v = _parse_num(c)
-    if v is not None:
-        return "=", v
-    return None, None
-
-
 def _eval_condition(query_val: float, row_op: Optional[str], row_val: Optional[float]) -> bool:
+    """Legacy single-bound evaluation, kept for reference/tests."""
     if row_op is None or row_val is None:
         return False
     if row_op in ("<=", "<"):
@@ -287,13 +479,31 @@ def _eval_condition(query_val: float, row_op: Optional[str], row_val: Optional[f
     return False
 
 
-def _tightest(candidates, qop):
-    valid = [c for c in candidates if c[1] is not None]
-    if not valid:
+def _tightest_match(preds: list[Predicate], matching: list[int]) -> Optional[int]:
+    """Resolve multiple matched rows to a single row index, or None.
+
+    Legitimate nesting of one-sided thresholds (≤4, ≤8, ≤12 …) resolves by
+    the tightest bound. True ambiguity (tie, or a bounded two-sided range
+    overlapping another matched row) returns None → caller falls back.
+    """
+    bounded = [i for i in matching if preds[i].is_compound]
+    if bounded and len(matching) > 1:
+        return None  # compound overlaps another matched row
+    if len(bounded) > 1:
         return None
-    if qop in ("<=", "<", "="):
-        return min(valid, key=lambda x: x[1])
-    return max(valid, key=lambda x: x[1])
+    uppers = [(preds[i].upper, i) for i in matching
+              if preds[i].upper is not None]
+    lowers = [(preds[i].lower, i) for i in matching
+              if preds[i].lower is not None]
+    if uppers:
+        best = min(u for u, _ in uppers)
+        winners = [i for u, i in uppers if u == best]
+        return winners[0] if len(winners) == 1 else None
+    if lowers:
+        best = max(l for l, _ in lowers)
+        winners = [i for l, i in lowers if l == best]
+        return winners[0] if len(winners) == 1 else None
+    return None
 
 
 def _table_header_line(table_content: str) -> str:
@@ -320,9 +530,11 @@ def _parse_table(table_content: str):
         rows.append(cells)
     if not rows or len(headers) < 2:
         return None, None, None, None
-    # Determine condition column: prefer column with comparison operators (≠ =)
-    cond_col = 0
-    found_in_ci0 = False
+    # Determine condition column: prefer column with comparison operators (≠ =).
+    # Build 30 safety limit: if MORE THAN ONE column carries inequality
+    # conditions, the table is ambiguous for deterministic selection → reject.
+    ineq_cols = []
+    numeric_cols = []
     for ci in range(len(headers)):
         has_comp_op = False
         has_any = False
@@ -335,18 +547,17 @@ def _parse_table(table_content: str):
                 if op != "=":
                     has_comp_op = True
         if has_comp_op:
-            cond_col = ci
-            break
+            ineq_cols.append(ci)
         elif has_any:
-            if ci == 0:
-                found_in_ci0 = True
-            elif not found_in_ci0:
-                cond_col = ci
-                found_in_ci0 = True
-            break
-        elif has_any and cond_col == 0 and ci > 0:
-            # First column with any parseable numeric wins
-            cond_col = ci
+            numeric_cols.append(ci)
+    if len(ineq_cols) > 1:
+        return None, None, None, None  # multiple condition columns
+    if ineq_cols:
+        cond_col = ineq_cols[0]
+    elif numeric_cols:
+        cond_col = numeric_cols[0]
+    else:
+        return None, None, None, None
     val_col = cond_col + 1 if cond_col + 1 < len(headers) else 0
     return headers, rows, cond_col, val_col
 
@@ -430,32 +641,31 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
     if overlap < _MIN_SEMANTIC_OVERLAP:
         return None
 
-    candidates = []
-    for ri, row in enumerate(rows):
+    # Evaluate each row's explicit predicate against the query value.
+    # Rows whose condition cell cannot be parsed are skipped (never guessed).
+    preds: list[Optional[Predicate]] = []
+    for row in rows:
         if len(row) <= cond_col:
+            preds.append(None)
             continue
-        rop, rv = _parse_row_cond(row[cond_col])
-        if rop is None or rv is None:
-            continue
-        if _eval_condition(v1_norm, rop, rv):
-            candidates.append((ri, rv, rop, row))
+        preds.append(_parse_row_predicate(row[cond_col]))
 
-    if not candidates:
+    matching = [ri for ri, p in enumerate(preds)
+                if p is not None and p.contains(v1_norm)]
+    if not matching:
         return None
-    if len(candidates) > 1:
-        best = _tightest(candidates, op)
-        if best is None:
+    if len(matching) > 1:
+        r_idx = _tightest_match([p for p in preds], matching)
+        if r_idx is None:
             return None
-        winners = [c for c in candidates if c[1] == best[1]]
-        if len(winners) > 1:
-            return None
-        r_idx = best[0]
     else:
-        r_idx = candidates[0][0]
+        r_idx = matching[0]
 
     row = rows[r_idx]
     val_text = row[val_col] if val_col < len(row) else ""
-    return row[cond_col], val_text, f"matched: {row[cond_col]} satisfies {op} {v1}"
+    pred = preds[r_idx]
+    return (row[cond_col], val_text,
+            f"matched: {row[cond_col]} [{pred.describe()}] contains {op} {v1}")
 
 
 def select_table_row(table_content: str, query_text: str, lang: str,
