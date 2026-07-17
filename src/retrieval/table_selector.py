@@ -88,26 +88,27 @@ _DIMENSION_MAP = {
     "kg": "mass", "t": "mass", "ton": "mass",
     "n/mm2": "pressure", "n/mm²": "pressure",
     "deg": "angle", "°c": "temperature", "celsius": "temperature",
+    "kn": "force", "n": "force",
+    "dwt": "mass",
 }
 
 
 def _extract_unit(s: str) -> Optional[str]:
     s = s.lower().strip()
     # Find units in brackets, or as word token, or paired with a number.
-    m = re.search(r"\[(mm|cm|m|%|t|deg|kg)\]", s)
+    m = re.search(r"\[(mm|cm|m|%|t|deg|kg|kn|n|dwt)\]", s)
     if m:
         return m.group(1)
     m = re.search(r"\b(n/mm[²2]|°c|inch)\b", s)
     if m:
         raw = m.group(1).lower()
         return {"persen": "%", "percent": "%"}.get(raw, raw)
-    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(mm|cm|m|%|kg|t|deg)\b", s)
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(mm|cm|m|%|kg|t|deg|kn|n|dwt)\b", s)
     if m:
         return m.group(2).lower()
     m = re.search(r"\bpercent\b|\bpersen\b", s)
     if m:
         return "%"
-    # Standalone unit token (for "30%" without number space)
     m = re.search(r"\b(\d+(?:[.,]\d+)?)(%)\b", s)
     if m:
         return "%"
@@ -210,14 +211,28 @@ def _semantic_overlap(query_text: str, table_header_text: str) -> int:
 # ═══════════════════════════════════════════════════════════════════
 
 def _parse_query_condition(query: str, lang: str):
-    """Parse numeric condition + unit from query. Returns (op, value, unit) or None."""
+    """Parse numeric condition + unit from query. Returns (op, value, v2, unit) or None."""
     q = _norm(query)
     q = _replace_ops(q, lang)
-    matches = list(re.finditer(r"(\d+(?:[.,]\d+)?)\s*([a-z%°/]+)?\s*(mm|cm|m|inch|in|kg|t|%|n/mm2|deg|°c|percent|persen)?", q))
-    if not matches:
+    # Find the first numeric value
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(\S*)", q)
+    if not m:
         return None
-    vm = matches[0]
-    val_start = vm.start()
+    val1 = float(m.group(1).replace(",", "."))
+    suffix = m.group(2).strip().lower()
+    # Try to extract a known unit from suffix
+    KNOWN_UNITS = ["n/mm2", "n/mm²", "°c", "inch", "percent", "persen",
+                   "dwt", "kn", "mm", "cm", "m", "%", "kg", "t", "deg", "n"]
+    unit = None
+    for ku in KNOWN_UNITS:
+        if suffix.startswith(ku):
+            unit = ku
+            break
+    UNIT_ALIASES = {"persen": "%", "percent": "%", "in": "inch", "°c": "deg"}
+    if unit:
+        unit = UNIT_ALIASES.get(unit, unit)
+    # Parse operator from prefix
+    val_start = m.start()
     prefix = q[:val_start].strip()
     op = None
     op_pos = -1
@@ -228,31 +243,32 @@ def _parse_query_condition(query: str, lang: str):
             op_pos = idx
     if op is None:
         op = "="
-    val1 = float(vm.group(1).replace(",", "."))
-    # Extract unit: try group(2) then group(3)
-    raw_unit = (vm.group(2) or "").strip().lower()
-    if not raw_unit:
-        raw_unit = (vm.group(3) or "").strip().lower()
-    # Normalize known unit variants; drop unrecognized "units" (e.g. "cross")
-    UNIT_ALIASES = {"persen": "%", "percent": "%", "in": "inch", "°c": "deg"}
-    unit = UNIT_ALIASES.get(raw_unit, raw_unit) if raw_unit else None
-    # Validate: unit must be a recognized dimension
-    if unit is not None and _dimension(unit) is None:
-        unit = None  # unrecognized — treat as unitless
     return op, val1, None, unit
 
 
 def _parse_row_cond(cell: str):
     c = _norm(cell)
+    # Strip leading variable prefix: "T <= 500" → "<= 500"
+    stripped = re.sub(r"^[a-z_][a-z0-9_]*\s*", "", c)
+    
     text_ops = [("or less", "<="), ("or fewer", "<="), ("or below", "<"),
                 ("or more", ">="), ("or greater", ">="), ("or above", ">")]
     for to, so in text_ops:
-        if to in c:
-            v = _parse_num(c.split(to)[0].strip())
+        if to in stripped:
+            v = _parse_num(stripped.split(to)[0].strip())
             return so, v
     for op in [">=", "<=", "!=", "<", ">", "="]:
-        if c.startswith(op):
-            return op, _parse_num(c[len(op):].strip())
+        if stripped.startswith(op):
+            return op, _parse_num(stripped[len(op):].strip())
+    # Compound: "500 < T <= 1500" → try both bounds, use the <= as primary
+    m_compound = re.search(r"(\S+)\s*<\s*[a-z_]+\s*<=\s*(\d+[.,]?\d*)", c)
+    if m_compound:
+        return "<=", _parse_num(m_compound.group(2))
+    # Single inequality with variable: "T <= 500" → strip variable, retry
+    stripped2 = re.sub(r"^.*?([<>=]+)\s*", r"\1", c)
+    for op in [">=", "<=", "!=", "<", ">", "="]:
+        if stripped2.startswith(op):
+            return op, _parse_num(stripped2[len(op):].strip())
     v = _parse_num(c)
     if v is not None:
         return "=", v
