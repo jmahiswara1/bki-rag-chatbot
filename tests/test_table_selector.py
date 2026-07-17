@@ -181,7 +181,47 @@ class TestCitation:
         assert r.table_ref == "Sec 19 p.418" or r.table_ref == "Sec 19 Welded Joints | Table 19.1 p.418"
 
 
-class TestCrossUnit10cm:
+class TestAdditionalTables:
+    """Tables 2.1, 27.1, 27.2 (new — corpus-expanded breadth)."""
+
+    def test_table_21_material_factor(self):
+        tbl = "R [N/mm2] eH | k\n315 | 0,78\n355 | 0,72\n390 | 0,66\n460 | 0,62"
+        r = select_table_row(tbl, "what is k for yield stress 355 N/mm2", "en", "")
+        assert r.selected
+        assert r.value_text == "0,72"
+
+    def test_table_271_test_force_mid(self):
+        tbl = ("Design force T [kN] | Test force PL [kN]\n"
+               "T <= 500 | 2 * T\n"
+               "500 < T <= 1500 | T + 500\n"
+               "1500 < T | 1,33 * T")
+        r = select_table_row(tbl, "test force for 800 kN", "en", "")
+        assert r.selected
+        assert "T + 500" in r.value_text
+
+    def test_table_271_test_force_low(self):
+        tbl = ("Design force T [kN] | Test force PL [kN]\n"
+               "T <= 500 | 2 * T\n"
+               "500 < T <= 1500 | T + 500\n"
+               "1500 < T | 1,33 * T")
+        r = select_table_row(tbl, "test force PL for design force 300 kN", "en", "")
+        assert r.selected
+        assert "2 * T" in r.value_text
+
+    def test_table_242_chafe_chain(self):
+        tbl = "Vessel size [DWT] | Chafe chain size [mm]\n<= 100000 | 76\n> 100000 | 76"
+        r = select_table_row(tbl, "chafe chain size for 120000 DWT vessel", "en", "")
+        assert r.selected
+        assert r.value_text == "76"
+
+    def test_table_271_kN_unit_ID(self):
+        tbl = ("Design force T [kN] | Test force PL [kN]\n"
+               "T <= 500 | 2 * T\n"
+               "500 < T <= 1500 | T + 500\n"
+               "1500 < T | 1,33 * T")
+        r = select_table_row(tbl, "test force untuk design force 800 kN", "id", "")
+        assert r.selected
+        assert "T + 500" in r.value_text
     def test_10cm_plate_selects_gt24(self):
         tbl = "Plate thickness t [mm] | Radius r [mm]\n≤ 4 | 1,0\n≤ 8 | 1,5\n≤ 12 | 2,0\n≤ 24 | 3,0\n> 24 | 5,0"
         r = select_table_row(tbl, "bending radius for 10 cm plate thickness", "en", "")
