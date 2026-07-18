@@ -563,3 +563,80 @@ class TestCompoundIdempotence:
         r3 = select_table_row(tbl, "test force for 800 kN", "en", "")
         assert r1.selected == r2.selected == r3.selected
         assert r1.value_text == r2.value_text == r3.value_text
+
+
+# ════════════════════════════════════════════════════════════════════
+# Build 30c — multi-column safety restriction
+# Compound (two-sided) predicates are only safe for 2-column tables
+# where val_col = cond_col + 1 is always correct. Multi-column tables
+# ALWAYS fallback for compound rows; single-threshold paths are
+# unaffected (pre-existing Build 29/30 behavior for nested one-sided
+# thresholds on multi-column tables).
+# ════════════════════════════════════════════════════════════════════
+
+class TestCompoundMultiColumnSafety:
+    """Compound predicates must NOT select on tables with >2 logical columns."""
+
+    def test_t242_full_5col_compound_insiderow_falls_back(self):
+        # Full T24.2 production: 5 cols. The middle row ">100000≤150000"
+        # is a compound predicate → must fallback (unsafe val_col=1 on 5-col).
+        tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
+               "≤ 100000 | 76 | 1 | 1 | 2000\n"
+               "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
+               "> 150000 | 76 | 2 | 2 | 3500")
+        r = select_table_row(tbl, "vessel value for 120000", "en", "")
+        assert not r.selected  # compound on 5-col → FALLBACK
+
+    def test_t242_full_5col_single_threshold_still_works(self):
+        # The first row "≤100000" is single-threshold → CAN select (Build 29).
+        tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
+               "≤ 100000 | 76 | 1 | 1 | 2000\n"
+               "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
+               "> 150000 | 76 | 2 | 2 | 3500")
+        r = select_table_row(tbl, "vessel value for 50000", "en", "")
+        assert r.selected and r.value_text == "76"
+
+    def test_t391_full_3col_falls_back(self):
+        # Full T39.1 production: 3 cols (categorical label + range + value).
+        tbl = ("Structural members | Thickness (mm) | Steel requirement\n"
+               "Upper deck | 50 < t < 100 | KI-E36 BCA1")
+        r = select_table_row(tbl, "brittle crack arrest steel for plate 75 mm", "en", "")
+        assert not r.selected  # 3-col → compound row must fallback
+
+    def test_synthetic_3col_compound_fall_back(self):
+        tbl = ("Thickness t [mm] | Factor A | Factor B\n"
+               "4 < t ≤ 8 | 1.5 | 2.0\n"
+               "8 < t ≤ 12 | 2.0 | 3.0")
+        r = select_table_row(tbl, "factor for thickness 6 mm", "en", "")
+        assert not r.selected
+
+    def test_synthetic_2col_compound_still_works(self):
+        # 2-column compound is safe — verify the restriction doesn't block it
+        tbl = ("Thickness t [mm] | Factor\n"
+               "4 < t ≤ 8 | 1.5\n"
+               "8 < t ≤ 12 | 2.0")
+        r = select_table_row(tbl, "factor for thickness 6 mm", "en", "")
+        assert r.selected and r.value_text == "1.5"
+
+    def test_t271_full_verbatim_compound_2col_still_works(self):
+        # T27.1 is 2-col and must remain fully supported
+        tbl = ("Design force T [kN] | Test force PL [kN]\n"
+               "T ≤ 500 | 2 · T\n500 < T ≤ 1500 | T + 500\n1500 < T | 1,33 · T")
+        r = select_table_row(tbl, "test force for 800 kN", "en", "")
+        assert r.selected and "T + 500" in r.value_text
+
+    def test_cross_tab_t6_1_falls_back(self):
+        # T6.1 production: 6-col cross-tab with compound condition columns
+        tbl = (" | α ≥ 0,3 |  |  | α < 0,3 | \n"
+               " | 0 < d ≤ 1 r | 1 < d ≤ 2 r | 2 < d ≤ 3 r | 0 < d ≤ 1 r | 1 < d ≤ 3 r\n"
+               "f > plate | 4,40 · f blade | 3,45 · f blade | 2,40 · f blade | 3,45 · f blade | 2,40 · f blade")
+        r = select_table_row(tbl, "f blade for plate d 1 r", "en", "")
+        assert not r.selected
+
+    def test_cross_tab_t5_1_falls_back(self):
+        # T5.1 production: ambiguous column choice (compound in col0, text in col1)
+        tbl = ("Range | for positive shear | for negative shear\n"
+               "x 0 ≤ < 0, 2 L | 1, 38·m L | -1, 38 L\n"
+               "x 0, 2 ≤ < 0, 3 L | 0, 276·m | -0, 276")
+        r = select_table_row(tbl, "shear force for 0.15 L", "en", "")
+        assert not r.selected
