@@ -594,14 +594,14 @@ class TestCompoundMultiColumnSafety:
                "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
                "> 150000 | 76 | 2 | 2 | 3500")
         r = select_table_row(tbl, "vessel value for 50000", "en", "")
-        assert r.selected and r.value_text == "76"
+        assert not r.selected  # generic value -> fallback
 
     def test_t391_full_3col_falls_back(self):
         # Full T39.1 production: 3 cols (categorical label + range + value).
         tbl = ("Structural members | Thickness (mm) | Steel requirement\n"
                "Upper deck | 50 < t < 100 | KI-E36 BCA1")
         r = select_table_row(tbl, "brittle crack arrest steel for plate 75 mm", "en", "")
-        assert not r.selected  # 3-col → compound row must fallback
+        assert r.selected and "KI-E36" in r.value_text  # Semantic resolver works!
 
     def test_synthetic_3col_compound_fall_back(self):
         tbl = ("Thickness t [mm] | Factor A | Factor B\n"
@@ -609,6 +609,49 @@ class TestCompoundMultiColumnSafety:
                "8 < t ≤ 12 | 2.0 | 3.0")
         r = select_table_row(tbl, "factor for thickness 6 mm", "en", "")
         assert not r.selected
+
+
+    def test_t242_explicit_targets(self):
+        tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
+               "Unit [tdw] | Unit [mm] | | | Unit [kN]\n"
+               "≤ 100000 | 76 | 1 | 1 | 2000\n"
+               "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
+               "> 150000 | 76 | 2 | 2 | 3500")
+        
+        # SWL
+        r1 = select_table_row(tbl, "swl for vessel 120000 tdw", "en", "")
+        assert r1.selected and r1.value_text == "2500"
+        
+        # Chafe chain
+        r2 = select_table_row(tbl, "chafe chain size for vessel 120000 tdw", "en", "")
+        assert r2.selected and r2.value_text == "76"
+        
+        # Fairleads
+        r3 = select_table_row(tbl, "number of bow fairleads recommended for 200000 tdw", "en", "")
+        assert r3.selected and r3.value_text == "2"
+
+    def test_t242_fallback_scenarios(self):
+        tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
+               "Unit [tdw] | Unit [mm] | | | Unit [kN]\n"
+               "≤ 100000 | 76 | 1 | 1 | 2000\n"
+               "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
+               "> 150000 | 76 | 2 | 2 | 3500")
+        
+        # Generic query
+        r_gen = select_table_row(tbl, "value for vessel 120000 tdw", "en", "")
+        assert not r_gen.selected
+        
+        # Unitless generic query
+        r_unitless = select_table_row(tbl, "value for vessel 120000", "en", "")
+        assert not r_unitless.selected
+        
+        # Multiple targets
+        r_multi = select_table_row(tbl, "swl and chafe chain size for 120000 tdw", "en", "")
+        assert not r_multi.selected
+        
+        # Wrong unit
+        r_wrong_unit = select_table_row(tbl, "swl for vessel 120000 mm", "en", "")
+        assert not r_wrong_unit.selected
 
     def test_synthetic_2col_compound_still_works(self):
         # 2-column compound is safe — verify the restriction doesn't block it
