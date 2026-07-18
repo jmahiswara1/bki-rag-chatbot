@@ -590,6 +590,7 @@ class TestCompoundMultiColumnSafety:
     def test_t242_full_5col_single_threshold_still_works(self):
         # The first row "≤100000" is single-threshold → CAN select (Build 29).
         tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
+               "[tdw] | [mm] | | | [kN]\n"
                "≤ 100000 | 76 | 1 | 1 | 2000\n"
                "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
                "> 150000 | 76 | 2 | 2 | 3500")
@@ -604,7 +605,7 @@ class TestCompoundMultiColumnSafety:
         assert r.selected and "KI-E36" in r.value_text  # Semantic resolver works!
 
     def test_synthetic_3col_compound_fall_back(self):
-        tbl = ("Thickness t [mm] | Factor A | Factor B\n"
+        tbl = ("Thickness t [mm] | Alpha Parameter | Beta Parameter\n"
                "4 < t ≤ 8 | 1.5 | 2.0\n"
                "8 < t ≤ 12 | 2.0 | 3.0")
         r = select_table_row(tbl, "factor for thickness 6 mm", "en", "")
@@ -613,7 +614,7 @@ class TestCompoundMultiColumnSafety:
 
     def test_t242_explicit_targets(self):
         tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
-               "Unit [tdw] | Unit [mm] | | | Unit [kN]\n"
+               "[tdw] | [mm] | | | [kN]\n"
                "≤ 100000 | 76 | 1 | 1 | 2000\n"
                "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
                "> 150000 | 76 | 2 | 2 | 3500")
@@ -632,7 +633,7 @@ class TestCompoundMultiColumnSafety:
 
     def test_t242_fallback_scenarios(self):
         tbl = ("Vessel size | Chafe chain size | Bow fairleads | Bow stoppers | SWL\n"
-               "Unit [tdw] | Unit [mm] | | | Unit [kN]\n"
+               "[tdw] | [mm] | | | [kN]\n"
                "≤ 100000 | 76 | 1 | 1 | 2000\n"
                "> 100000 ≤ 150000 | 76 | 1 | 1 | 2500\n"
                "> 150000 | 76 | 2 | 2 | 3500")
@@ -683,3 +684,18 @@ class TestCompoundMultiColumnSafety:
                "x 0, 2 ≤ < 0, 3 L | 0, 276·m | -0, 276")
         r = select_table_row(tbl, "shear force for 0.15 L", "en", "")
         assert not r.selected
+
+
+    def test_numeric_headers_fallback(self):
+        tbl = ("Region | 2014 | 2015 | 2016\n"\
+               "North | 100 | 120 | 130\n"\
+               "South | 80 | 90 | 100")
+        r = select_table_row(tbl, "value for 2014", "en", "")
+        assert not r.selected
+
+    def test_bare_numeric_data_preserved(self):
+        tbl = ("Thickness t [mm] | Alpha Parameter | Beta Parameter\n"\
+               "10 | 1.5 | 1.6\n"\
+               "20 | 2.0 | 2.1")
+        r = select_table_row(tbl, "alpha parameter for thickness 10 mm", "en", "")
+        assert r.selected and r.value_text == "1.5"
