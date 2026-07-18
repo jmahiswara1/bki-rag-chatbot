@@ -5,7 +5,13 @@ Categorical/text-matching is DISABLED. Only numeric + unit-compatible + semantic
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.retrieval.table_selector import select_table_row
+from src.retrieval.table_selector import (
+    select_table_row,
+    _find_best_partition,
+    _parse_headers,
+    _evaluate_partition,
+    _row_type_profile,
+)
 
 
 class TestThresholdUpperBound:
@@ -697,5 +703,150 @@ class TestCompoundMultiColumnSafety:
         tbl = ("Thickness t [mm] | Alpha Parameter | Beta Parameter\n"\
                "10 | 1.5 | 1.6\n"\
                "20 | 2.0 | 2.1")
+        r = select_table_row(tbl, "alpha parameter for thickness 10 mm", "en", "")
+        assert r.selected and r.value_text == "1.5"
+
+
+# ════════════════════════════════════════════════════════════════════
+# Build 31f — permanent sequence-aware partition regression locks
+# ════════════════════════════════════════════════════════════════════
+
+class TestSequenceAwarePartition:
+    """Permanent regression tests for _find_best_partition internals."""
+
+    # ── pure numeric header ──
+
+    def test_pure_numeric_header_partition(self):
+        """Pure-numeric row 2014 | 2015 | 2016 must be classified as header."""
+        lines = ["2014 | 2015 | 2016", "North | 100 | 120 | 130", "South | 80 | 90 | 100"]
+        bp = _find_best_partition(lines)
+        assert bp == 1
+        cols, data = _parse_headers(lines)
+        header_texts = [c.source_text for c in cols]
+        assert header_texts == ["2014", "2015", "2016"]
+        assert len(data) == 2
+
+    def test_pure_numeric_header_no_selection(self):
+        """Numeric-only header table must not emit false evidence."""
+        tbl = ("2014 | 2015 | 2016\nNorth | 100 | 120 | 130\nSouth | 80 | 90 | 100")
+        r = select_table_row(tbl, "value for 2014", "en", "")
+        assert not r.selected
+
+    # ── bare numeric body data ──
+
+    def test_bare_numeric_body_partition(self):
+        """Bare-numeric rows 315 | 0.78 and 355 | 0.72 must stay in body, not header."""
+        lines = [
+            "Temperature [C] | Factor",
+            "315 | 0.78",
+            "355 | 0.72",
+            "400 | 0.65",
+        ]
+        bp = _find_best_partition(lines)
+        assert bp == 1
+        cols, data = _parse_headers(lines)
+        header_texts = [c.source_text for c in cols]
+        assert "Temperature" in header_texts[0]
+        assert len(data) == 3
+
+    def test_bare_numeric_data_selectable(self):
+        """Bare-numeric body rows must be selectable through selector."""
+        tbl = ("Temperature [C] | Factor\n315 | 0.78\n355 | 0.72\n400 | 0.65")
+        r = select_table_row(tbl, "factor for temperature 315", "en", "")
+        assert r.selected and r.value_text == "0.78"
+
+    # ── ambiguous partition safety ──
+
+    def test_all_text_no_valid_schema_is_ambiguous(self):
+        """Table with no numeric condition columns must return no partition."""
+        lines = ["Header1 | Header2", "DataA | DataB", "DataX | DataY"]
+        bp = _find_best_partition(lines)
+        assert bp is None
+
+    def test_ambiguous_partition_no_evidence(self):
+        """Ambiguous partition (None) must not produce table evidence."""
+        tbl = "Header1 | Header2\nDataA | DataB\nDataX | DataY"
+        r = select_table_row(tbl, "value for DataA", "en", "")
+        assert not r.selected
+
+    # ── cold-bending permanent regression ──
+
+    def test_cold_bending_partition_structure(self):
+        """Table 19.1 must parse with correct split, headers, and units."""
+        tbl = ("Plate thickness t [mm] | Minimum inner bending radius r [mm]\n"
+               "≤ 4 | 1,0 · t\n≤ 8 | 1,5 · t\n≤ 12 | 2,0 · t\n≤ 24 | 3,0 · t\n> 24 | 5,0 · t")
+        lines = [l for l in tbl.split("\n") if l.strip()]
+        bp = _find_best_partition(lines)
+        assert bp == 1
+        cols, data = _parse_headers(lines)
+        header_texts = [c.source_text for c in cols]
+        assert "Plate thickness" in header_texts[0]
+        assert "bending radius" in header_texts[1]
+        assert len(data) == 5
+
+    def test_cold_bending_t10_exact_id(self):
+        """v6r ID cold-bending t=10mm must select row with 2,0 · t."""
+        tbl = ("Plate thickness t [mm] | Minimum inner bending radius r [mm]\n"
+               "≤ 4 | 1,0 · t\n≤ 8 | 1,5 · t\n≤ 12 | 2,0 · t\n≤ 24 | 3,0 · t\n> 24 | 5,0 · t")
+        r = select_table_row(
+            tbl,
+            "Untuk pelat dengan ketebalan 10 mm, berapa radius lentur minimum saat cold forming?",
+            "id", "")
+        assert r.selected and "2,0" in r.value_text and "t" in r.value_text
+
+    def test_cold_bending_t10_exact_en(self):
+        """v6r EN cold-bending t=10mm must select row with 2,0 · t."""
+        tbl = ("Plate thickness t [mm] | Minimum inner bending radius r [mm]\n"
+               "≤ 4 | 1,0 · t\n≤ 8 | 1,5 · t\n≤ 12 | 2,0 · t\n≤ 24 | 3,0 · t\n> 24 | 5,0 · t")
+        r = select_table_row(
+            tbl,
+            "For plates with 10 mm thickness, what is the minimum bending radius during cold forming?",
+            "en", "")
+        assert r.selected and "2.0" in r.value_text.replace(",", ".") and "t" in r.value_text.lower()
+
+    # ── T27.1 source identity ──
+
+    def test_t271_source_identity_partition(self):
+        """Chunk 1130 T27.1 Design force -> Test force PL must parse correctly."""
+        tbl = ("Design force T [kN] | Test force PL [kN]\n"
+               "T ≤ 500 | 2 · T\n500 < T ≤ 1500 | T + 500\n1500 < T | 1,33 · T")
+        lines = [l for l in tbl.split("\n") if l.strip()]
+        bp = _find_best_partition(lines)
+        assert bp == 1
+        cols, data = _parse_headers(lines)
+        header_texts = [c.source_text for c in cols]
+        assert "Design force T" in header_texts[0]
+        assert "Test force PL" in header_texts[1]
+        assert len(data) == 3
+
+    def test_t271_identity_no_anchor_mass(self):
+        """T27.1 must not emit Anchor mass — correct source is Design force/Test force."""
+        tbl = ("Design force T [kN] | Test force PL [kN]\n"
+               "T ≤ 500 | 2 · T\n500 < T ≤ 1500 | T + 500\n1500 < T | 1,33 · T")
+        r = select_table_row(tbl, "test force for 800 kN", "en", "")
+        assert r.selected and "T + 500" in r.value_text
+
+    # ── T39.1 partition structure ──
+
+    def test_t391_partition_structure(self):
+        """T39.1 must parse with single header line and correct columns."""
+        tbl = ("Structural members plating (*) | Thickness (mm) | Brittle crack arrest steel requirement\n"
+               "Strength deck | t ≤ 50 | Not required\n"
+               "Strength deck | 50 < t ≤ 75 | One layer\n"
+               "Strength deck | 75 < t ≤ 100 | Two layers")
+        lines = [l for l in tbl.split("\n") if l.strip()]
+        bp = _find_best_partition(lines)
+        assert bp == 1
+        cols, data = _parse_headers(lines)
+        header_texts = [c.source_text for c in cols]
+        assert "Structural members" in header_texts[0]
+        assert "Thickness" in header_texts[1]
+        assert len(data) == 3
+
+    # ── bare-numeric data original counterexample ──
+
+    def test_original_bare_numeric_counterexample(self):
+        """Original 'alpha parameter for thickness 10 mm' must still work."""
+        tbl = ("Thickness t [mm] | Alpha Parameter\n10 | 1.5\n20 | 2.0")
         r = select_table_row(tbl, "alpha parameter for thickness 10 mm", "en", "")
         assert r.selected and r.value_text == "1.5"
