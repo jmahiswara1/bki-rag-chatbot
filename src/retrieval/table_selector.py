@@ -9,6 +9,10 @@ A row condition is parsed into a Predicate (lower/upper bounds + inclusivity,
 or an equality point). Selection evaluates the query value against BOTH
 bounds; overlapping bounded ranges, gaps, duplicate ranges, and ambiguous
 columns all fall back instead of speculating.
+
+Build 30c: compound (two-sided) predicate path restricted to unambiguous
+2-column tables. Multi-column tables (>2 logical columns) skip compound
+rows but retain single-threshold selection (Build 29 behavior).
 """
 import re
 from dataclasses import dataclass
@@ -661,9 +665,16 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
     else:
         r_idx = matching[0]
 
+    pred = preds[r_idx]
+    # Build 30c: compound (two-sided) predicates are only safe when the
+    # table has exactly two logical columns. val_col = cond_col + 1 is
+    # always correct for 2-col tables; for >2-col tables a compound match
+    # could emit a value from the wrong column.
+    if pred.is_compound and len(headers) != 2:
+        return None
+
     row = rows[r_idx]
     val_text = row[val_col] if val_col < len(row) else ""
-    pred = preds[r_idx]
     return (row[cond_col], val_text,
             f"matched: {row[cond_col]} [{pred.describe()}] contains {op} {v1}")
 
