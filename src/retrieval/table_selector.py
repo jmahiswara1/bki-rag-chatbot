@@ -530,40 +530,109 @@ class ColumnDescriptor:
     dimension: Optional[str]
     source_text: str
 
-def _is_data_line(cells: List[str]) -> bool:
+def _row_type_profile(cells: List[str]) -> List[str]:
     types = []
     for c in cells:
         c = c.strip()
         if not c:
+            types.append("U")
             continue
         op, val = _parse_row_cond(c)
         if op is None:
-            types.append("T")
+            if "[" in c and "]" in c:
+                types.append("UNIT")
+            else:
+                types.append("T")
         elif op == "=":
             types.append("N")
         else:
             types.append("E")
+    return types
+
+def _evaluate_partition(lines: List[List[str]], split_idx: int) -> int:
+    if split_idx == 0 or split_idx >= len(lines):
+        return -9999
+        
+    hdr_lines = lines[:split_idx]
+    body_lines = lines[split_idx:]
+    
+    max_cols = max(len(r) for r in lines)
+    
+    ineq_cols = []
+    numeric_cols = []
+    
+    for ci in range(max_cols):
+        has_comp = False
+        has_any = False
+        has_text = False
+        
+        for row in body_lines:
+            if ci >= len(row): continue
+            cell = row[ci].strip()
+            if not cell: continue
+            op, val = _parse_row_cond(cell)
+            if op is not None:
+                has_any = True
+                if op != "=":
+                    has_comp = True
+            else:
+                if not (cell.startswith("[") and cell.endswith("]")) and not cell.endswith(")"):
+                    has_text = True
+                
+        if has_comp and not has_text:
+            ineq_cols.append(ci)
+        elif has_any and not has_text:
+            numeric_cols.append(ci)
             
-    if "E" in types:
-        return True
-    if "N" in types and "T" not in types:
-        return True
-    return False
+    is_valid_schema = False
+    if len(ineq_cols) == 1:
+        is_valid_schema = True
+    elif len(numeric_cols) >= 1 and len(ineq_cols) == 0:
+        is_valid_schema = True
+        
+    score = 0
+    if is_valid_schema:
+        score += 1000
+        score += len(body_lines) * 10
+        
+    for r in hdr_lines:
+        if "UNIT" in _row_type_profile(r):
+            score += 50
+            
+    body_profiles = [_row_type_profile(r) for r in body_lines]
+    for p in body_profiles:
+        if "T" in p and "E" not in p and "N" not in p:
+            score -= 500
+            
+    return score
+
+def _find_best_partition(lines: List[str]) -> Optional[int]:
+    parsed_lines = [[c.strip() for c in l.split("|")] for l in lines]
+    
+    best_split = None
+    best_score = -9999
+    
+    for i in range(1, len(parsed_lines)):
+        s = _evaluate_partition(parsed_lines, i)
+        if s > best_score:
+            best_score = s
+            best_split = [i]
+        elif s == best_score:
+            best_split.append(i)
+            
+    if best_split and len(best_split) == 1 and best_score > 0:
+        return best_split[0]
+        
+    return None
 
 def _parse_headers(lines: List[str]) -> Tuple[List[ColumnDescriptor], List[List[str]]]:
-    hdr_lines = []
-    data_lines = []
+    split_idx = _find_best_partition(lines)
     
-    is_data = False
-    for l in lines:
-        cells = [c.strip() for c in l.split("|")]
-        if not is_data:
-            is_data = _is_data_line(cells)
-            
-        if is_data:
-            data_lines.append(cells)
-        else:
-            hdr_lines.append(cells)
+    if split_idx is None:
+        return [], []
+        
+    hdr_lines = [[c.strip() for c in l.split("|")] for l in lines[:split_idx]]
+    data_lines = [[c.strip() for c in l.split("|")] for l in lines[split_idx:]]
             
     if not hdr_lines:
         return [], data_lines
