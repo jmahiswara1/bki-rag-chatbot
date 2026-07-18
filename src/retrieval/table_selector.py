@@ -512,7 +512,7 @@ def _tightest_match(preds: list[Predicate], matching: list[int]) -> Optional[int
 
 def _table_header_line(table_content: str) -> str:
     """Extract the first data line (headers) for semantic matching."""
-    lines = [l for l in table_content.split("\n") if l.strip() and not l.startswith("[")]
+    lines = [l for l in table_content.split("\n") if l.strip() and not re.match(r"^\[(?:Sec|Table)\s+.*\]$", l.strip())]
     return lines[0] if lines else ""
 
 
@@ -531,10 +531,23 @@ class ColumnDescriptor:
     source_text: str
 
 def _is_data_line(cells: List[str]) -> bool:
+    types = []
     for c in cells:
+        c = c.strip()
+        if not c:
+            continue
         op, val = _parse_row_cond(c)
-        if op is not None and val is not None:
-            return True
+        if op is None:
+            types.append("T")
+        elif op == "=":
+            types.append("N")
+        else:
+            types.append("E")
+            
+    if "E" in types:
+        return True
+    if "N" in types and "T" not in types:
+        return True
     return False
 
 def _parse_headers(lines: List[str]) -> Tuple[List[ColumnDescriptor], List[List[str]]]:
@@ -596,7 +609,7 @@ def _parse_headers(lines: List[str]) -> Tuple[List[ColumnDescriptor], List[List[
 
 def _parse_table(table_content: str):
     """Legacy compatible parser. Uses the hierarchical parser internally."""
-    lines = [l for l in table_content.split("\n") if l.strip() and not l.startswith("[")]
+    lines = [l for l in table_content.split("\n") if l.strip() and not re.match(r"^\[(?:Sec|Table)\s+.*\]$", l.strip())]
     if len(lines) < 2:
         return None, None, None, None
         
@@ -697,7 +710,7 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
         return None
     headers, rows, cond_col, _ = parsed
     
-    lines = [l for l in table_content.split("\n") if l.strip() and not l.startswith("[")]
+    lines = [l for l in table_content.split("\n") if l.strip() and not re.match(r"^\[(?:Sec|Table)\s+.*\]$", l.strip())]
     cols, _ = _parse_headers(lines)
     
     cond = _parse_query_condition(query, lang)
