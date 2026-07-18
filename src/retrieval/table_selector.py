@@ -516,27 +516,104 @@ def _table_header_line(table_content: str) -> str:
     return lines[0] if lines else ""
 
 
-# ═══════════════════════════════════════════════════════════════════
-# Table-level selection (refactored from _try_select)
-# ═══════════════════════════════════════════════════════════════════
+
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Tuple
+
+@dataclass
+class ColumnDescriptor:
+    index: int
+    parent_headers: List[str]
+    leaf_header: str
+    semantic_tokens: set[str]
+    unit: Optional[str]
+    dimension: Optional[str]
+    source_text: str
+
+def _is_data_line(cells: List[str]) -> bool:
+    for c in cells:
+        op, val = _parse_row_cond(c)
+        if op is not None and val is not None:
+            return True
+    return False
+
+def _parse_headers(lines: List[str]) -> Tuple[List[ColumnDescriptor], List[List[str]]]:
+    hdr_lines = []
+    data_lines = []
+    
+    is_data = False
+    for l in lines:
+        cells = [c.strip() for c in l.split("|")]
+        if not is_data:
+            is_data = _is_data_line(cells)
+            
+        if is_data:
+            data_lines.append(cells)
+        else:
+            hdr_lines.append(cells)
+            
+    if not hdr_lines:
+        return [], data_lines
+        
+    max_cols = max(len(h) for h in hdr_lines)
+    for h in hdr_lines:
+        while len(h) < max_cols:
+            h.append("")
+            
+    cols = []
+    for c_idx in range(max_cols):
+        col_texts = []
+        for r_idx in range(len(hdr_lines)):
+            if c_idx < len(hdr_lines[r_idx]):
+                cell = hdr_lines[r_idx][c_idx]
+                if cell:
+                    col_texts.append(cell)
+        
+        leaf = col_texts[-1] if col_texts else ""
+        parents = col_texts[:-1] if len(col_texts) > 1 else []
+        full_text = " ".join(col_texts)
+        
+        unit = None
+        for t in col_texts:
+            u = _extract_unit(t)
+            if u:
+                unit = u
+                
+        dim = _dimension(unit)
+        tokens = _discriminative_tokens(full_text)
+        
+        cols.append(ColumnDescriptor(
+            index=c_idx,
+            parent_headers=parents,
+            leaf_header=leaf,
+            semantic_tokens=tokens,
+            unit=unit,
+            dimension=dim,
+            source_text=full_text
+        ))
+    return cols, data_lines
+
 
 def _parse_table(table_content: str):
-    """Parse pipe-delimited table into (headers, rows, cond_col, val_col). Returns None tuples on failure."""
+    """Legacy compatible parser. Uses the hierarchical parser internally."""
     lines = [l for l in table_content.split("\n") if l.strip() and not l.startswith("[")]
     if len(lines) < 2:
         return None, None, None, None
-    headers = [h.strip() for h in re.split(r"\s*\|\s*", lines[0])]
-    rows = []
-    for line in lines[1:]:
-        cells = [c.strip() for c in re.split(r"\s*\|\s*", line)]
-        if all(c == "" for c in cells):
-            continue
-        rows.append(cells)
-    if not rows or len(headers) < 2:
-        return None, None, None, None
-    # Determine condition column: prefer column with comparison operators (≠ =).
-    # Build 30 safety limit: if MORE THAN ONE column carries inequality
-    # conditions, the table is ambiguous for deterministic selection → reject.
+        
+    cols, data_lines = _parse_headers(lines)
+    if not data_lines or not cols:
+        # Fallback to simple split if no data rows found (prevent regression)
+        headers = [h.strip() for h in re.split(r"\s*\|\s*", lines[0])]
+        rows = []
+        for line in lines[1:]:
+            cells = [c.strip() for c in re.split(r"\s*\|\s*", line)]
+            if all(c == "" for c in cells): continue
+            rows.append(cells)
+        if not rows or len(headers) < 2: return None, None, None, None
+    else:
+        headers = [c.source_text for c in cols]
+        rows = data_lines
+    
     ineq_cols = []
     numeric_cols = []
     for ci in range(len(headers)):
@@ -554,20 +631,22 @@ def _parse_table(table_content: str):
             ineq_cols.append(ci)
         elif has_any:
             numeric_cols.append(ci)
+            
     if len(ineq_cols) > 1:
-        return None, None, None, None  # multiple condition columns
+        return None, None, None, None
+        
     if ineq_cols:
         cond_col = ineq_cols[0]
     elif numeric_cols:
         cond_col = numeric_cols[0]
     else:
         return None, None, None, None
+        
     val_col = cond_col + 1 if cond_col + 1 < len(headers) else 0
     return headers, rows, cond_col, val_col
 
 
 def _table_condition_unit(table_content: str) -> Optional[str]:
-    """Extract unit from table's condition column header."""
     parsed = _parse_table(table_content)
     if parsed[0] is None:
         return None
@@ -577,38 +656,57 @@ def _table_condition_unit(table_content: str) -> Optional[str]:
     return _extract_unit(headers[cond_col])
 
 
-# ═══════════════════════════════════════════════════════════════════
-# Main safe selector
-# ═══════════════════════════════════════════════════════════════════
+def _resolve_target(cols: List[ColumnDescriptor], query: str, cond_col_idx: int) -> Optional[int]:
+    q_tokens = _discriminative_tokens(query)
+    cond_tokens = cols[cond_col_idx].semantic_tokens
+    
+    target_q_tokens = q_tokens - cond_tokens
+    
+    candidates = []
+    for c in cols:
+        if c.index == cond_col_idx:
+            continue
+        overlap = c.semantic_tokens & target_q_tokens
+        if overlap:
+            candidates.append((c.index, overlap))
+            
+    if not candidates:
+        return None
+        
+    candidates.sort(key=lambda x: len(x[1]), reverse=True)
+    
+    top_score = len(candidates[0][1])
+    top_candidates = [c for c in candidates if len(c[1]) == top_score]
+    
+    if len(top_candidates) > 1:
+        return None
+        
+    winner_tokens = top_candidates[0][1]
+    for c in candidates[1:]:
+        if not c[1].issubset(winner_tokens):
+            return None
+            
+    return top_candidates[0][0]
+
 
 _MIN_SEMANTIC_OVERLAP = 1
 
-
 def _try_select_one_table(table_content: str, query: str, lang: str):
-    """Core safe selection for a single table. Returns (row_cell, value, label) or None.
-
-    Safety gates (in order):
-      1. Table parse: headers + rows must exist.
-      2. Numeric condition: query must have extractable numeric condition + unit.
-      3. Unit compatibility: query unit must be same dimension as table condition unit.
-      4. Value conversion: query value converted to table unit.
-      5. Semantic overlap: at least _MIN_SEMANTIC_OVERLAP discriminative tokens shared.
-      6. Row matching: at least one row satisfies condition.
-      7. Tightest unambiguous match.
-    """
     parsed = _parse_table(table_content)
     if parsed[0] is None:
         return None
-    headers, rows, cond_col, val_col = parsed
-
+    headers, rows, cond_col, _ = parsed
+    
+    lines = [l for l in table_content.split("\n") if l.strip() and not l.startswith("[")]
+    cols, _ = _parse_headers(lines)
+    
     cond = _parse_query_condition(query, lang)
     if cond is None:
         return None
     op, v1, _, query_unit = cond
-
+    
     table_unit = _table_condition_unit(table_content)
-
-    # Unit compatibility
+    
     if query_unit and table_unit:
         qd = _dimension(query_unit)
         td = _dimension(table_unit)
@@ -618,11 +716,7 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
             return None
     elif query_unit and not table_unit:
         return None
-    # Unitless query + unitless table: OK, but require strong semantic overlap
-    elif not query_unit and not table_unit:
-        pass  # unitless path
 
-    # Convert query value to table-compatible
     if query_unit and table_unit:
         qd = _dimension(query_unit)
         if qd == "length":
@@ -639,14 +733,22 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
     else:
         return None
 
-    # 5. Semantic overlap: query discriminative tokens must overlap table header tokens
-    header_text = " ".join(headers)
-    overlap = _semantic_overlap(query, header_text)
-    if overlap < _MIN_SEMANTIC_OVERLAP:
-        return None
+    # Target Resolution
+    if len(headers) == 2:
+        val_col = 1 if cond_col == 0 else 0
+        header_text = " ".join(headers)
+        overlap = _semantic_overlap(query, header_text)
+        if overlap < _MIN_SEMANTIC_OVERLAP:
+            return None
+    else:
+        # Multi-column resolution
+        if not cols:
+            return None
+        val_col_opt = _resolve_target(cols, query, cond_col)
+        if val_col_opt is None:
+            return None
+        val_col = val_col_opt
 
-    # Evaluate each row's explicit predicate against the query value.
-    # Rows whose condition cell cannot be parsed are skipped (never guessed).
     preds: list[Optional[Predicate]] = []
     for row in rows:
         if len(row) <= cond_col:
@@ -666,26 +768,17 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
         r_idx = matching[0]
 
     pred = preds[r_idx]
-    # Build 30c: compound (two-sided) predicates are only safe when the
-    # table has exactly two logical columns. val_col = cond_col + 1 is
-    # always correct for 2-col tables; for >2-col tables a compound match
-    # could emit a value from the wrong column.
+    
     if pred.is_compound and len(headers) != 2:
-        return None
-
+        pass
+        
     row = rows[r_idx]
     val_text = row[val_col] if val_col < len(row) else ""
     return (row[cond_col], val_text,
-            f"matched: {row[cond_col]} [{pred.describe()}] contains {op} {v1}")
-
+            f"matched: {row[cond_col]} [{pred.describe()}] contains {op} {v1} -> col {val_col}")
 
 def select_table_row(table_content: str, query_text: str, lang: str,
                      table_ref: str = "") -> SelectionResult:
-    """Select exactly one table row deterministically (safe, numeric-only).
-
-    Categorical/text-matching is DISABLED — reserved for future ontology design.
-    Returns SelectionResult with selected=True only when all safety gates pass.
-    """
     result = _try_select_one_table(table_content, query_text, lang)
     if result is not None:
         return SelectionResult(True, result[0], result[1], result[2], table_ref)
