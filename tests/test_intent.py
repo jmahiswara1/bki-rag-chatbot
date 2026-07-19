@@ -108,6 +108,33 @@ def test_rules_qa_berapa_menurut_aturan():
     print("PASS: test_rules_qa_berapa_menurut_aturan")
 
 
+def test_table_routing_gate_t271():
+    """Build 32a: T27.1 table value request must bypass LLM fallback and go to rules_qa."""
+    query = "test force for design force 800 kN"
+    intent = classify(query)
+    assert intent.kind == "rules_qa"
+    assert intent.confidence == "high"
+    assert intent.source == "heuristic"
+
+
+def test_table_routing_gate_t391():
+    """Build 32a: T39.1 table value request must bypass LLM fallback."""
+    query = "brittle crack arrest steel for thickness 60 mm"
+    intent = classify(query)
+    assert intent.kind == "rules_qa"
+    assert intent.confidence == "high"
+    assert intent.source == "heuristic"
+
+
+def test_table_routing_gate_explicit_table():
+    """Build 32a: Explicit table mention must bypass LLM fallback."""
+    query = "table 19.1 bending radius"
+    intent = classify(query)
+    assert intent.kind == "rules_qa"
+    assert intent.confidence == "high"
+    assert intent.source == "heuristic"
+
+
 def test_word_boundary_perhitungan():
     """Regression: 'perhitungan' should NOT trigger calculation (word boundary test)"""
     query = "Apa itu perhitungan tebal pelat?"

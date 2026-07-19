@@ -81,6 +81,12 @@ def classify(query: str, history: list[dict] | None = None) -> Intent:
     if is_quest and not has_num and not has_imper:
         return Intent(kind="rules_qa", confidence="high", source="heuristic")
     
+    # Branch 3b: table-targeted or value-lookup requests without compute imperatives
+    has_table_cue = re.search(r"\b(?:table|tabel|chart|t\d+\.\d+)\b", q) is not None
+    has_val_lookup = re.search(r"\b(?:for|untuk|of|dari|pada|dengan)\b.*\b\d+(?:[.,]\d+)?\b", q) is not None
+    if has_table_cue or (has_val_lookup and not has_imper and not has_topical):
+        return Intent(kind="rules_qa", confidence="high", source="heuristic")
+    
     # Branch 4: defer to LLM classifier
     return Intent(kind="rules_qa", confidence="low", source="heuristic")
 
