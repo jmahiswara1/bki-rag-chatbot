@@ -174,6 +174,27 @@ def test_gate_33a_not_overroute_calc_topical_id():
     assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
 
 
+def test_gate_33c_gerund_calculating_routes_to_calc():
+    """Build 33c: EN gerund 'calculating' must route to calculation."""
+    query = "calculating section modulus for L=100"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
+def test_gate_33c_gerund_computing_routes_to_calc():
+    """Build 33c: EN gerund 'computing' must route to calculation."""
+    query = "computing moment of inertia for frame 0.6"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
+def test_gate_33c_past_participle_not_broken():
+    """Build 33c: 32c fix must not be broken — 'calculated' stays rules_qa."""
+    query = "How is the section modulus of tween deck frames calculated?"
+    intent = classify(query)
+    assert intent.kind == "rules_qa", f"expected rules_qa, got {intent.kind}"
+
+
 if __name__ == "__main__":
     test_calc_high_with_numbers_and_imperative()
     test_calc_high_with_numbers_and_topical()

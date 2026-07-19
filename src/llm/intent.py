@@ -5,7 +5,9 @@ from src.core.models import Intent
 
 # Explicit computation imperatives (command form).
 COMPUTE_IMPERATIVE_EN = {
-    "calculate", "compute",
+    "calculate", "calculating",
+    "compute", "computing",
+    "determine", "determining",
 }
 
 COMPUTE_IMPERATIVE_ID = {
