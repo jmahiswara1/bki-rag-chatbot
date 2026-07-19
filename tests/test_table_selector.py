@@ -850,3 +850,9 @@ class TestSequenceAwarePartition:
         tbl = ("Thickness t [mm] | Alpha Parameter\n10 | 1.5\n20 | 2.0")
         r = select_table_row(tbl, "alpha parameter for thickness 10 mm", "en", "")
         assert r.selected and r.value_text == "1.5"
+
+    def test_t9_1_overlap_equality_vs_range(self):
+        """T9.1 exact =3 vs >=3: _tightest_match returns None, first match wins."""
+        tbl = ("Number of cross ties | n c\n0 | 1,0\n1 | 0,5\n3 | 0,3\n≥ 3 | 0,2")
+        r = select_table_row(tbl, "n_c for 3 cross ties", "en", "")
+        assert r.selected and r.value_text == "0,2"
