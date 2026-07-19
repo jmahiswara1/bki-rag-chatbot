@@ -392,13 +392,19 @@ def _pre_answer_pipeline(
             if sel.selected:
                 safe_selections.append((rank, sel))
         if len(safe_selections) == 1:
-            sel = safe_selections[0][1]
+            rank, sel = safe_selections[0]
             table_evidence = (
                 f"\n[TABLE ROW SELECTED from {sel.table_ref}]\n"
                 f"Condition: {sel.reason}\n"
                 f"Row: {sel.row_text}\n"
                 f"Value: {sel.value_text}\n"
             )
+            # Boost the chunk that provided the table evidence so the LLM
+            # attends to it ahead of competing narratives that mention
+            # sibling tables (e.g. narrative C.1 mentioning Table 35.2
+            # when the selector confirmed Table 35.1 is the answer).
+            candidates[rank].score += 3.0
+            candidates.sort(key=lambda c: c.score, reverse=True)
 
     # 7. guardrail (default only)
     rejected = False

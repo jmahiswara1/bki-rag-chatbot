@@ -51,7 +51,14 @@ def build_context(chunks, table_evidence: str = "") -> str:
     # Render retrieved chunks into a citable context block.
     parts = []
     if table_evidence:
-        parts.append(table_evidence)
+        parts.append(
+            "[TABLE SELECTION — HIGHEST AUTHORITY]\n"
+            "The following value was deterministically selected from the rules table.\n"
+            "Use this exact value as the primary answer. Any conflicting values in the\n"
+            "narrative context below refer to different tables or parameters.\n"
+            + table_evidence +
+            "\n[END TABLE SELECTION]"
+        )
     for c in chunks:
         tag = f"[Sec {c.section_no} {c.section_title}"
         if c.paragraph_id:
