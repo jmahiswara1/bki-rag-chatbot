@@ -146,6 +146,34 @@ def test_word_boundary_perhitungan():
     print("PASS: test_word_boundary_perhitungan")
 
 
+def test_gate_33a_not_overroute_calc_imperative_en():
+    """Build 33a: Query with compute imperative must stay calculation, not rules_qa."""
+    query = "calculate section modulus for L=150"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
+def test_gate_33a_not_overroute_calc_assignment_en():
+    """Build 33a: Query with explicit assignment must stay calculation."""
+    query = "moment of inertia for L=100"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
+def test_gate_33a_not_overroute_calc_imperative_id():
+    """Build 33a: Indonesian compute imperative must stay calculation."""
+    query = "Hitung tebal web penumpu tengah untuk L=100"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
+def test_gate_33a_not_overroute_calc_topical_id():
+    """Build 33a: Indonesian topical term with assignment must stay calculation."""
+    query = "Kalkulasi modulus penampang untuk jarak gading 0.5"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
 if __name__ == "__main__":
     test_calc_high_with_numbers_and_imperative()
     test_calc_high_with_numbers_and_topical()
