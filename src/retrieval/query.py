@@ -57,14 +57,6 @@ def retrieve_context(
         # Default mode: higher match_count for recall, then rerank for precision
         candidates = hybrid_search(query_embedding, fts_query_text, top_k=20)
         
-    # Build 32b: Hot-patch mislabeled Table 35.2 chunk (chunk 1208 in DB,
-    # identified by its unique content signature).
-    for c in candidates:
-        if (c.table_no == "35.1" and c.content_type == "table"
-                and '"COLL"-Notation | v*' in c.content):
-            c.table_no = "35.2"
-            c.content = c.content.replace("| Table 35.1]", "| Table 35.2]", 1)
-            
     if mode == "fast":
         return candidates
     return rerank_chunks(fts_query_text, candidates, top_k=8)
