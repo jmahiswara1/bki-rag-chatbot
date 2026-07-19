@@ -823,8 +823,22 @@ class TestSequenceAwarePartition:
         """T27.1 must not emit Anchor mass — correct source is Design force/Test force."""
         tbl = ("Design force T [kN] | Test force PL [kN]\n"
                "T ≤ 500 | 2 · T\n500 < T ≤ 1500 | T + 500\n1500 < T | 1,33 · T")
-        r = select_table_row(tbl, "test force for 800 kN", "en", "")
-        assert r.selected and "T + 500" in r.value_text
+        r = select_table_row(tbl, "anchor mass for test force 600 kN", "en", "")
+        assert not r.selected
+        r2 = select_table_row(tbl, "massa jangkar untuk test force 600 kN", "id", "")
+        assert not r2.selected
+
+    def test_t2_14_faktor_beta_target_resolution(self):
+        """T2.14 beta target must fall back if ambiguous, and select correctly if explicit."""
+        tbl = ("Aluminium alloy | Temper condition | As-built thickness [mm] | β\n"
+               "6005A (Open sections) | T5 or T6 | t ≤ 6 | 0.45\n"
+               " |  | t > 6 | 0.40")
+        # Ambiguous: mentions aluminium (col 0) and beta (col 3) but doesn't specify alloy
+        r = select_table_row(tbl, "faktor beta untuk paduan aluminium ketebalan 5 mm", "id", "")
+        assert not r.selected
+        # Explicit: only asks for beta
+        r2 = select_table_row(tbl, "faktor beta untuk ketebalan 5 mm", "id", "")
+        assert r2.selected and r2.value_text == "0.45"
 
     # ── T39.1 partition structure ──
 
@@ -852,7 +866,7 @@ class TestSequenceAwarePartition:
         assert r.selected and r.value_text == "1.5"
 
     def test_t9_1_overlap_equality_vs_range(self):
-        """T9.1 exact =3 vs >=3: _tightest_match returns None, first match wins."""
+        """T9.1 exact =3 vs >=3: overlap is ambiguous, must fallback."""
         tbl = ("Number of cross ties | n c\n0 | 1,0\n1 | 0,5\n3 | 0,3\n≥ 3 | 0,2")
         r = select_table_row(tbl, "n_c for 3 cross ties", "en", "")
-        assert r.selected and r.value_text == "0,2"
+        assert not r.selected

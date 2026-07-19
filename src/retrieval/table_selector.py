@@ -190,6 +190,9 @@ def _parse_num(v: str) -> Optional[float]:
 
 def _discriminative_tokens(text: str) -> set[str]:
     """Extract discriminative technical words from text, excluding stop/generic words."""
+    # Map common Greek symbols to words to allow semantic matching
+    text = text.replace("α", "alpha").replace("β", "beta").replace("γ", "gamma")
+    
     words = set()
     for w in re.findall(r"\b\w+\b", text.lower()):
         w = w.strip(".,:;()[]\"'")
@@ -495,6 +498,12 @@ def _tightest_match(preds: list[Predicate], matching: list[int]) -> Optional[int
         return None  # compound overlaps another matched row
     if len(bounded) > 1:
         return None
+
+    points = [i for i in matching if preds[i].is_point]
+    ranges = [i for i in matching if not preds[i].is_point]
+    if points and ranges:
+        return None  # point overlaps a range bound
+
     uppers = [(preds[i].upper, i) for i in matching
               if preds[i].upper is not None]
     lowers = [(preds[i].lower, i) for i in matching
@@ -663,6 +672,9 @@ def _parse_headers(lines: List[str]) -> Tuple[List[ColumnDescriptor], List[List[
                 
         dim = _dimension(unit)
         tokens = _discriminative_tokens(full_text)
+        # Fallback for short symbols like β
+        if not tokens and full_text and len(full_text.strip()) <= 2:
+            tokens.add(full_text.strip().lower())
         
         cols.append(ColumnDescriptor(
             index=c_idx,
@@ -821,6 +833,23 @@ def _try_select_one_table(table_content: str, query: str, lang: str):
         header_text = " ".join(headers)
         overlap = _semantic_overlap(query, header_text)
         if overlap < _MIN_SEMANTIC_OVERLAP:
+            return None
+            
+        # Target identity verification for 2-col
+        q_tokens = _discriminative_tokens(query)
+        cond_tokens = cols[cond_col].semantic_tokens if cols else set()
+        val_tokens = cols[val_col].semantic_tokens if cols else set()
+        
+        target_intent = q_tokens - cond_tokens
+        
+        # If query has explicit separator, target intent primarily comes from before it
+        sep_match = re.search(r'\b(for|of|dari|untuk|buat|pada|dengan)\b', query.lower())
+        if sep_match and sep_match.start() > 3:
+            pre_sep = query[:sep_match.start()]
+            pre_tokens = _discriminative_tokens(pre_sep)
+            if pre_tokens and val_tokens and not (pre_tokens & val_tokens):
+                return None
+        elif target_intent and val_tokens and not (target_intent & val_tokens):
             return None
     else:
         # Multi-column resolution
