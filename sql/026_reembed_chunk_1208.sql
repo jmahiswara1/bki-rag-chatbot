@@ -1,0 +1,32 @@
+-- sql/026_reembed_chunk_1208.sql
+-- Build 33d: re-embed chunk 1208 after provenance label correction (sql/025).
+-- Stored embedding was computed from old content '| Table 35.1]'; now stale
+-- vs corrected content '| Table 35.2]'.
+--
+-- Round-trip sanity on chunks 745/1130/832 confirmed cosine=1.000000
+-- (embedder: bge-m3, 1024 dims, Ollama defaults, no fp16/normalize).
+-- Cosine(old, new) for chunk 1208 = 0.998886 confirming drift.
+--
+-- The new embedding was computed and applied via Python (temp_33d_apply.py).
+-- Full 1024-dim pgvector saved in temp_33d_rollback.txt for rollback.
+--
+-- To re-apply after re-provision:
+--   1. Run sql/025 first (content + table_no fix)
+--   2. Run: python -c "
+--        from src.ingest.embedder import embed
+--        from core.db import get_client
+--        c = get_client()
+--        r = c.table('chunks').select('content').eq('id',1208).single().execute()
+--        vec = '[' + ','.join(f'{x:.8f}' for x in embed(r.data['content'])) + ']'
+--        c.table('chunks').update({'embedding': vec}).eq('id',1208).execute()
+--      "
+--
+-- Verify:
+-- SELECT id, table_no,
+--   embedding IS NOT NULL AS has_embedding,
+--   LEFT(content, 60) AS content_preview
+-- FROM chunks WHERE id = 1208;
+
+-- ── ROLLBACK ──
+-- Restore old embedding from temp_33d_rollback.txt:
+-- c.table('chunks').update({'embedding': open('temp_33d_rollback.txt').read()}).eq('id',1208).execute()
