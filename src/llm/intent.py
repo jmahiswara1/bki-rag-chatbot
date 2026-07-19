@@ -4,9 +4,12 @@ from src.core.config import settings
 from src.core.models import Intent
 
 # Explicit computation imperatives (command form).
-COMPUTE_IMPERATIVE = {
-    "hitung", "kalkulasi", "kalkulasikan",
+COMPUTE_IMPERATIVE_EN = {
     "calculate", "compute",
+}
+
+COMPUTE_IMPERATIVE_ID = {
+    "hitung", "kalkulasi", "kalkulasikan",
 }
 
 # Question cues (interrogatives that signal rules_qa, not calculation).
@@ -59,7 +62,8 @@ def classify(query: str, history: list[dict] | None = None) -> Intent:
     # keeps the match inside a word-char region, so a trailing \b would
     # miss these forms and the heuristic would fall through to the LLM
     # fallback, which misroutes value-asking queries to the calc engine.
-    has_imper = any(re.search(rf"\b{v}\w*", q) for v in COMPUTE_IMPERATIVE)
+    has_imper = (any(re.search(rf"\b{v}\b", q) for v in COMPUTE_IMPERATIVE_EN)
+                 or any(re.search(rf"\b{v}\w*", q) for v in COMPUTE_IMPERATIVE_ID))
 
     # Check for question cues with WORD BOUNDARIES
     # Same boundary fix as has_imper: trailing \b dropped to handle -kah
