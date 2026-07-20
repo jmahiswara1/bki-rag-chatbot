@@ -70,6 +70,18 @@ _RULES: list[LookupRule] = [
                        "spacing", "jarak", "2,6 m"),
     ),
     LookupRule(
+        topic="towing_winch_holding_capacity",
+        parameter=None,
+        value_text="80% dari minimum breaking load Fmin tali tunda",
+        value_num=80,
+        unit="% Fmin",
+        section_no=27,
+        paragraph_id="C.5.3.1",
+        page_no=630,
+        source_quote="The holding capacity of the towing winch...",
+        trigger_terms=("towing winch", "holding capacity", "kapasitas penahan", "winch tunda", "holding", "capacity", "kapasitas", "penahan", "towing", "winch", "towrope", "tali tunda", "first layer", "lapisan pertama"),
+    ),
+    LookupRule(
         topic="tug_winch_drum_diameter",
         parameter=None,
         value_text="tidak kurang dari 14 x diameter towrope",
@@ -605,6 +617,27 @@ def test_match_forepeak_stringer_spacing():
     assert match.rule.paragraph_id == "A.5.2.1"
     print("PASS: test_match_forepeak_stringer_spacing")
 
+
+def test_match_towing_winch_holding_capacity():
+    """Test towing_winch_holding_capacity triggers properly without misfiring drum diameter."""
+    match = match_lookup(
+        query_id="Berapa kapasitas penahan (holding capacity) winch tunda pada lapisan pertama towrope?",
+        query_en="What is the holding capacity required for the towing winch on tugs in the first layer of the towrope?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "towing_winch_holding_capacity"
+    assert match.rule.value_num == 80
+
+def test_towing_winch_sibling_non_misfire():
+    """Test drum diameter query does not misfire to holding capacity and vice versa."""
+    match = match_lookup(
+        query_id="Berapa diameter drum winch tunda?",
+        query_en="What is the diameter of the drum for the towing winch?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "tug_winch_drum_diameter"
 
 def test_match_tug_winch_drum():
     match = match_lookup(
