@@ -185,3 +185,36 @@ if __name__ == "__main__":
     test_unrelated_technical_query_unchanged_1()
     test_unrelated_technical_query_unchanged_2()
     print(f"\nAll {len([f for f in dir() if f.startswith('test_')])} tests passed!")
+
+def test_pelat_alas_to_bottom_shell():
+    out = apply_glossary("Berapa tebal minimum pelat alas?").lower()
+    assert "bottom shell plating" in out
+    assert "deck" not in out
+    assert "keel" not in out
+    assert "floor plate" not in out
+
+def test_pelat_alas_dalam_to_inner_bottom():
+    out = apply_glossary("Jelaskan perbedaan pelat alas dan pelat alas dalam.").lower()
+    assert "inner bottom plating" in out
+    assert "bottom shell plating" in out
+    # should not be "bottom shell plating dalam"
+    assert "bottom shell plating dalam" not in out
+
+def test_pelat_wrang_to_floor_plate():
+    out = apply_glossary("Ketentuan untuk pelat wrang tunggal.").lower()
+    assert "floor plate" in out
+
+def test_wrang_to_floor():
+    out = apply_glossary("Apa itu wrang pada konstruksi alas ganda?").lower()
+    assert "floor" in out
+    # "alas ganda" should be "double bottom"
+    assert "double bottom" in out
+
+def test_alas_ganda_to_double_bottom():
+    out = apply_glossary("Tangki pada alas ganda harus dilengkapi.").lower()
+    assert "double bottom" in out
+
+def test_wrang_not_floor_plate():
+    out = apply_glossary("Tebal minimum wrang.").lower()
+    assert "floor" in out
+    assert "floor plate" not in out
