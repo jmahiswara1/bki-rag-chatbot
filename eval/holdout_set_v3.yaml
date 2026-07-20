@@ -334,11 +334,10 @@
   expect_lookup: true
   question: What is the holding capacity required for the towing winch on tugs in the first layer of the towrope?
   coverage: uncovered
-  source_quote: The acting forces are to be calculated for 80% and 45% respectively of the rated breaking load of the chain
-    cable
-  section_no: 18
-  paragraph_id: F.5.2
-  page_no: 405
+  source_quote: The holding capacity of the towing winch (towrope in the first layer) shall correspond to 80% of the minimum breaking load Fmin of the towrope.
+  section_no: 27
+  paragraph_id: C.5.3.1
+  page_no: 630
   must_include:
   - 80%
 - id: v3_iso_window_test_en
