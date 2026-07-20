@@ -196,6 +196,14 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "beam spacing",
     ),
     # tug winch drum (Sec 27): winch drum vs towrope.
+    "towing_winch_holding_capacity": (
+        "holding",
+        "capacity",
+        "holding capacity",
+        "kapasitas penahan",
+        "winch tunda",
+        "towing winch",
+    ),
     "tug_winch_drum_diameter": (
         "winch",
         "drum",
@@ -527,6 +535,15 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     # diameter answer for a holding-capacity question. The correct
     # behaviour when no holding-capacity lookup rule exists is to fall
     # back to RAG, not to answer with the wrong aspect.
+    "towing_winch_holding_capacity": (
+        "drum",
+        "diameter",
+        "anchor",
+        "jangkar",
+        "windlass",
+        "chain",
+        "rantai",
+    ),
     "tug_winch_drum_diameter": (
         "holding", "hold",
         "brake",
