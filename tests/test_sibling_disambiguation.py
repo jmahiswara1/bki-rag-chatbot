@@ -57,11 +57,17 @@ class TestSiblingDisambiguationID:
     """ID C*->COLL must cite T35.1 (citation lock, pre-existing value drift noted)."""
 
     def test_id_c_to_coll_cites_t351(self):
-        """ID C*->COLL must cite Table 35.1 in table_evidence, not T35.2."""
+        """ID C*->COLL must cite Table 35.1 and return COLL notation, not v*cr."""
         state = _pre_answer_pipeline("notasi COLL untuk C 3", None, "default")
         assert state.table_evidence, "Table evidence must not be empty"
         assert "Table 35.1" in state.table_evidence, (
             f"Expected Table 35.1 citation, got: {state.table_evidence[:200]}"
+        )
+        assert "COLL 2" in state.table_evidence, (
+            f"Expected COLL 2 value, got: {state.table_evidence[:200]}"
+        )
+        assert "v*" not in state.table_evidence, (
+            "Table evidence must not contain speed values from sibling T35.2"
         )
 
     def test_id_speed_retrieves_t352(self):
