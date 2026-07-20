@@ -28,6 +28,12 @@ GLOSSARY = (
     ("pelat geladak", "deck plating"),
     ("pelat dek", "deck plating"),
     ("gading", "frame"),
+    # Bottom and floor construction terms (Sec 6, Sec 8)
+    ("pelat alas dalam", "inner bottom plating"),
+    ("pelat wrang", "floor plate"),
+    ("pelat alas", "bottom shell plating"),
+    ("alas ganda", "double bottom"),
+    ("wrang", "floor"),
     ("sekat", "bulkhead"),
     ("penampang", "section"),
     ("engsel", "hinged"),
