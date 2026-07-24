@@ -38,12 +38,12 @@ def _parse_variables(
             - warnings: list of warning messages (e.g., unit mismatch)
     """
     # Regex: variable_name = value [unit]
-    # Examples: "L=100", "L = 100 m", "L : 100.5", "panjang = 100"
+    # Examples: "L=100", "L = 100 m", "L : 100.5", "panjang = 100", "b) = 600 mm"
     # Use negative lookahead to avoid matching a word as unit if followed by = or :
     # Changed (?!\s*[=:]) to (?!\w*\s*[=:]) to prevent matching partial words as units
     # Changed value group from [\d.,]+ to \d+(?:[.,]\d+)? to capture exactly one number
     # with at most one decimal separator (prevents swallowing trailing comma)
-    pattern = r"(\w+)\s*[=:]\s*(\d+(?:[.,]\d+)?)(?:\s+(\w+)(?!\w*\s*[=:]))?"
+    pattern = r"(\w+)[\)]?\s*[=:]\s*(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
     matches = re.findall(pattern, query, re.IGNORECASE)
     
     parsed_values: dict[str, float] = {}
@@ -65,23 +65,77 @@ def _parse_variables(
             if (var.symbol.lower() == var_name.lower() or 
                 var.name.lower() == var_name.lower()):
                 matched_var = var
+                
+                # Unit conversion specifically for 'a' (stiffener spacing) which is expected in 'm'
+                if matched_var.symbol.lower() == 'a' and unit and unit.lower() == 'mm':
+                    value = value / 1000.0
+                    warnings.append(f"Auto-converted 'a' from mm to m: {value} m")
+                
                 break
         
         if matched_var:
             parsed_values[matched_var.symbol] = value
             
-            # Unit check: warning only, don't auto-convert
+            # Unit check: warning only, don't auto-convert (except 'a' which we just handled)
             if unit and matched_var.unit and unit.lower() != matched_var.unit.lower():
-                warnings.append(
-                    f"Unit '{unit}' for {matched_var.symbol} doesn't match "
-                    f"expected '{matched_var.unit}'. Using value as-is."
-                )
+                # Don't warn again if we just auto-converted 'a'
+                if not (matched_var.symbol.lower() == 'a' and unit.lower() == 'mm'):
+                    warnings.append(
+                        f"Unit '{unit}' for {matched_var.symbol} doesn't match "
+                        f"expected '{matched_var.unit}'. Using value as-is."
+                    )
+
+    # 2. Natural Language Parsing for Aliases
+    nl_aliases = {
+        "jarak penegar": "a",
+        "stiffener spacing": "a",
+        "spacing": "a",
+        "jarak gading": "a",
+    }
     
+    for alias, symbol in nl_aliases.items():
+        # alias [optional =:] value [optional unit]
+        alias_pattern = re.escape(alias) + r"[\s=:]+(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
+        for match in re.finditer(alias_pattern, query, flags=re.IGNORECASE):
+            value_str = match.group(1).replace(",", ".")
+            unit = match.group(2)
+            try:
+                value = float(value_str)
+            except ValueError:
+                continue
+                
+            matched_var = None
+            for var in formula.variables:
+                if var.symbol.lower() == symbol.lower():
+                    matched_var = var
+                    break
+                    
+            if matched_var and matched_var.symbol not in parsed_values:
+                if matched_var.symbol.lower() == 'a' and unit and unit.lower() == 'mm':
+                    value = value / 1000.0
+                    warnings.append(f"Auto-converted 'a' from mm to m: {value} m")
+                parsed_values[matched_var.symbol] = value
+                
+                if unit and matched_var.unit and unit.lower() != matched_var.unit.lower():
+                    if not (matched_var.symbol.lower() == 'a' and unit.lower() == 'mm'):
+                        warnings.append(
+                            f"Unit '{unit}' for {matched_var.symbol} doesn't match "
+                            f"expected '{matched_var.unit}'. Using value as-is."
+                        )
+
     # Find missing required variables
-    missing_vars = [
-        var for var in formula.variables
-        if var.required and var.symbol not in parsed_values
-    ]
+    missing_vars = []
+    for var in formula.variables:
+        if not var.required:
+            continue
+        # Allow pS1 to be missing for SIDE_PLATING_L_GREATER_90
+        if formula.code == "SIDE_PLATING_L_GREATER_90" and var.symbol == "pS1":
+            continue
+        # If it has a default, we already filled it, so it's not missing
+        if var.default is not None:
+            continue
+        if var.symbol not in parsed_values:
+            missing_vars.append(var)
     
     return parsed_values, missing_vars, warnings
 
@@ -173,9 +227,8 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
     
     # FIX #2a: Fill default values for optional variables that weren't provided
     for var in formula.variables:
-        if (not var.required and 
-            var.symbol not in parsed_values and 
-            var.default is not None):
+        # If var has a default, fill it (even if required=True, meaning it's a required input but has a sensible default we can use if not provided)
+        if (var.symbol not in parsed_values and var.default is not None):
             parsed_values[var.symbol] = var.default
     
     # Check for missing required variables
@@ -210,7 +263,37 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
     
     # Evaluate formula
     try:
-        result, substituted_expr = _evaluate_formula(formula, parsed_values)
+        # Special handling for pS1 in SIDE_PLATING_L_GREATER_90
+        # If pS1 is missing but pS is present, evaluate without the tS3 branch
+        if formula.code == "SIDE_PLATING_L_GREATER_90" and "pS1" not in parsed_values:
+            # We must strip the pS1 term from the Max function string before parsing
+            # Original: Max(..., ..., 18.3 * nf * a * sqrt(pS1 / (190.8/k)) + tK)
+            expr_str = "Max(18.3 * nf * a * sqrt(pS / (176.1/k)) + tK, 1.21 * a * sqrt(pS * k) + tK)"
+            local_dict = {var.symbol: sympy.Symbol(var.symbol) for var in formula.variables if var.symbol != 'pS1'}
+            try:
+                expr = parse_expr(expr_str, local_dict=local_dict, transformations=standard_transformations)
+                subs_dict = {local_dict[k]: v for k, v in parsed_values.items() if k in local_dict}
+                substituted = expr.subs(subs_dict)
+                substituted_expr = str(substituted)
+                result_expr = substituted.evalf()
+                
+                if result_expr.free_symbols:
+                    unsubstituted = sorted(str(s) for s in result_expr.free_symbols)
+                    raise ValueError(
+                        f"Variabel belum punya nilai: {', '.join(unsubstituted)}. "
+                        "Please provide values for these variables."
+                    )
+                if result_expr.is_finite is not True:
+                    raise ValueError(
+                        "Pembagian nol / hasil tak hingga. "
+                        "Please check variable values."
+                    )
+                result = float(result_expr)
+                warnings.append("Catatan: tS3 dilewati (pS1 tidak diberikan)")
+            except Exception as e:
+                raise ValueError(f"Failed to evaluate modified expression for missing pS1: {e}")
+        else:
+            result, substituted_expr = _evaluate_formula(formula, parsed_values)
         
         # Build citation
         citation = f"(Sec {formula.section_no}"

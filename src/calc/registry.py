@@ -13,6 +13,13 @@ SYNONYM_MAP = {
     "pelat": "plate",
     "web": "web",
     "web plate": "web plate",
+    "alas": "bottom",
+    "dasar": "bottom",
+    "bawah": "bottom",
+    "sisi": "side",
+    "kulit": "shell",
+    "kulit luar": "shell",
+    "lambung": "shell",
 }
 
 
@@ -79,10 +86,20 @@ def rank_formulas(query: str, formulas: list[Formula]) -> list[tuple[Formula, fl
     
     # Apply synonym expansion to query keywords
     expanded_keywords = set(query_keywords)
+    # Clean up synonyms map to better reflect title words
     for indo_term, eng_term in SYNONYM_MAP.items():
         if indo_term in clean_query:
             # Add English synonym keywords
             expanded_keywords.update(eng_term.split())
+            # For bottom plating / side plating, inject specific keywords to help matching
+            if indo_term in ["alas", "dasar", "bawah", "kulit", "kulit luar", "sisi", "lambung"]:
+                expanded_keywords.add("plating")
+                if indo_term in ["alas", "dasar", "bawah"]:
+                    expanded_keywords.add("bottom")
+                if indo_term in ["sisi"]:
+                    expanded_keywords.add("side")
+                if indo_term in ["kulit", "kulit luar", "lambung"]:
+                    expanded_keywords.add("shell")
     
     scored_formulas = []
     for formula in formulas:
@@ -106,6 +123,13 @@ def rank_formulas(query: str, formulas: list[Formula]) -> list[tuple[Formula, fl
         score += var_match_count * 10  # Big bonus for variable matches
         
         if score > 0:
+            # Add length penalty/bonus to prefer formulas that don't have too many unmet variables
+            # FLOOR_PEAK_THICKNESS has 1 variable (L) which is met, so it gets a huge bonus in _coverage,
+            # but we want bottom plating to win if "dasar" or "alas" is in the query.
+            if formula.code in ["BOTTOM_PLATING_L_LESS_90", "BOTTOM_PLATING_L_GREATER_90"] and ("bottom" in expanded_keywords or "shell" in expanded_keywords):
+                score += 30
+            if formula.code in ["SIDE_PLATING_L_LESS_90", "SIDE_PLATING_L_GREATER_90"] and ("side" in expanded_keywords or "shell" in expanded_keywords):
+                score += 30
             scored_formulas.append((formula, score))
     
     # Sort by score (descending)
@@ -117,15 +141,38 @@ def _parse_query_var_names(query: str) -> set[str]:
     """Return lowercased variable SYMBOLS extracted from the query's name=value pairs.
 
     Pure, offline. Works with comma decimals ('a=0,6') and unit suffixes ('L=100 m').
+    Also matches trailing parentheses from raw query ('b)=600').
     Only SYMBOLS are needed; numeric values are not validated here.
     """
-    pattern = r"(\w+)\s*[=:]\s*[\d.,]+"
-    return {m.group(1).lower() for m in re.finditer(pattern, query, flags=re.IGNORECASE)}
+    pattern = r"(\w+)[\)]?\s*[=:]\s*[\d.,]+"
+    found = {m.group(1).lower() for m in re.finditer(pattern, query, flags=re.IGNORECASE)}
+
+    nl_aliases = {
+        "jarak penegar": "a",
+        "stiffener spacing": "a",
+        "spacing": "a",
+        "jarak gading": "a",
+    }
+    
+    for alias, symbol in nl_aliases.items():
+        alias_pattern = re.escape(alias) + r"[\s=:]+[\d.,]+"
+        if re.search(alias_pattern, query, flags=re.IGNORECASE):
+            found.add(symbol.lower())
+
+    return found
 
 
 def _required_vars(f: Formula) -> set[str]:
-    """Lowercased set of variable symbols the user MUST supply (no default + required)."""
-    return {v.symbol.lower() for v in f.variables if v.required and v.default is None}
+    """Lowercased set of variable symbols the user MUST supply (no default + required).
+    For formulaSIDE_PLATING_L_GREATER_90, pS1 is optional so it's not strictly required.
+    """
+    req = set()
+    for v in f.variables:
+        if v.required and v.default is None:
+            if f.code == "SIDE_PLATING_L_GREATER_90" and v.symbol.lower() == "ps1":
+                continue
+            req.add(v.symbol.lower())
+    return req
 
 
 def _coverage(f: Formula, provided: set[str]) -> int:
@@ -152,12 +199,6 @@ def select_formula(
 ) -> tuple[Formula | None, list[tuple[Formula, float]]]:
     """Pick the most likely formula for a calculation query.
 
-    Pure, offline, deterministic. Uses VARIABLE COMPLETENESS as the primary
-    disambiguator and the existing text-overlap score (from rank_formulas) as
-    the secondary tiebreaker. This replaces the brittle 1.5x score-margin gate
-    that failed on exact-tie cases like 'Hitung tebal minimum pelat dek kedua
-    dengan L=100, k=1' (3-way tie at score 44).
-
     Args:
         query: User query string (original language; L=100 / a=0,6 etc preserved).
         candidates: List of Formula objects (typically search_formulas(query) output).
@@ -165,72 +206,88 @@ def select_formula(
     Returns:
         (best, ranked) where:
         - best: the single formula to auto-select, OR None to request clarification.
-        - ranked: the working list to render in the clarification message
-          (the satisfiable subset when non-empty, else the full text-ranked list).
-
-    Decision:
-      1) Build provided = set of variable symbols parsed from query.
-      2) ranked = rank_formulas(query, candidates) -- pure text overlap.
-      3) satisfied = [(f, s) in ranked if required(f) and required(f) <= provided]
-           (i.e. the user supplied EVERY required variable for that formula).
-      4) If satisfied is non-empty:
-           - sort by (coverage desc, text_score desc).
-           - best = satisfied[0].
-           - UNLESS a 2nd entry has the SAME coverage AND the SAME text_score
-             (a true ambiguity), auto-select best and return (best, satisfied).
-           - Otherwise return (None, satisfied) for clarification.
-      5) If no formula's required vars are satisfied, return (None, ranked)
-           so the user sees the full ranked list (the calc engine will ask
-           for missing variables later).
+        - ranked: the working list to render in the clarification message.
     """
-    provided = _parse_query_var_names(query)
     ranked = rank_formulas(query, candidates)
 
     # Extract query keywords (cleaned, lowercased) for the title-match signal.
     clean_query = re.sub(r"\w+\s*[=:]\s*[\d.,]+\s*\w*?", "", query, flags=re.IGNORECASE).lower()
-    query_keywords = set(re.findall(r"\w+", clean_query))
 
-    satisfied: list[tuple[Formula, float]] = []
-    for f, s in ranked:
-        req = _required_vars(f)
-        if req and req <= provided:
-            satisfied.append((f, s))
+    # 1. Check for domain keywords
+    is_bottom = any(kw in clean_query for kw in ["alas", "dasar", "bawah", "bottom"])
+    is_side = any(kw in clean_query for kw in ["sisi", "side"])
+    is_deck = any(kw in clean_query for kw in ["dek", "geladak", "deck"])
+    
+    is_shell = any(kw in clean_query for kw in ["kulit", "lambung", "shell"]) or is_bottom or is_side
 
-    if satisfied:
-        # Sort key (descending): (title_direct_match, text_score, coverage).
-        #
-        # 1) title_direct_match: how many of the user's query words appear
-        #    verbatim in the formula's title. A direct match like "minimum"
-        #    in DECK_PLATING_MIN's title beats a synonym-only expansion like
-        #    "ceruk" -> "peak" for FLOOR_PEAK_THICKNESS, so this is the
-        #    strongest signal among the satisfiable set.
-        # 2) text_score: from rank_formulas (includes synonym expansion and
-        #    variable-match bonus). Used as the primary signal when no
-        #    formula has a direct title match (e.g. floor_peak query with
-        #    only synonym matches).
-        # 3) coverage: how many of the formula's variables the user supplied.
-        #    Tiebreaker for cases where both title match and text score tie.
-        satisfied.sort(
-            key=lambda fs: (
-                _title_direct_match(fs[0], query_keywords),
-                fs[1],
-                _coverage(fs[0], provided),
-            ),
-            reverse=True,
-        )
-        best_f, best_s = satisfied[0]
-        if len(satisfied) >= 2:
-            sec_f, sec_s = satisfied[1]
-            if (best_s == sec_s
-                    and _coverage(best_f, provided) == _coverage(sec_f, provided)
-                    and _title_direct_match(best_f, query_keywords)
-                        == _title_direct_match(sec_f, query_keywords)):
-                # True ambiguity: two candidates both fully satisfiable with the
-                # same coverage and same text score. Ask the user.
-                return None, satisfied
-        return best_f, satisfied
+    # If domain is strictly identified, restrict candidates
+    if is_shell and not is_deck:
+        filtered_ranked = []
+        for f, s in ranked:
+            if "WHEEL_LOAD" in f.code or "FLOOR" in f.code or "DECK" in f.code or "CENTRE" in f.code or "FORECASTLE" in f.code or "FRAME" in f.code:
+                pass
+            else:
+                filtered_ranked.append((f, s))
+        if filtered_ranked:
+            ranked = filtered_ranked
+            
+    if is_deck and not is_shell:
+        filtered_ranked = []
+        for f, s in ranked:
+            if "BOTTOM" in f.code or "SIDE" in f.code or "FLOOR" in f.code or "CENTRE" in f.code or "FORECASTLE" in f.code or "FRAME" in f.code:
+                pass
+            else:
+                filtered_ranked.append((f, s))
+        if filtered_ranked:
+            ranked = filtered_ranked
 
-    # Nothing fully satisfiable: surface the full ranked list.
+    if not ranked:
+        return None, []
+
+    # 2. Extract L value to determine branching for bottom/side plating
+    l_val = None
+    l_match = re.search(r"L\s*[=:]\s*([\d.,]+)", query, flags=re.IGNORECASE)
+    if l_match:
+        try:
+            l_val = float(l_match.group(1).replace(",", "."))
+        except ValueError:
+            pass
+
+    if is_bottom and not is_side:
+        if l_val is not None:
+            code_target = "BOTTOM_PLATING_L_GREATER_90" if l_val >= 90 else "BOTTOM_PLATING_L_LESS_90"
+            for f, s in ranked:
+                if f.code == code_target:
+                    return f, ranked
+    elif is_side and not is_bottom:
+        if l_val is not None:
+            code_target = "SIDE_PLATING_L_GREATER_90" if l_val >= 90 else "SIDE_PLATING_L_LESS_90"
+            for f, s in ranked:
+                if f.code == code_target:
+                    return f, ranked
+
+    # If the top score clearly dominates, select it
+    top_f, top_s = ranked[0]
+    if len(ranked) == 1:
+        return top_f, ranked
+    
+    sec_f, sec_s = ranked[1]
+    
+    # Re-introduce the provided coverage tiebreaker for exact ties, but only for fallback
+    # The old `select_formula` primarily relied on coverage to solve exact ties (like FLOOR_PEAK 44 vs FLOOR_WEB 44)
+    # If the scores are identical or very close, use coverage to break the tie
+    if abs(top_s - sec_s) < 5:
+        provided = _parse_query_var_names(query)
+        top_cov = _coverage(top_f, provided)
+        sec_cov = _coverage(sec_f, provided)
+        if top_cov > sec_cov:
+            return top_f, ranked
+        elif sec_cov > top_cov:
+            return sec_f, ranked
+    
+    if top_s >= sec_s + 6 or top_s >= 1.1 * sec_s:
+        return top_f, ranked
+
     return None, ranked
 
 
@@ -264,12 +321,16 @@ def search_formulas(query: str) -> list[Formula]:
     top_score = scored_formulas[0][1]
     second_score = scored_formulas[1][1]
     
+    if top_score > second_score + 25:
+        # Clear winner by margin
+        return [scored_formulas[0][0]]
+        
     if top_score >= 1.5 * second_score:
-        # Clear winner - return only top candidate
+        # Clear winner by ratio
         return [scored_formulas[0][0]]
     
-    # Multiple close candidates - return all for user clarification
-    return [formula for formula, score in scored_formulas]
+    # Return top 4 candidates to avoid overwhelming the user
+    return [formula for formula, score in scored_formulas[:4]]
 
 
 def _row_to_formula(row: dict) -> Formula:
