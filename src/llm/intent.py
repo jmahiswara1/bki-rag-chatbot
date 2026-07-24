@@ -23,7 +23,7 @@ QUESTION_CUES = {
 }
 
 # Numeric assignment pattern: variable = number (e.g. L=100, a=0.6, n: 4)
-NUM_ASSIGN = re.compile(r"[A-Za-z_]\w*\s*[=:]\s*-?\d")
+NUM_ASSIGN = re.compile(r"[A-Za-z_]\w*[\)]?\s*[=:]\s*-?\d")
 
 # Domain-specific composite terms that imply numeric computation.
 # IMPORTANT: These only trigger calculation when combined with NUM_ASSIGN.
@@ -38,6 +38,14 @@ _CALC_TERMS = (
     "ambang",
     "kecepatan",
     "speed threshold",
+    "tebal pelat",
+    "shell plating",
+    "kulit luar",
+    "pelat alas",
+    "pelat dasar",
+    "pelat sisi",
+    "bottom plating",
+    "side plating",
 )
 
 
