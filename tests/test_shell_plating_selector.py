@@ -102,3 +102,23 @@ class TestShellPlatingSelector:
         best, _ = select_formula(query, candidates)
         assert best is not None
         assert best.code == "BOTTOM_PLATING_L_GREATER_90"
+
+    def test_def1_no_domain_word_requests_clarification(self):
+        query = "hitung tebal pelat, L=100, pB=60, jarak penegar 0.6 m"
+        candidates = search_formulas(query)
+        best, _ = select_formula(query, candidates)
+        assert best is None
+
+    def test_def1_regression_b1_works(self):
+        query = "pelat alas L=100 pB=60 jarak penegar 0.6 m"
+        candidates = search_formulas(query)
+        best, _ = select_formula(query, candidates)
+        assert best is not None
+        assert best.code == "BOTTOM_PLATING_L_GREATER_90"
+
+    def test_def1_regression_b2_en_works(self):
+        query = "bottom plate L=100 pB=60 spacing 0.6 m"
+        candidates = search_formulas(query)
+        best, _ = select_formula(query, candidates)
+        assert best is not None
+        assert best.code == "BOTTOM_PLATING_L_GREATER_90"

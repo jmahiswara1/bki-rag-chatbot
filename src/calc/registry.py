@@ -297,7 +297,22 @@ def select_formula(
         # If it's just a raw var match (like L=100 giving 20 points) but NO text matches,
         # it's a flat distribution of low-confidence matches. Ask for clarification.
         return None, ranked
-
+        
+    # P3 Fix (T7-DEF1): "tebal pelat" generic query without domain explicit tokens should NOT auto-resolve to non-shell
+    # If the user asks for generic plate thickness ("tebal pelat") and provides a pressure var (pB or pS), 
+    # but does NOT mention bottom/side, we should ask for clarification instead of picking a random floor/peak formula.
+    is_generic_thickness = any(kw in clean_query for kw in ["tebal", "thickness"]) and any(kw in clean_query for kw in ["pelat", "plate"])
+    provided_vars = _parse_query_var_names(query)
+    has_shell_var = "pb" in provided_vars or "ps" in provided_vars or "ps1" in provided_vars
+    
+    if is_generic_thickness and not (is_bottom or is_side):
+        # User wants thickness but didn't specify bottom/side. 
+        # If they provided shell plating variables, it's highly ambiguous.
+        if has_shell_var:
+            return None, ranked
+        # Even without shell vars, if the top formula isn't a clear shell formula, it's risky.
+        # But we'll stick to the safest signal: S1 + S2 (intent tebal-pelat + no explicit domain + has shell vars) -> None
+        
     if len(ranked) == 1:
         return top_f, ranked
     
