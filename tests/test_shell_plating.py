@@ -41,7 +41,7 @@ def test_shell_plating_bottom(bottom_greater_90):
     query = "L = 100, pB = 60, a = 600 mm"
     res = calculate(query, bottom_greater_90)
     assert res.success is True
-    assert "Auto-converted 'a' from mm to m: 0.6 m" in res.message
+    assert "Auto-converted 'a' from mm to m" not in res.message
     # a=0.6, pB=60, k=1, tK=1.5, nf=1
     # max(18.3 * 1 * 0.6 * sqrt(60 / 200.2) + 1.5, 1.21 * 0.6 * sqrt(60) + 1.5)
     # max(10.98 * 0.5474 + 1.5, 0.726 * 7.745 + 1.5) = max(7.51, 7.12) = 7.51

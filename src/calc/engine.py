@@ -67,9 +67,18 @@ def _parse_variables(
                 matched_var = var
                 
                 # Unit conversion specifically for 'a' (stiffener spacing) which is expected in 'm'
-                if matched_var.symbol.lower() == 'a' and unit and unit.lower() == 'mm':
-                    value = value / 1000.0
-                    warnings.append(f"Auto-converted 'a' from mm to m: {value} m")
+                if matched_var.symbol.lower() == 'a':
+                    if unit and unit.lower() == 'mm':
+                        value = value / 1000.0
+                    elif unit and unit.lower() == 'm':
+                        pass # explicit meter, do nothing
+                    elif not unit:
+                        # Unitless assumption logic
+                        if value <= 2.0:
+                            warnings.append(f"Asumsi: 'a' tanpa satuan ditafsirkan sebagai meter (a={value} m). Sertakan 'mm' bila maksudnya milimeter.")
+                        else:
+                            value = value / 1000.0
+                            warnings.append(f"Asumsi: 'a'={value*1000} terlalu besar untuk meter; ditafsirkan sebagai mm (a={value} m). Sertakan satuan untuk memastikan.")
                 
                 break
         
@@ -78,7 +87,7 @@ def _parse_variables(
             
             # Unit check: warning only, don't auto-convert (except 'a' which we just handled)
             if unit and matched_var.unit and unit.lower() != matched_var.unit.lower():
-                # Don't warn again if we just auto-converted 'a'
+                # Don't warn again if we just handled 'a'
                 if not (matched_var.symbol.lower() == 'a' and unit.lower() == 'mm'):
                     warnings.append(
                         f"Unit '{unit}' for {matched_var.symbol} doesn't match "
@@ -111,9 +120,17 @@ def _parse_variables(
                     break
                     
             if matched_var and matched_var.symbol not in parsed_values:
-                if matched_var.symbol.lower() == 'a' and unit and unit.lower() == 'mm':
-                    value = value / 1000.0
-                    warnings.append(f"Auto-converted 'a' from mm to m: {value} m")
+                if matched_var.symbol.lower() == 'a':
+                    if unit and unit.lower() == 'mm':
+                        value = value / 1000.0
+                    elif unit and unit.lower() == 'm':
+                        pass # explicit meter, do nothing
+                    elif not unit:
+                        if value <= 2.0:
+                            warnings.append(f"Asumsi: 'a' tanpa satuan ditafsirkan sebagai meter (a={value} m). Sertakan 'mm' bila maksudnya milimeter.")
+                        else:
+                            value = value / 1000.0
+                            warnings.append(f"Asumsi: 'a'={value*1000} terlalu besar untuk meter; ditafsirkan sebagai mm (a={value} m). Sertakan satuan untuk memastikan.")
                 parsed_values[matched_var.symbol] = value
                 
                 if unit and matched_var.unit and unit.lower() != matched_var.unit.lower():
@@ -122,6 +139,30 @@ def _parse_variables(
                             f"Unit '{unit}' for {matched_var.symbol} doesn't match "
                             f"expected '{matched_var.unit}'. Using value as-is."
                         )
+
+    # 3. Handle specific domain semantics (P1 fixes)
+    # k (steel grade)
+    k_explicit = False
+    if 'k' in parsed_values:
+        k_explicit = True
+    elif re.search(r"high\s*tensile|ht", query, re.IGNORECASE):
+        # High tensile but no explicit k: DO NOT default to 1.0
+        # Will handle this below by not setting a default for k
+        pass
+    elif re.search(r"mild\s*steel|baja\s*lunak", query, re.IGNORECASE):
+        parsed_values['k'] = 1.0
+        # NO warning here, because user explicitly requested mild steel.
+    
+    # nf (framing system)
+    nf_explicit = False
+    if 'nf' in parsed_values:
+        nf_explicit = True
+    elif re.search(r"longitudinal|membujur", query, re.IGNORECASE):
+        parsed_values['nf'] = 0.83
+        warnings.append("Sistem gading memanjang (longitudinal framing) -> nf=0.83.")
+    elif re.search(r"transverse|melintang", query, re.IGNORECASE):
+        parsed_values['nf'] = 1.0
+        warnings.append("Sistem gading melintang (transverse framing) -> nf=1.0.")
 
     # Find missing required variables
     missing_vars = []
@@ -229,7 +270,44 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
     for var in formula.variables:
         # If var has a default, fill it (even if required=True, meaning it's a required input but has a sensible default we can use if not provided)
         if (var.symbol not in parsed_values and var.default is not None):
+            if var.symbol == 'k' and re.search(r"high\s*tensile|ht", query, re.IGNORECASE):
+                # Don't apply default k=1.0 if high tensile is mentioned
+                continue
+            
             parsed_values[var.symbol] = var.default
+            
+            # Add warnings for implicit defaults
+            if var.symbol == 'nf':
+                warnings.append("Asumsi: nf=1.0 (transverse). Sebutkan 'longitudinal' untuk nf=0.83.")
+            elif var.symbol == 'k':
+                warnings.append("Asumsi: k=1.0 (mild steel).")
+                
+    # Sanity-bound for 'a'
+    if 'a' in parsed_values:
+        a_m = parsed_values['a']
+        if not (0.1 <= a_m <= 2.0):
+             return CalculationResult(
+                success=False,
+                message=f"Nilai 'a' ({a_m} m) di luar rentang wajar [0.1, 2.0] m. Mohon koreksi nilai atau berikan satuan (mm/m) yang jelas.",
+                formula=formula,
+                parsed_values=parsed_values,
+                missing_vars=[],
+                warnings=warnings
+             )
+    
+    # Custom message for missing k when high tensile is mentioned
+    if 'k' not in parsed_values and re.search(r"high\s*tensile|ht", query, re.IGNORECASE):
+        # We need to block the missing_vars check and return a custom message
+        missing_vars = [v for v in missing_vars if v.symbol != 'k']
+        return CalculationResult(
+            success=False,
+            message="Anda menyebutkan 'high tensile' / 'HT', namun nilai material factor (k) tidak diberikan.\nMohon sebutkan nilai k atau tegangan luluh (ReH), contoh:\n- ReH 315 -> k = 0.78\n- ReH 355 -> k = 0.72\nAtau tulis 'k=0.78' secara eksplisit.",
+            formula=formula,
+            parsed_values=parsed_values,
+            missing_vars=missing_vars,
+            warnings=warnings
+        )
+
     
     # Check for missing required variables
     if missing_vars:
