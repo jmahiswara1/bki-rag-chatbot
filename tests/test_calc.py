@@ -642,13 +642,14 @@ class TestCalculate:
             result_unit="m2",
         )
         result = calculate("L=100 cm, W=50 ft", formula)
-        
+    
         assert result.success is True
         assert result.result == 5000.0  # Values used as-is
         assert "Peringatan" in result.message
         assert "cm" in result.message
         assert "ft" in result.message
-        assert len(result.warnings) == 2
+        # Now there are 3 warnings because 5000 > 100 triggers the new sanity bound warning
+        assert len(result.warnings) == 3
 
 
 class TestOptionalVariableDefaults:
@@ -731,9 +732,9 @@ class TestWarningSurface:
             result_unit="m2",
         )
         result = calculate("L=100 cm, W=50 ft", formula)
-        
+    
         assert result.success is True
-        assert len(result.warnings) == 2
+        assert len(result.warnings) == 3
         assert any("cm" in w for w in result.warnings)
         assert any("ft" in w for w in result.warnings)
 
@@ -751,11 +752,11 @@ class TestWarningSurface:
             result_unit="m2",
         )
         result = calculate("L=100 cm, W=50", formula)
-        
+    
         assert result.success is True
         assert "Peringatan" in result.message
         assert "cm" in result.message
-        assert len(result.warnings) == 1
+        assert len(result.warnings) == 2
 
     def test_warnings_in_missing_vars_case(self):
         """Test warnings are stored even when missing vars."""

@@ -254,24 +254,52 @@ def select_formula(
             pass
 
     if is_bottom and not is_side:
-        if l_val is not None:
+        # Check if it might be a floor/peak query first, which contains "alas" but shouldn't match BOTTOM_PLATING strictly
+        is_floor = any(kw in clean_query for kw in ["wrang", "floor", "ceruk", "peak"])
+        if not is_floor and l_val is not None:
             code_target = "BOTTOM_PLATING_L_GREATER_90" if l_val >= 90 else "BOTTOM_PLATING_L_LESS_90"
             for f, s in ranked:
                 if f.code == code_target:
                     return f, ranked
+            
+            all_fs = list_verified_formulas()
+            for f in all_fs:
+                if f.code == code_target:
+                    return f, ranked
+                    
+            return None, ranked
     elif is_side and not is_bottom:
         if l_val is not None:
             code_target = "SIDE_PLATING_L_GREATER_90" if l_val >= 90 else "SIDE_PLATING_L_LESS_90"
             for f, s in ranked:
                 if f.code == code_target:
                     return f, ranked
+            
+            all_fs = list_verified_formulas()
+            for f in all_fs:
+                if f.code == code_target:
+                    return f, ranked
+                    
+            return None, ranked
 
     # If the top score clearly dominates, select it
     top_f, top_s = ranked[0]
+    sec_f, sec_s = ranked[1] if len(ranked) > 1 else (None, 0)
+    
+    # E1 Fix: Domain confidence gate to prevent heavy typos from misrouting.
+    # Matches the guardrail pattern from chunk retrieval:
+    #   - flat_distribution: gap < 5 (analogous to 0.5) AND top <= 0
+    #   - top_below_min: top <= -2 (translated to top <= 0 in this offline scoring context 
+    #     since 0 is the floor for any match without penalty)
+    if top_s <= 0:
+        return None, ranked
+    if len(ranked) > 1 and (top_s - sec_s) < 5 and top_s <= 20: # 20 is the score of a single 0-overlap var match fallback
+        # If it's just a raw var match (like L=100 giving 20 points) but NO text matches,
+        # it's a flat distribution of low-confidence matches. Ask for clarification.
+        return None, ranked
+
     if len(ranked) == 1:
         return top_f, ranked
-    
-    sec_f, sec_s = ranked[1]
     
     # Re-introduce the provided coverage tiebreaker for exact ties, but only for fallback
     # The old `select_formula` primarily relied on coverage to solve exact ties (like FLOOR_PEAK 44 vs FLOOR_WEB 44)

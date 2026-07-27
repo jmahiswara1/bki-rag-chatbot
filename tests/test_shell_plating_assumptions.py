@@ -102,3 +102,35 @@ def test_a_out_of_bounds(bottom_greater_90):
     res = calculate(query, bottom_greater_90)
     assert res.success is False
     assert "luar rentang wajar" in res.message
+
+def test_pB_negative_rejected(bottom_greater_90):
+    query = "L = 100, pB = -60, a = 600 mm"
+    res = calculate(query, bottom_greater_90)
+    assert res.success is False
+    assert res.parsed_values['pB'] == -60.0
+    assert "Nilai pB harus positif" in res.message
+
+def test_pB_zero_rejected(bottom_greater_90):
+    query = "L = 100, pB = 0, a = 600 mm"
+    res = calculate(query, bottom_greater_90)
+    assert res.success is False
+    assert res.parsed_values['pB'] == 0.0
+    assert "Nilai pB harus positif" in res.message
+
+def test_pB_extreme_warned(bottom_greater_90):
+    query = "L = 100, pB = 99999, a = 600 mm"
+    res = calculate(query, bottom_greater_90)
+    assert res.success is True
+    assert res.parsed_values['pB'] == 99999.0
+    assert any("pB=99999.0 sangat besar (implausibel)" in w for w in res.warnings)
+    assert any("tebal pelat sangat besar" in w for w in res.warnings)
+
+def test_pB_normal_no_warnings(bottom_greater_90):
+    query = "L = 100, pB = 60, a = 600 mm, mild steel"
+    res = calculate(query, bottom_greater_90)
+    assert res.success is True
+    assert res.parsed_values['pB'] == 60.0
+    assert not any("sangat besar (implausibel)" in w for w in res.warnings)
+    assert not any("tebal pelat sangat besar" in w for w in res.warnings)
+    assert 7.50 < res.result < 7.52
+

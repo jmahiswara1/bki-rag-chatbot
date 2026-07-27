@@ -41,9 +41,8 @@ def _parse_variables(
     # Examples: "L=100", "L = 100 m", "L : 100.5", "panjang = 100", "b) = 600 mm"
     # Use negative lookahead to avoid matching a word as unit if followed by = or :
     # Changed (?!\s*[=:]) to (?!\w*\s*[=:]) to prevent matching partial words as units
-    # Changed value group from [\d.,]+ to \d+(?:[.,]\d+)? to capture exactly one number
-    # with at most one decimal separator (prevents swallowing trailing comma)
-    pattern = r"(\w+)[\)]?\s*[=:]\s*(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
+    # Changed value group from [\d.,]+ to -?\d+(?:[.,]\d+)? to capture optional negative sign
+    pattern = r"(\w+)[\)]?\s*[=:]\s*(-?\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
     matches = re.findall(pattern, query, re.IGNORECASE)
     
     parsed_values: dict[str, float] = {}
@@ -104,7 +103,8 @@ def _parse_variables(
     
     for alias, symbol in nl_aliases.items():
         # alias [optional =:] value [optional unit]
-        alias_pattern = re.escape(alias) + r"[\s=:]+(\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
+        # Changed value group to include optional negative sign
+        alias_pattern = re.escape(alias) + r"[\s=:]+(-?\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
         for match in re.finditer(alias_pattern, query, flags=re.IGNORECASE):
             value_str = match.group(1).replace(",", ".")
             unit = match.group(2)
@@ -307,6 +307,22 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
             missing_vars=missing_vars,
             warnings=warnings
         )
+        
+    # Sanity-bounds & validasi untuk pB (Bottom Load)
+    if 'pB' in parsed_values:
+        pB_val = parsed_values['pB']
+        if pB_val <= 0:
+            return CalculationResult(
+                success=False,
+                message=f"Nilai pB harus positif (> 0, tekanan desain). Nilai yang diberikan: {pB_val}",
+                formula=formula,
+                parsed_values=parsed_values,
+                missing_vars=[],
+                warnings=warnings
+            )
+        # Ambang wajar pB: jarang tekanan beban alas melampaui 1000 kN/m2 (setara ~100m head air) pada kapal kargo komersial standar.
+        if pB_val > 1000:
+            warnings.append(f"Perhatian: Nilai pB={pB_val} sangat besar (implausibel). Mohon periksa kembali input Anda.")
 
     
     # Check for missing required variables
@@ -396,6 +412,10 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
         # Add formula notes if present (applicability limits, etc.)
         if formula.notes:
             message += f"\n\nNote: {formula.notes}"
+            
+        # Ambang wajar ketebalan pelat: tebal lambung/alas kapal pada umumnya di bawah 50mm, jarang di atas 100mm.
+        if result > 100:
+            warnings.append(f"Perhatian: Hasil perhitungan tebal pelat sangat besar ({result_str} {unit_str}). Nilai mungkin implausibel, periksa input Anda.")
         
         if warnings:
             message += "\n\nPeringatan:\n" + "\n".join(f"  - {w}" for w in warnings)
