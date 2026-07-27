@@ -309,6 +309,10 @@ def select_formula(
         # User wants thickness but didn't specify bottom/side. 
         # If they provided shell plating variables, it's highly ambiguous.
         if has_shell_var:
+            # Fix T7-m1: Filter clarification candidates to shell domain if shell vars are present
+            shell_candidates = [(f, s) for (f, s) in ranked if "BOTTOM" in f.code or "SIDE" in f.code]
+            if shell_candidates:
+                return None, shell_candidates
             return None, ranked
         # Even without shell vars, if the top formula isn't a clear shell formula, it's risky.
         # But we'll stick to the safest signal: S1 + S2 (intent tebal-pelat + no explicit domain + has shell vars) -> None

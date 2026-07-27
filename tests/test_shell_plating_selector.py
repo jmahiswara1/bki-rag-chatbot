@@ -109,6 +109,16 @@ class TestShellPlatingSelector:
         best, _ = select_formula(query, candidates)
         assert best is None
 
+    def test_t7_m1_clarification_filtered_to_shell(self):
+        query = "tebal pelat L=100 pB=60 jarak penegar 0.6m"
+        candidates = search_formulas(query)
+        best, ranked = select_formula(query, candidates)
+        assert best is None
+        # Make sure FLOOR_PEAK is not in the clarification list
+        codes = [f.code for f, s in ranked]
+        assert "FLOOR_PEAK_THICKNESS" not in codes
+        assert "BOTTOM_PLATING_L_LESS_90" in codes
+
     def test_def1_regression_b1_works(self):
         query = "pelat alas L=100 pB=60 jarak penegar 0.6 m"
         candidates = search_formulas(query)
