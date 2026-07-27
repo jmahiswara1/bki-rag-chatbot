@@ -61,9 +61,11 @@ def test_shell_plating_side_with_pS1(side_greater_90):
     # Check that pS1 branch was taken (which gives larger value)
     assert 8.6 < res.result < 8.7
 
-def test_shell_plating_missing_pB(bottom_greater_90):
-    query = "L = 100, a = 600 mm"
+def test_t7_m2_no_spurious_unit_warning(bottom_greater_90):
+    query = "bottom plate L=100 pB=60 spacing 0.6 m"
     res = calculate(query, bottom_greater_90)
-    assert res.success is False
-    assert "Missing required variables" in res.message
-    assert "pB (Bottom load)" in res.message
+    assert res.success is True
+    assert "spacing" not in res.message
+    # Check that it didn't mistake 'spacing' as the unit for pB
+    assert not any("Unit 'spacing' for pB" in w for w in res.warnings)
+    assert res.parsed_values['a'] == 0.6

@@ -37,69 +37,19 @@ def _parse_variables(
             - missing_vars: list of required Variables not found in query
             - warnings: list of warning messages (e.g., unit mismatch)
     """
-    # Regex: variable_name = value [unit]
-    # Examples: "L=100", "L = 100 m", "L : 100.5", "panjang = 100", "b) = 600 mm"
-    # Use negative lookahead to avoid matching a word as unit if followed by = or :
-    # Changed (?!\s*[=:]) to (?!\w*\s*[=:]) to prevent matching partial words as units
-    # Changed value group from [\d.,]+ to -?\d+(?:[.,]\d+)? to capture optional negative sign
-    pattern = r"(\w+)[\)]?\s*[=:]\s*(-?\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
-    matches = re.findall(pattern, query, re.IGNORECASE)
-    
-    parsed_values: dict[str, float] = {}
-    warnings: list[str] = []
-    
-    for var_name, value_str, unit in matches:
-        # Normalize decimal: "1,5" -> "1.5" (comma -> dot)
-        value_str = value_str.replace(",", ".")
-        
-        try:
-            value = float(value_str)
-        except ValueError:
-            # Skip non-numeric values
-            continue
-        
-        # Match to formula variable (case-insensitive on symbol or name)
-        matched_var = None
-        for var in formula.variables:
-            if (var.symbol.lower() == var_name.lower() or 
-                var.name.lower() == var_name.lower()):
-                matched_var = var
-                
-                # Unit conversion specifically for 'a' (stiffener spacing) which is expected in 'm'
-                if matched_var.symbol.lower() == 'a':
-                    if unit and unit.lower() == 'mm':
-                        value = value / 1000.0
-                    elif unit and unit.lower() == 'm':
-                        pass # explicit meter, do nothing
-                    elif not unit:
-                        # Unitless assumption logic
-                        if value <= 2.0:
-                            warnings.append(f"Asumsi: 'a' tanpa satuan ditafsirkan sebagai meter (a={value} m). Sertakan 'mm' bila maksudnya milimeter.")
-                        else:
-                            value = value / 1000.0
-                            warnings.append(f"Asumsi: 'a'={value*1000} terlalu besar untuk meter; ditafsirkan sebagai mm (a={value} m). Sertakan satuan untuk memastikan.")
-                
-                break
-        
-        if matched_var:
-            parsed_values[matched_var.symbol] = value
-            
-            # Unit check: warning only, don't auto-convert (except 'a' which we just handled)
-            if unit and matched_var.unit and unit.lower() != matched_var.unit.lower():
-                # Don't warn again if we just handled 'a'
-                if not (matched_var.symbol.lower() == 'a' and unit.lower() == 'mm'):
-                    warnings.append(
-                        f"Unit '{unit}' for {matched_var.symbol} doesn't match "
-                        f"expected '{matched_var.unit}'. Using value as-is."
-                    )
-
     # 2. Natural Language Parsing for Aliases
     nl_aliases = {
         "jarak penegar": "a",
         "stiffener spacing": "a",
-        "spacing": "a",
         "jarak gading": "a",
+        "spacing": "a", # Add back generic spacing for cases like "spacing 0.6 m"
     }
+    
+    parsed_values: dict[str, float] = {}
+    warnings: list[str] = []
+    
+    # Track the start/end indexes of aliases matched so we don't accidentally match part of them again in general variables
+    alias_matched_ranges = []
     
     for alias, symbol in nl_aliases.items():
         # alias [optional =:] value [optional unit]
@@ -112,6 +62,8 @@ def _parse_variables(
                 value = float(value_str)
             except ValueError:
                 continue
+                
+            alias_matched_ranges.append(match.span())
                 
             matched_var = None
             for var in formula.variables:
@@ -139,6 +91,68 @@ def _parse_variables(
                             f"Unit '{unit}' for {matched_var.symbol} doesn't match "
                             f"expected '{matched_var.unit}'. Using value as-is."
                         )
+
+    # General Variable parsing
+    # Use negative lookahead to avoid matching a word as unit if followed by = or :
+    # Also explicitly prevent common calculation keywords (like 'spacing') from being parsed as units
+    # Changed (?!\s*[=:]) to (?!\w*\s*[=:]) to prevent matching partial words as units
+    # Changed value group from [\d.,]+ to -?\d+(?:[.,]\d+)? to capture optional negative sign
+    pattern = r"(\w+)[\)]?\s*[=:]\s*(-?\d+(?:[.,]\d+)?)(?:\s+(?!spacing|jarak)([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
+    
+    for match in re.finditer(pattern, query, re.IGNORECASE):
+        # Skip if this match falls entirely inside an alias match (e.g. "spacing 0.6 m" inside "stiffener spacing 0.6 m")
+        # to prevent double parsing or grabbing pieces of it
+        start, end = match.span()
+        if any(a_start <= start and end <= a_end for a_start, a_end in alias_matched_ranges):
+            continue
+            
+        var_name = match.group(1)
+        value_str = match.group(2)
+        unit = match.group(3)
+        
+        # Normalize decimal: "1,5" -> "1.5" (comma -> dot)
+        value_str = value_str.replace(",", ".")
+        
+        try:
+            value = float(value_str)
+        except ValueError:
+            # Skip non-numeric values
+            continue
+        
+        # Match to formula variable (case-insensitive on symbol or name)
+        matched_var = None
+        for var in formula.variables:
+            if (var.symbol.lower() == var_name.lower() or 
+                var.name.lower() == var_name.lower()):
+                matched_var = var
+                
+                # Unit conversion specifically for 'a' (stiffener spacing) which is expected in 'm'
+                if matched_var.symbol.lower() == 'a' and matched_var.symbol not in parsed_values:
+                    if unit and unit.lower() == 'mm':
+                        value = value / 1000.0
+                    elif unit and unit.lower() == 'm':
+                        pass # explicit meter, do nothing
+                    elif not unit:
+                        # Unitless assumption logic
+                        if value <= 2.0:
+                            warnings.append(f"Asumsi: 'a' tanpa satuan ditafsirkan sebagai meter (a={value} m). Sertakan 'mm' bila maksudnya milimeter.")
+                        else:
+                            value = value / 1000.0
+                            warnings.append(f"Asumsi: 'a'={value*1000} terlalu besar untuk meter; ditafsirkan sebagai mm (a={value} m). Sertakan satuan untuk memastikan.")
+                
+                break
+        
+        if matched_var and matched_var.symbol not in parsed_values:
+            parsed_values[matched_var.symbol] = value
+            
+            # Unit check: warning only, don't auto-convert (except 'a' which we just handled)
+            if unit and matched_var.unit and unit.lower() != matched_var.unit.lower():
+                # Don't warn again if we just handled 'a'
+                if not (matched_var.symbol.lower() == 'a' and unit.lower() == 'mm'):
+                    warnings.append(
+                        f"Unit '{unit}' for {matched_var.symbol} doesn't match "
+                        f"expected '{matched_var.unit}'. Using value as-is."
+                    )
 
     # 3. Handle specific domain semantics (P1 fixes)
     # k (steel grade)
