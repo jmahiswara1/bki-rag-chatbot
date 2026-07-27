@@ -312,13 +312,14 @@ def _pre_answer_pipeline(
 
     # 4. translate + condense
     t = time.time()
-    if mode == "default":
-        en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
+    # T7-DEF3 (P4): Unified bypass for EN queries.
+    # If the user explicitly asks in English AND there is no history (stand-alone),
+    # bypass _translate_condense entirely. This prevents qwen2.5 from mistranslating
+    # the EN query into ID. This applies uniformly to BOTH default and fast modes.
+    if lang == "en" and not history:
+        en_query = query
     else:
-        if lang == "en" and not history:
-            en_query = query
-        else:
-            en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
+        en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     timings["translate"] = time.time() - t
 
     # 4.5. lookup-first (before retrieval — deterministic short-circuit)

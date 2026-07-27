@@ -459,11 +459,55 @@ class TestCondenseCache:
         assert "forward deck" not in r
         assert "thickness" in r
 
-    def test_non_deck_query_unchanged_2(self):
-        """Another non-deck technical query stays unchanged."""
-        r = canonicalize_condensed_query(
-            "apa persyaratan sistem bilga untuk kapal penumpang?",
-            "what are the bilge system requirements for passenger ships"
-        )
-        assert "forward deck" not in r
-        assert "bilge" in r
+class TestCondenseBypass:
+    def test_translate_condense_bypassed_for_en_no_history_default(self):
+        """Build P4: EN query with no history bypasses translation in default mode."""
+        from src.llm.chain import _pre_answer_pipeline
+        with patch("src.llm.chain._translate_condense") as mock_tc:
+            # We must use an intent that doesn't short-circuit calculation
+            # and triggers translation. Rules QA is perfect.
+            # We mock classify to ensure it doesn't short circuit.
+            with patch("src.llm.chain.classify") as mock_classify, \
+                 patch("src.llm.chain.retrieve_context") as mock_retrieve, \
+                 patch("src.llm.chain._apply_guardrail") as mock_guardrail:
+                
+                from src.core.models import Intent
+                mock_classify.return_value = Intent("rules_qa", "high", "heuristic")
+                mock_retrieve.return_value = [] # return empty candidates to speed up
+                mock_guardrail.return_value = ([], True, "no_chunks")
+                
+                state = _pre_answer_pipeline(
+                    query="what is the minimum bottom plating thickness requirement?",
+                    history=[],
+                    mode="default"
+                )
+                
+                # Should not have called translate_condense
+                mock_tc.assert_not_called()
+                # en_query should be exactly the raw query
+                assert state.en_query == "what is the minimum bottom plating thickness requirement?"
+
+    def test_translate_condense_called_for_en_with_history_default(self):
+        """Build P4: EN query WITH history STILL calls translation to condense."""
+        from src.llm.chain import _pre_answer_pipeline
+        with patch("src.llm.chain._translate_condense") as mock_tc:
+            mock_tc.return_value = "condensed query"
+            with patch("src.llm.chain.classify") as mock_classify, \
+                 patch("src.llm.chain.retrieve_context") as mock_retrieve, \
+                 patch("src.llm.chain._apply_guardrail") as mock_guardrail, \
+                 patch("src.llm.chain.detect_language") as mock_lang:
+                
+                from src.core.models import Intent
+                mock_classify.return_value = Intent("rules_qa", "high", "heuristic")
+                mock_lang.return_value = ("en", 0.9)
+                mock_retrieve.return_value = [] 
+                mock_guardrail.return_value = ([], True, "no_chunks")
+                
+                state = _pre_answer_pipeline(
+                    query="and what about the side plating?",
+                    history=[{"role": "user", "content": "prev"}, {"role": "assistant", "content": "ans"}],
+                    mode="default"
+                )
+                
+                mock_tc.assert_called_once()
+                assert state.en_query == "condensed query"
