@@ -160,6 +160,157 @@ def test_unrelated_technical_query_unchanged_2():
     print("PASS: test_unrelated_technical_query_unchanged_2")
 
 
+def test_wrang_not_floor_plate():
+    out = apply_glossary("Tebal minimum wrang.").lower()
+    assert "floor" in out
+    assert "floor plate" not in out
+
+def test_pelat_alas_to_bottom_shell():
+    out = apply_glossary("Berapa tebal minimum pelat alas?").lower()
+    assert "bottom shell plating" in out
+    assert "deck" not in out
+    assert "keel" not in out
+    assert "floor plate" not in out
+
+def test_pelat_alas_dalam_to_inner_bottom():
+    out = apply_glossary("Jelaskan perbedaan pelat alas dan pelat alas dalam.").lower()
+    assert "inner bottom plating" in out
+    assert "bottom shell plating" in out
+    assert "bottom shell plating dalam" not in out
+
+def test_pelat_wrang_to_floor_plate():
+    out = apply_glossary("Ketentuan untuk pelat wrang tunggal.").lower()
+    assert "floor plate" in out
+
+def test_wrang_to_floor():
+    out = apply_glossary("Apa itu wrang pada konstruksi alas ganda?").lower()
+    assert "floor" in out
+    assert "double bottom" in out
+
+def test_alas_ganda_to_double_bottom():
+    out = apply_glossary("Tangki pada alas ganda harus dilengkapi.").lower()
+    assert "double bottom" in out
+
+# --- New entries (Fase A — retrieval relevance improvement) ---
+
+def test_kapal_kontainer_to_container_ship():
+    out = apply_glossary("kapal kontainer 120m dengan pelat sisi").lower()
+    assert "container ship" in out
+
+def test_kapal_peti_kemas_to_container_ship():
+    out = apply_glossary("kapal peti kemas muatan berat").lower()
+    assert "container ship" in out
+
+def test_kapal_curah_to_bulk_carrier():
+    out = apply_glossary("kapal curah 200m").lower()
+    assert "bulk carrier" in out
+
+def test_kapal_tangki_to_tanker():
+    out = apply_glossary("kapal tangki minyak").lower()
+    assert "tanker" in out
+
+def test_kapal_penumpang_to_passenger_ship():
+    out = apply_glossary("kapal penumpang 500 GT").lower()
+    assert "passenger ship" in out
+
+def test_kapal_niaga_to_merchant_ship():
+    out = apply_glossary("kapal niaga ukuran sedang").lower()
+    assert "merchant ship" in out
+
+def test_konstruksi_memanjang_system():
+    out = apply_glossary("jenis konstruksi memanjang dengan L 100m").lower()
+    assert "longitudinal framing system" in out
+
+def test_konstruksi_melintang_system():
+    out = apply_glossary("jenis konstruksi melintang L 80m").lower()
+    assert "transverse framing system" in out
+
+def test_konstruksi_memanjang_bare():
+    out = apply_glossary("konstruksi memanjang").lower()
+    assert "longitudinal framing" in out
+    assert "longitudinal framing system" not in out
+
+def test_konstruksi_melintang_bare():
+    out = apply_glossary("konstruksi melintang").lower()
+    assert "transverse framing" in out
+    assert "transverse framing system" not in out
+
+def test_jarak_antar_penegar_to_stiffener_spacing():
+    out = apply_glossary("jarak antar penegar 600mm").lower()
+    assert "stiffener spacing" in out
+
+def test_pelat_bukaan_palka_to_hatch_opening_plate():
+    out = apply_glossary("pelat bukaan palka minimum").lower()
+    assert "hatch opening plate" in out
+
+def test_pelat_kulit_luar_to_outer_shell_plating():
+    out = apply_glossary("pelat kulit luar lambung kapal niaga").lower()
+    assert "outer shell plating" in out
+
+def test_kulit_luar_lambung_to_hull_shell():
+    out = apply_glossary("kulit luar lambung").lower()
+    assert "hull shell" in out
+
+def test_ketebalan_bersih_to_net_thickness():
+    out = apply_glossary("ketebalan bersih minimum tp").lower()
+    assert "net thickness" in out
+
+def test_baja_standar_to_mild_steel():
+    out = apply_glossary("baja standar untuk pelat lambung").lower()
+    assert "mild steel" in out
+
+def test_baja_lunak_to_mild_steel():
+    out = apply_glossary("baja lunak").lower()
+    assert "mild steel" in out
+
+def test_pelat_lambung_to_shell_plating():
+    out = apply_glossary("pelat lambung kapal niaga").lower()
+    assert "shell plating" in out
+
+def test_pelat_sisi_to_side_shell_plating():
+    out = apply_glossary("pelat sisi tebal 4mm").lower()
+    assert "side shell plating" in out
+
+def test_penegar_to_stiffener():
+    out = apply_glossary("penegar vertikal lambung").lower()
+    assert "stiffener" in out
+
+def test_pembukaan_palka_to_hatch_opening():
+    out = apply_glossary("pembukaan palka kapal").lower()
+    assert "hatch opening" in out
+
+def test_beban_yang_bekerja_to_acting_loads():
+    out = apply_glossary("beban yang bekerja pada struktur").lower()
+    assert "acting loads" in out
+
+# --- Regression: pre-existing entries still work ---
+
+def test_regression_senta_sisi_to_stringer():
+    out = apply_glossary("senta sisi kapal").lower()
+    assert "stringer" in out
+
+def test_regression_sekat_tubrukan():
+    out = apply_glossary("jarak sekat tubrukan dari haluan").lower()
+    assert "collision bulkhead" in out
+
+
+# --- Slamming entries (Fase retrieval improvement) ---
+
+def test_hantaman_to_slamming():
+    out = apply_glossary("apa itu hantaman pada kapal").lower()
+    assert "slamming" in out
+
+def test_hantaman_dasar_to_bottom_slamming():
+    out = apply_glossary("hantaman dasar").lower()
+    assert "bottom slamming" in out
+
+def test_hentaman_to_slamming():
+    out = apply_glossary("beban hentaman").lower()
+    assert "slamming" in out
+
+
+# ---------- Runner ----------
+
 if __name__ == "__main__":
     test_bare_tinggi_not_freeboard()
     test_tinggi_bebas_to_freeboard()
@@ -184,37 +335,38 @@ if __name__ == "__main__":
     test_idempotent_geladak_depan()
     test_unrelated_technical_query_unchanged_1()
     test_unrelated_technical_query_unchanged_2()
-    print(f"\nAll {len([f for f in dir() if f.startswith('test_')])} tests passed!")
-
-def test_pelat_alas_to_bottom_shell():
-    out = apply_glossary("Berapa tebal minimum pelat alas?").lower()
-    assert "bottom shell plating" in out
-    assert "deck" not in out
-    assert "keel" not in out
-    assert "floor plate" not in out
-
-def test_pelat_alas_dalam_to_inner_bottom():
-    out = apply_glossary("Jelaskan perbedaan pelat alas dan pelat alas dalam.").lower()
-    assert "inner bottom plating" in out
-    assert "bottom shell plating" in out
-    # should not be "bottom shell plating dalam"
-    assert "bottom shell plating dalam" not in out
-
-def test_pelat_wrang_to_floor_plate():
-    out = apply_glossary("Ketentuan untuk pelat wrang tunggal.").lower()
-    assert "floor plate" in out
-
-def test_wrang_to_floor():
-    out = apply_glossary("Apa itu wrang pada konstruksi alas ganda?").lower()
-    assert "floor" in out
-    # "alas ganda" should be "double bottom"
-    assert "double bottom" in out
-
-def test_alas_ganda_to_double_bottom():
-    out = apply_glossary("Tangki pada alas ganda harus dilengkapi.").lower()
-    assert "double bottom" in out
-
-def test_wrang_not_floor_plate():
-    out = apply_glossary("Tebal minimum wrang.").lower()
-    assert "floor" in out
-    assert "floor plate" not in out
+    test_pelat_alas_to_bottom_shell()
+    test_pelat_alas_dalam_to_inner_bottom()
+    test_pelat_wrang_to_floor_plate()
+    test_wrang_to_floor()
+    test_alas_ganda_to_double_bottom()
+    test_wrang_not_floor_plate()
+    test_kapal_kontainer_to_container_ship()
+    test_kapal_peti_kemas_to_container_ship()
+    test_kapal_curah_to_bulk_carrier()
+    test_kapal_tangki_to_tanker()
+    test_kapal_penumpang_to_passenger_ship()
+    test_kapal_niaga_to_merchant_ship()
+    test_konstruksi_memanjang_system()
+    test_konstruksi_melintang_system()
+    test_konstruksi_memanjang_bare()
+    test_konstruksi_melintang_bare()
+    test_jarak_antar_penegar_to_stiffener_spacing()
+    test_pelat_bukaan_palka_to_hatch_opening_plate()
+    test_pelat_kulit_luar_to_outer_shell_plating()
+    test_kulit_luar_lambung_to_hull_shell()
+    test_ketebalan_bersih_to_net_thickness()
+    test_baja_standar_to_mild_steel()
+    test_baja_lunak_to_mild_steel()
+    test_pelat_lambung_to_shell_plating()
+    test_pelat_sisi_to_side_shell_plating()
+    test_penegar_to_stiffener()
+    test_pembukaan_palka_to_hatch_opening()
+    test_beban_yang_bekerja_to_acting_loads()
+    test_regression_senta_sisi_to_stringer()
+    test_regression_sekat_tubrukan()
+    test_hantaman_to_slamming()
+    test_hantaman_dasar_to_bottom_slamming()
+    test_hentaman_to_slamming()
+    all_count = len([f for f in dir() if f.startswith("test_")])
+    print(f"\nAll {all_count} tests passed!")

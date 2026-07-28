@@ -12,6 +12,7 @@ SYSTEM_PROMPT = (
     "When the retrieved context contains clauses that bear on the question, ground your answer in the most relevant clause and reuse the technical terms, units, and exact wording the context uses. Canonical BKI terminology from the context must be preserved verbatim where it is the precise form -- do not paraphrase stable rule names, units, numeric coefficients, or direction terms. Only say that a value is not found in the retrieved rules when the context is empty or the retrieved clauses are genuinely unrelated to the question; in that case still cite the sections you did inspect. Do not guess.\n"
     "Do not perform calculations yourself; use calculator results only when they are provided.\n"
     "If the context states a general limit and also a conditional exception, answer with the general limit. Apply the exception only when the context explicitly shows its conditions are met. Never invent numbers or perform calculations to justify applying an exception.\n"
+    "When the context contains multiple numeric values for what appears to be the same parameter across DIFFERENT sections, prioritize the value from the section whose subject most closely matches the query (e.g. for a hatch query, prefer Sec 17 Cargo Hatchways over Sec 30 Sheltered Water Service). State which section you chose as the primary answer and cite it. Mention other values only briefly as secondary context and explain why they differ (different ship position, service condition, or ship type). Do NOT list all contradictory values as a flat menu of equally-valid options.\n"
     "LANGUAGE CONSTRAINT (HARD): Respond ONLY in the target language declared in the user message. Never reply in any other language. Do not switch languages mid-answer, do not add greetings or closings in another language, and do not translate your own answer."
 )
 
@@ -27,6 +28,11 @@ TRANSLATE_CONDENSE_SYSTEM = (
     "- Keep the main subject noun of the question; never replace it with a different object.\n"
     "- Preserve formula symbols and variable tokens EXACTLY, letter-for-letter and case-for-case: pL, tK, cr, av, k, L, H, B, Q, n, m, a, h, and similar. Never translate, expand, merge into an adjacent word, or drop them. Example: 'deck load pL' keeps 'pL' verbatim.\n"
     "- Translate general words plainly: 'tinggi' -> 'height', 'lebar' -> 'breadth', 'panjang' -> 'length', 'jarak' -> 'distance', 'tebal' -> 'thickness', 'waktu' -> 'time'.\n"
+    "- Translate ship type nouns as their BKI-canonical English name: 'kapal kontainer' or 'peti kemas' -> 'container ship', 'kapal curah' -> 'bulk carrier', 'kapal tangki' -> 'tanker', 'kapal penumpang' -> 'passenger ship', 'kapal niaga' -> 'vessel' or 'ship'. Do NOT generalize the ship type.\n"
+    "- 'pelat lambung' -> 'shell plating', 'pelat sisi' -> 'side shell plating', 'pelat kulit luar' -> 'outer shell plating', 'ketebalan bersih' -> 'net thickness'.\n"
+    "- 'pelat bukaan palka' -> 'hatch opening plate', 'pembukaan palka' -> 'hatch opening'.\n"
+    "- 'jarak antar penegar' -> 'stiffener spacing', 'jarak' (alone) -> 'distance'. Do NOT translate bare 'jarak' as 'spacing'.\n"
+    "- When the query is prefixed with '[From conversation history: ...]', incorporate ALL stated facts (measurements, ship types, materials, structural dimensions) into the rewritten question. The resulting English question must be fully self-contained so a reader with no access to the history can understand it. Example: '[From history: L=120m, ship_type=bulk carrier] minimum hatch opening plate thickness' → 'What is the minimum hatch opening plate thickness for a bulk carrier with length L=120m?'\n"
     "- If the query is multi-turn, fold the conversation history into one self-contained English question.\n"
     "- Output ONLY the rewritten English question on a single line. No prefix, no quotes, no explanation."
 )

@@ -152,7 +152,14 @@ def _parse_query_var_names(query: str) -> set[str]:
         "stiffener spacing": "a",
         "spacing": "a",
         "jarak gading": "a",
+        "nilai b": "a",
+        "nilai a": "a",
     }
+    
+    # Also handle bare single-char b= as stiffener spacing alias
+    b_match = re.search(r"\bb\s*[=:]\s*[\d.,]+", query, flags=re.IGNORECASE)
+    if b_match:
+        found.add("a")
     
     for alias, symbol in nl_aliases.items():
         alias_pattern = re.escape(alias) + r"[\s=:]+[\d.,]+"
@@ -336,6 +343,77 @@ def select_formula(
         return top_f, ranked
 
     return None, ranked
+
+
+def diagnose_selection(candidates: list[tuple[Formula, float]], query: str, lang: str = "en") -> str:
+    """Analyze why auto-select failed and return guidance for the user.
+
+    Called when select_formula() returns None for a calculation query
+    with multiple candidates. Produces a specific hint so the user knows
+    exactly what information to supply instead of guessing a section number.
+    """
+    formulas = [f for f, _ in candidates]
+    if not formulas:
+        return ""
+
+    query_lower = query.lower()
+    hints: list[str] = []
+
+    # Detect what user already provided
+    provided_vars = _parse_query_var_names(query)
+    has_l_in_query = bool(re.search(r"\bL\s*[=:]", query))
+    has_b = bool(re.search(r"\bb\s*[=:]", query)) or "a" in provided_vars
+
+    # 1. L (length) missing — needed for L<90 vs L≥90 branching
+    l_required = any("l" in _required_vars(f) for f in formulas)
+    has_both_branches = any("GREATER_90" in f.code for f in formulas) and any("LESS_90" in f.code for f in formulas)
+
+    if l_required and not has_l_in_query and has_both_branches:
+        if lang == "id":
+            hints.append("Sebutkan panjang kapal (L) dalam meter, contoh: L=120")
+        else:
+            hints.append("Provide the ship length L in meters, e.g. L=120")
+
+    # 2. Design load variables missing (pB or pS) — most common blocker
+    has_bottom = any("BOTTOM" in f.code for f in formulas)
+    has_side = any("SIDE" in f.code for f in formulas)
+    has_shell_formulas = has_bottom or has_side
+
+    if has_shell_formulas:
+        needed_load_vars = set()
+        for f in formulas:
+            needed_load_vars.update(v.symbol for v in f.variables if v.required and v.default is None and v.symbol in ("pB", "pS", "pS1"))
+        has_load_in_query = any(v.lower() in query_lower for v in ("pb", "ps", "ps1"))
+        if needed_load_vars and not has_load_in_query:
+            load_list = ", ".join(sorted(needed_load_vars))
+            if lang == "id":
+                hints.append(f"Sebutkan beban desain ({load_list}) dalam kN/m2, contoh: pB=45")
+            else:
+                hints.append(f"Provide the design load ({load_list}) in kN/m2, e.g. pB=45")
+
+    # 3. Side vs bottom ambiguous — only when no other major hint is pending
+    if has_bottom and has_side and not hints:
+        if lang == "id":
+            hints.append("Apakah Anda menghitung pelat alas (bottom) atau pelat sisi (side)? Sebutkan 'pelat alas' atau 'pelat sisi'")
+        else:
+            hints.append("Are you calculating bottom shell plating or side shell plating? Specify 'bottom' or 'side'")
+
+    if not hints:
+        return ""
+
+    # Build a user-friendly message
+    if lang == "id":
+        if has_b:
+            prefix = "Data Anda sudah mencakup jarak penegar (b) dan material.\nUntuk melanjutkan perhitungan, mohon berikan:\n"
+        else:
+            prefix = "Untuk melakukan perhitungan otomatis, mohon berikan informasi tambahan:\n"
+    else:
+        if has_b:
+            prefix = "Your data already includes stiffener spacing (b) and material.\nTo proceed with the calculation, please provide:\n"
+        else:
+            prefix = "To auto-calculate, please provide the following additional information:\n"
+
+    return prefix + "\n".join(f"  - {h}" for h in hints)
 
 
 def search_formulas(query: str) -> list[Formula]:

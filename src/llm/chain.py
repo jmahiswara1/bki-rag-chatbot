@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Iterator
 
 from src.calc.engine import calculate
-from src.calc.registry import search_formulas, select_formula
+from src.calc.registry import diagnose_selection, search_formulas, select_formula
 from src.core.config import settings
 from src.core.db import get_client
 from src.core.models import Intent, RetrievedChunk
@@ -17,8 +17,10 @@ from src.llm.client import chat, chat_stream
 from src.llm.intent import classify, classify_with_llm
 from src.llm.language import detect_language
 from src.llm.modes import MODES
+from src.retrieval.domain_scorer import apply_domain_scores, detect_ship_type
 from src.retrieval.query import retrieve_context
 from src.retrieval.table_selector import select_table_row
+from src.retrieval.contradiction_detect import build_conflict_annotation
 
 
 @dataclass
@@ -290,10 +292,17 @@ def _pre_answer_pipeline(
                         f"  - {f.title} (Sec {f.section_no})"
                         for f, _score in clarification_list
                     ])
-                    message = (
-                        f"I found {len(clarification_list)} matching formula(s):\n{formula_list}\n\n"
-                        "Please specify which formula you'd like to use by providing its section number or title."
-                    )
+                    diagnostic = diagnose_selection(clarification_list, query, lang)
+                    if diagnostic:
+                        message = (
+                            f"I found {len(clarification_list)} matching formula(s):\n{formula_list}\n\n"
+                            f"{diagnostic}"
+                        )
+                    else:
+                        message = (
+                            f"I found {len(clarification_list)} matching formula(s):\n{formula_list}\n\n"
+                            "Please specify which formula you'd like to use by providing its section number or title."
+                        )
         
         timings["calc"] = time.time() - t
         return PipelineState(
@@ -377,6 +386,16 @@ def _pre_answer_pipeline(
     )
     timings["retrieve"] = time.time() - t
 
+    # 6.1. domain-aware scoring — boost chunks from the ship-type-specific
+    # section so they outrank competing generic narratives (e.g. query about
+    # "container ship" → Sec 39 chunks get +2.0 boost over Sec 23 bulk carrier).
+    t = time.time()
+    if en_query and mode == "default" and candidates:
+        ship_type = detect_ship_type(en_query)
+        if ship_type:
+            candidates = apply_domain_scores(candidates, ship_type)
+    timings["domain_score"] = time.time() - t
+
     # 6.5. deterministic table-row selection (safe: semantic + unit + numeric gates)
     table_evidence = ""
     if en_query and candidates:
@@ -406,6 +425,16 @@ def _pre_answer_pipeline(
             # when the selector confirmed Table 35.1 is the answer).
             candidates[rank].score += 3.0
             candidates.sort(key=lambda c: c.score, reverse=True)
+
+    # 6.6. contradiction detection — annotate conflicting values from
+    # different sections so the LLM can pick the most relevant source
+    # instead of listing all values as a flat menu.
+    t = time.time()
+    if en_query and mode == "default" and len(candidates) > 1:
+        anno = build_conflict_annotation(candidates, en_query)
+        if anno:
+            table_evidence = (table_evidence or "") + anno
+    timings["contradiction"] = time.time() - t
 
     # 7. guardrail (default only)
     rejected = False
@@ -798,6 +827,33 @@ def _format_lookup_answer(match: _lookup.LookupMatch, lang: str) -> str:
 
 # --- existing chain helpers ---
 
+def _extract_history_facts(history: list[dict] | None, query: str) -> str:
+    """Extract key=value facts and ship type from conversation history.
+    
+    Merges all user+assistant messages, then detects:
+    - Variable assignments: L=120, H=8.5, b=600, B=20, etc.
+    - Ship type via detect_ship_type()
+    Returns a comma-separated string for the translate prompt prefix,
+    or empty string if nothing is found.
+    """
+    if not history:
+        return ""
+    all_text = " ".join(h.get("content", "") for h in history)
+    all_text += " " + query
+    all_text_en = apply_glossary(all_text)
+    facts: list[str] = []
+    for m in re.finditer(
+        r'(?<!\w)([LHBbTtatKknfQ]\w{0,4})\s*[=:]\s*(\d+[.,]?\d*)\s*(m|mm|kN|MPa|N/mm2|%|t)?',
+        all_text,
+    ):
+        unit = m.group(3) or ""
+        facts.append(f"{m.group(1)}={m.group(2)}{unit}")
+    ship = detect_ship_type(all_text_en)
+    if ship:
+        facts.append(f"ship_type={ship}")
+    return ", ".join(facts)
+
+
 def _translate_condense(query, history, *, temperature, mode=None, lang=None) -> str:
     # Utility call: always fast_model + think=False (AGENTS.md hard rule).
     # Non-streaming; num_ctx is passed by client.chat default.
@@ -821,6 +877,11 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     # 'freeboard' / 'hatch cover' / 'side stringer' from a thin glossary
     # priming in the system prompt.
     query_pre = apply_glossary(query)
+    # Extract persistent facts (L, H, B, ship type) from history so
+    # the LLM can fold them into a self-contained English question.
+    history_prefix = _extract_history_facts(history, query)
+    if history_prefix:
+        query_pre = f"[From conversation history: {history_prefix}] {query_pre}"
     messages = [{"role": "system", "content": prompts.TRANSLATE_CONDENSE_SYSTEM}]
     for h in history:
         messages.append(h)

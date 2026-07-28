@@ -897,3 +897,88 @@ class TestRankFormulas:
         ]
         ranked = rank_formulas("completely unrelated query", formulas)
         assert ranked == []
+
+
+# ---------------------------------------------------------------------------
+# diagnose_selection tests
+# ---------------------------------------------------------------------------
+
+class TestDiagnoseSelection:
+    """Tests for diagnose_selection() — guidance when auto-select fails."""
+
+    def test_missing_l_with_both_branches(self):
+        from src.calc.registry import diagnose_selection
+        formulas = [
+            Formula(code="BOTTOM_PLATING_L_LESS_90", title="Bottom shell plating thickness (L < 90m) (Sec 6)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m"), Variable(symbol="b", name="Stiffener spacing", unit="mm"), Variable(symbol="k", name="Material factor", unit="-", required=False, default=1.0)], result_unit="mm"),
+            Formula(code="BOTTOM_PLATING_L_GREATER_90", title="Bottom shell plating thickness (L >= 90m) (Sec 6)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m"), Variable(symbol="b", name="Stiffener spacing", unit="mm"), Variable(symbol="k", name="Material factor", unit="-", required=False, default=1.0)], result_unit="mm"),
+            Formula(code="SIDE_PLATING_L_LESS_90", title="Side shell plating thickness (L < 90m) (Sec 6)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m"), Variable(symbol="b", name="Stiffener spacing", unit="mm"), Variable(symbol="k", name="Material factor", unit="-", required=False, default=1.0)], result_unit="mm"),
+            Formula(code="SIDE_PLATING_L_GREATER_90", title="Side shell plating thickness (L >= 90m) (Sec 6)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m"), Variable(symbol="b", name="Stiffener spacing", unit="mm"), Variable(symbol="k", name="Material factor", unit="-", required=False, default=1.0)], result_unit="mm"),
+        ]
+        ranked = [(f, 40 - i) for i, f in enumerate(formulas)]
+        result = diagnose_selection(ranked, "tebal pelat lambung b=600 mild steel", "id")
+        assert "panjang kapal" in result
+        assert "L" in result
+
+    def test_missing_l_en(self):
+        from src.calc.registry import diagnose_selection
+        formulas = [
+            Formula(code="BOTTOM_PLATING_L_LESS_90", title="Bottom shell plating thickness (L < 90m)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+            Formula(code="BOTTOM_PLATING_L_GREATER_90", title="Bottom shell plating thickness (L >= 90m)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+        ]
+        ranked = [(f, 30 - i) for i, f in enumerate(formulas)]
+        result = diagnose_selection(ranked, "bottom shell plate thickness b=600", "en")
+        assert "ship length" in result
+        assert "L" in result
+
+    def test_side_bottom_ambiguous_no_l(self):
+        from src.calc.registry import diagnose_selection
+        formulas = [
+            Formula(code="BOTTOM_PLATING_L_LESS_90", title="Bottom shell plating thickness (L < 90m) (Sec 6)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m"), Variable(symbol="k", name="Material factor", unit="-", required=False, default=1.0)], result_unit="mm"),
+            Formula(code="SIDE_PLATING_L_GREATER_90", title="Side shell plating thickness (L >= 90m) (Sec 6)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m"), Variable(symbol="k", name="Material factor", unit="-", required=False, default=1.0)], result_unit="mm"),
+        ]
+        ranked = [(f, 20 - i) for i, f in enumerate(formulas)]
+        result = diagnose_selection(ranked, "tebal pelat lambung", "id")
+        # L hint should appear (most critical blocker); side/bottom is deferred
+        assert "panjang kapal" in result
+
+    def test_no_shell_formulas_returns_empty(self):
+        from src.calc.registry import diagnose_selection
+        formulas = [
+            Formula(code="FLOOR_WEB_THICKNESS", title="Floor plate web thickness", section_no=8,
+                    expression="h/100 + 3.0", variables=[Variable(symbol="h", name="Web height", unit="mm")], result_unit="mm"),
+            Formula(code="CENTRE_GIRDER_WEB", title="Centre girder web thickness", section_no=8,
+                    expression="0.07*L + 5.5", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+        ]
+        ranked = [(f, 15 - i) for i, f in enumerate(formulas)]
+        result = diagnose_selection(ranked, "tebal wrang", "id")
+        assert result == ""
+
+    def test_empty_candidates(self):
+        from src.calc.registry import diagnose_selection
+        assert diagnose_selection([], "test", "en") == ""
+
+    def test_l_already_provided(self):
+        from src.calc.registry import diagnose_selection
+        formulas = [
+            Formula(code="BOTTOM_PLATING_L_LESS_90", title="Bottom shell plating thickness (L < 90m)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+            Formula(code="BOTTOM_PLATING_L_GREATER_90", title="Bottom shell plating thickness (L >= 90m)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+            Formula(code="SIDE_PLATING_L_LESS_90", title="Side shell plating thickness (L < 90m)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+            Formula(code="SIDE_PLATING_L_GREATER_90", title="Side shell plating thickness (L >= 90m)", section_no=6,
+                    expression="tp", variables=[Variable(symbol="L", name="Rule length", unit="m")], result_unit="mm"),
+        ]
+        ranked = [(f, 40 - i) for i, f in enumerate(formulas)]
+        result = diagnose_selection(ranked, "tebal pelat lambung b=600 L=120", "id")
+        assert "pelat alas" in result
+        assert "pelat sisi" in result
+

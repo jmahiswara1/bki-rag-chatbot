@@ -42,6 +42,10 @@ def _parse_variables(
         "jarak penegar": "a",
         "stiffener spacing": "a",
         "jarak gading": "a",
+        "frame spacing": "a",
+        "nilai b": "a",  # BKI notation: b = stiffener spacing
+        "nilai a": "a",
+        "jarak jepit": "l",  # unsupported span
         "spacing": "a", # Add back generic spacing for cases like "spacing 0.6 m"
     }
     
@@ -97,7 +101,7 @@ def _parse_variables(
     # Also explicitly prevent common calculation keywords (like 'spacing') from being parsed as units
     # Changed (?!\s*[=:]) to (?!\w*\s*[=:]) to prevent matching partial words as units
     # Changed value group from [\d.,]+ to -?\d+(?:[.,]\d+)? to capture optional negative sign
-    pattern = r"(\w+)[\)]?\s*[=:]\s*(-?\d+(?:[.,]\d+)?)(?:\s+(?!spacing|jarak)([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
+    pattern = r"(\w+)[\)]?\s*[=:]\s*(-?\d+(?:[.,]\d+)?)(?:\s+(?!spacing|jarak|pelat|alas|sisi|bawah|atas|mild|steel|baja|standar|lunak|kapal|minimum|maksimum|nilai|shell|plating|bottom|side|deck|hatch|plate)([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
     
     for match in re.finditer(pattern, query, re.IGNORECASE):
         # Skip if this match falls entirely inside an alias match (e.g. "spacing 0.6 m" inside "stiffener spacing 0.6 m")
@@ -121,8 +125,12 @@ def _parse_variables(
         
         # Match to formula variable (case-insensitive on symbol or name)
         matched_var = None
+        # Hard-coded symbol aliases for BKI variable notation:
+        # b = stiffener spacing (mapped to 'a' when formula has 'a' but not 'b')
+        _symbol_aliases = {"b": "a"}
+        effective_name = _symbol_aliases.get(var_name.lower(), var_name)
         for var in formula.variables:
-            if (var.symbol.lower() == var_name.lower() or 
+            if (var.symbol.lower() == effective_name.lower() or 
                 var.name.lower() == var_name.lower()):
                 matched_var = var
                 
@@ -295,6 +303,8 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
                 warnings.append("Asumsi: nf=1.0 (transverse). Sebutkan 'longitudinal' untuk nf=0.83.")
             elif var.symbol == 'k':
                 warnings.append("Asumsi: k=1.0 (mild steel).")
+            elif var.symbol == 'tK':
+                warnings.append(f"Asumsi: tK={var.default} mm (corrosion addition standar).")
                 
     # Sanity-bound for 'a'
     if 'a' in parsed_values:
