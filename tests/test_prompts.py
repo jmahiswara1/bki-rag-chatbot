@@ -7,7 +7,7 @@ answer-faithfulness fix.  No LLM calls are made.
 import sys
 sys.path.insert(0, r"E:\Project\bki-rag-chatbot")
 
-from src.llm.prompts import SYSTEM_PROMPT, TRANSLATE_CONDENSE_SYSTEM
+from src.llm.prompts import SYSTEM_PROMPT, TRANSLATE_CONDENSE_SYSTEM, _ANSWER_STYLE_DETAILED
 
 
 def test_system_prompt_preserves_citation_format():
@@ -76,6 +76,21 @@ def test_system_prompt_has_no_echo_rule():
     assert "double brackets" in SYSTEM_PROMPT
 
 
+def test_system_prompt_has_anti_repetition():
+    """Anti-repetition: never repeat same citation more than once."""
+    assert "Never repeat the same citation more than once" in SYSTEM_PROMPT
+
+
+def test_system_prompt_has_paragraph_limit():
+    """Answer must fit in 1-3 paragraphs."""
+    assert "1-3 paragraphs" in SYSTEM_PROMPT
+
+
+def test_answer_style_detailed_no_cover_every_clause():
+    """Detailed style must NOT force covering every clause."""
+    assert "cover every relevant clause" not in _ANSWER_STYLE_DETAILED
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -94,5 +109,8 @@ if __name__ == "__main__":
     test_translate_condense_has_history_facts_rule()
     test_translate_condense_has_self_contained_rule()
     test_system_prompt_has_no_echo_rule()
+    test_system_prompt_has_anti_repetition()
+    test_system_prompt_has_paragraph_limit()
+    test_answer_style_detailed_no_cover_every_clause()
     all_count = len([f for f in dir() if f.startswith("test_")])
     print(f"\nAll {all_count} tests passed!")

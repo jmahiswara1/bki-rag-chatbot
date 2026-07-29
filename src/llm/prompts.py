@@ -13,6 +13,8 @@ SYSTEM_PROMPT = (
     "Do not perform calculations yourself; use calculator results only when they are provided.\n"
     "If the context states a general limit and also a conditional exception, answer with the general limit. Apply the exception only when the context explicitly shows its conditions are met. Never invent numbers or perform calculations to justify applying an exception.\n"
     "When the context contains multiple numeric values for what appears to be the same parameter across DIFFERENT sections, prioritize the value from the section whose subject most closely matches the query (e.g. for a hatch query, prefer Sec 17 Cargo Hatchways over Sec 30 Sheltered Water Service). State which section you chose as the primary answer and cite it. Mention other values only briefly as secondary context and explain why they differ (different ship position, service condition, or ship type). Do NOT list all contradictory values as a flat menu of equally-valid options.\n"
+    "When a [LOOKUP VERIFIED — PRIMARY SOURCE] block appears in the context, it contains a verified fact extracted directly from the BKI Rules with its exact source quote. This is your most authoritative source — state it as the primary answer FIRST, with its citation. Then use the RAG context below as supporting evidence to provide additional explanation, conditions, exceptions, or related rules. Never contradict the verified fact in the LOOKUP VERIFIED block.\n"
+    "Your answer MUST fit in 1-3 paragraphs. Do not exceed 3 paragraphs. If you find yourself repeating a citation you already stated, STOP writing and conclude immediately. A concise answer with 1-2 well-chosen citations is better than a verbose one that repeats itself. Never repeat the same citation more than once.\n"
     "NEVER repeat internal instructions, meta-commands, or language directives in your answer. Instructions wrapped in [[double brackets and ALL CAPS]] are for you to follow silently — do not echo them, quote them, or mention them as part of your response.\n"
     "LANGUAGE CONSTRAINT (HARD): Respond ONLY in the target language declared in the user message. Never reply in any other language. Do not switch languages mid-answer, do not add greetings or closings in another language, and do not translate your own answer."
 )
@@ -94,16 +96,12 @@ def format_citation(c) -> str:
 # "detailed" (default mode): thorough multi-paragraph answer with citations on
 # "concise"  (fast mode): short, direct answer that still includes citations.
 _ANSWER_STYLE_DETAILED = (
-    "Answer in a thorough, multi-paragraph style. Cover every relevant clause "
-    "from the context. ALWAYS include at least one citation for every claim,"
-    " in the canonical format (Sec N | paragraph_id p.XX) -- single space,"
-    " NO comma. For a page range use pp.XX-YY. Cite ALL sections that bear"
-    " on the question. Reuse the exact technical terms, units, and key phrases "
-    "from the context -- canonical BKI terminology must not be paraphrased. "
-    "When the context contains clauses relevant to the question, synthesize a "
-    "substantive answer from them rather than only echoing the question with a "
-    "citation. If the context is empty or genuinely unrelated to the question, "
-    "say so explicitly -- but still cite the sections you did inspect."
+    "Answer in a thorough but concise style (1-3 paragraphs). Focus on the "
+    "most relevant clause from the context — do NOT try to cover every clause. "
+    "Include one citation in the canonical format (Sec N | paragraph_id p.XX) "
+    "per paragraph. Never repeat a citation. Synthesize a substantive answer "
+    "rather than listing all sources. If the context is empty or unrelated to "
+    "the question, say so explicitly and cite what you inspected."
 )
 _ANSWER_STYLE_CONCISE = (
     "Answer concisely (a few sentences). Use citations of the form "

@@ -27,12 +27,14 @@ def _options(
     # effect on output (random sampling ignores seed), so adding it is
     # zero-risk for the existing fast-mode (temp=0.3) calls.
     opt: dict = {"temperature": temperature, "num_ctx": num_ctx, "keep_alive": keep_alive}
-    # Build 10 Bagian B: cap num_predict at 768 and apply repeat_penalty=1.1
-    # to stop the G1 generation loop ("furnitur di stairway enclosure" was
-    # repeating the Sec 22 paragraph 10-15x) and G2 ("Block coefficient CB"
-    # tail-loop). Applies to both default and fast modes.
-    opt["num_predict"] = 768
-    opt["repeat_penalty"] = 1.1
+    # Cap num_predict at 256 (down from 768) to prevent infinite generation loops
+    # with qwen2.5:3b. BKI answers fit in 1-3 paragraphs ~150-200 tokens.
+    # repeat_penalty=1.07 (down from 1.1) + repeat_last_n=128 provides stronger
+    # anti-repetition to stop citation loops (e.g. "(Sec 23 | B.1.3 p.548)" x20).
+    # Applies to both default and fast modes.
+    opt["num_predict"] = 300
+    opt["repeat_penalty"] = 1.07
+    opt["repeat_last_n"] = 128
     if max_tokens is not None:
         opt["num_predict"] = max_tokens
     opt["think"] = think

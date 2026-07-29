@@ -363,6 +363,14 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "geladak akomodasi",
         "geladak bangunan atas",
     ),
+    # side scuttle maximum opening area (Sec 22 F.1.2).
+    # Must not fire on hatch opening / cargo hatch queries.
+    "side_scuttle_area": (
+        "side scuttle",
+        "jendela kapal",
+        "scuttle",
+        "round or oval openings",
+    ),
     # Build 7D: hatch corrosion addition (Sec 17 B Table 17.1). Distinct
     # from hatch_cover_deflection (Sec 17 B.2.2) and from
     # cargo_hatch_coaming_height / ventilator_coaming_height. Anchor requires
@@ -599,6 +607,16 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "stock diameter", "diameter stock",
         "horn shear", "shear stress", "tegangan geser",
         "sole piece", "bracket",
+    ),
+    # accommodation_deck_min_thickness: query yang mengandung kata "tinggi",
+    # "air pipe", "ventilator", "freeboard" sebenarnya bertanya tentang
+    # ketinggian pipa/ventilasi, bukan tebal geladak. Anchor "geladak bangunan
+    # atas" / "superstructure deck" muncul insidental sebagai titik referensi.
+    "accommodation_deck_min_thickness": (
+        "tinggi", "height",
+        "pipa udara", "air pipe",
+        "ventilator", "ventilasi",
+        "freeboard", "geladak bebas",
     ),
 }
 # ---------------------------------------------------------------------------

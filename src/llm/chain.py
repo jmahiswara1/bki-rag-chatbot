@@ -58,6 +58,7 @@ class PipelineState:
     is_pre_answer_only: bool = False
     lookup_match: object = None
     table_evidence: str = ""  # selected table row evidence for context
+    lookup_evidence: str = ""  # injected lookup rule result for LLM prioritization
 
 
 @dataclass
@@ -331,9 +332,10 @@ def _pre_answer_pipeline(
         en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     timings["translate"] = time.time() - t
 
-    # 4.5. lookup-first (before retrieval — deterministic short-circuit)
+    # 4.5. lookup-first (before retrieval — injects verified facts as LLM context)
     t = time.time()
     lookup_match = None
+    lookup_evidence = ""
     if mode == "default" and intent.kind == "rules_qa":
         try:
             rules = _get_lookup_rules()
@@ -342,22 +344,7 @@ def _pre_answer_pipeline(
                     query_id=query, query_en=en_query, rules=rules,
                 )
             if lookup_match is not None:
-                msg = _format_lookup_answer(lookup_match, lang)
-                timings["lookup"] = time.time() - t
-                return PipelineState(
-                    lang=lang,
-                    intent=intent,
-                    en_query=en_query,
-                    expanded=[],
-                    candidates=[],
-                    rejected=False,
-                    reject_reason="",
-                    timings=timings,
-                    mode_cfg=mode_cfg,
-                    short_circuit_msg=msg,
-                    is_pre_answer_only=True,
-                    lookup_match=lookup_match,
-                )
+                lookup_evidence = _format_lookup_evidence(lookup_match, lang)
         except Exception as exc:
             print(
                 f"  [chain] WARNING: lookup match failed, falling back to RAG "
@@ -470,6 +457,8 @@ def _pre_answer_pipeline(
         short_circuit_msg=short_circuit_msg,
         is_pre_answer_only=is_pre_answer_only,
         table_evidence=table_evidence,
+        lookup_match=lookup_match,
+        lookup_evidence=lookup_evidence,
     )
 
 
@@ -509,8 +498,8 @@ def chain_answer(
         think=False,
         answer_style=state.mode_cfg.answer_style,
         table_evidence=state.table_evidence,
+        lookup_evidence=state.lookup_evidence,
     )
-    state.timings["answer"] = time.time() - t
     return ChainResult(
         answer=answer,
         sources=state.candidates,
@@ -572,7 +561,8 @@ def chain_answer_stream(
     yield ("status", "answer_streaming")
     messages = _build_answer_messages(query, state.candidates, state.lang,
                                        answer_style=state.mode_cfg.answer_style,
-                                       table_evidence=state.table_evidence)
+                                       table_evidence=state.table_evidence,
+                                       lookup_evidence=state.lookup_evidence)
     accumulated: list[str] = []
     t_stream = time.time()
     try:
@@ -607,7 +597,7 @@ def chain_answer_stream(
             file=sys.stderr,
             flush=True,
         )
-        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style)
+        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style, lookup_evidence=state.lookup_evidence)
         if final_text and final_text.strip():
             fallback_used = True
             yield ("token", final_text)
@@ -661,7 +651,8 @@ def _stream_from_state(
     yield ("status", "answer_streaming")
     messages = _build_answer_messages(query, state.candidates, state.lang,
                                        answer_style=state.mode_cfg.answer_style,
-                                       table_evidence=state.table_evidence)
+                                       table_evidence=state.table_evidence,
+                                       lookup_evidence=state.lookup_evidence)
     accumulated: list[str] = []
     t_stream = time.time()
     try:
@@ -693,7 +684,7 @@ def _stream_from_state(
             file=sys.stderr,
             flush=True,
         )
-        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style)
+        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style, lookup_evidence=state.lookup_evidence)
         if final_text and final_text.strip():
             yield ("token", final_text)
     state.timings["total"] = time.time() - t_total
@@ -826,6 +817,40 @@ def _format_lookup_answer(match: _lookup.LookupMatch, lang: str) -> str:
 
 
 # --- existing chain helpers ---
+
+def _format_lookup_evidence(match: object, lang: str) -> str:
+    """Render a lookup match as a [LOOKUP VERIFIED] context block for the LLM.
+    
+    Injected before RAG chunks so the LLM treats it as primary authoritative
+    source while still having access to supporting RAG context.
+    """
+    rule = match.rule
+    is_id = lang == "id"
+    body = rule.localized_text(lang).strip()
+    while body.endswith("."):
+        body = body[:-1].rstrip()
+    body = body + "."
+    para = f" {rule.paragraph_id}" if rule.paragraph_id else ""
+    page = f"p.{rule.page_no}" if rule.page_no is not None else ""
+    citation = f"(Sec {rule.section_no}{para}, {page})" if page else f"(Sec {rule.section_no}{para})"
+
+    if is_id:
+        return (
+            "\n[LOOKUP VERIFIED — PRIMARY SOURCE]\n"
+            f"Fakta terverifikasi BKI Rules: {body}\n"
+            f"Sumber: {citation}\n"
+            f"Kutipan: \"" + rule.source_quote + "\"\n"
+            "[/LOOKUP VERIFIED]\n"
+        )
+    else:
+        return (
+            "\n[LOOKUP VERIFIED — PRIMARY SOURCE]\n"
+            f"Verified BKI Rules fact: {body}\n"
+            f"Source: {citation}\n"
+            f"Quote: \"" + rule.source_quote + "\"\n"
+            "[/LOOKUP VERIFIED]\n"
+        )
+
 
 def _extract_history_facts(history: list[dict] | None, query: str) -> str:
     """Extract key=value facts and ship type from conversation history.
@@ -995,6 +1020,7 @@ def _build_answer_messages(
     language: str,
     answer_style: str = "detailed",
     table_evidence: str = "",
+    lookup_evidence: str = "",
 ) -> list[dict]:
     """Build a FRESH messages list for one _answer call.
 
@@ -1003,6 +1029,8 @@ def _build_answer_messages(
     accumulation would silently truncate the system prompt or context window.
     """
     context = prompts.build_context(chunks, table_evidence=table_evidence)
+    if lookup_evidence:
+        context = lookup_evidence + "\n" + context
     style = prompts.answer_style_instruction(answer_style)
     target = _language_name(language)
     if language == "id":
@@ -1010,14 +1038,16 @@ def _build_answer_messages(
             f"[[INTERNAL_INSTRUCTION — DO NOT REPEAT THIS SENTENCE: You MUST answer in Bahasa Indonesia only. Never use English. Never add a meta-instruction in your answer.]]\n\n"
             f"Konteks:\\n{context}\\n\\n"
             f"Pertanyaan: {query}\\n\\n"
-            f"{style}"
+            f"{style}\n\n"
+            f"[[REMINDER — DO NOT ECHO: Jawab dalam Bahasa Indonesia.]]"
         )
     else:
         user_msg = (
             f"[[INTERNAL_INSTRUCTION — DO NOT REPEAT THIS SENTENCE: You MUST answer in English only. Never use another language. Never add a meta-instruction in your answer.]]\n\n"
             f"Context:\\n{context}\\n\\n"
             f"Question: {query}\\n\\n"
-            f"{style}"
+            f"{style}\n\n"
+            f"[[REMINDER — DO NOT ECHO: Respond in English.]]"
         )
     return [
         {"role": "system", "content": prompts.SYSTEM_PROMPT},
@@ -1025,11 +1055,11 @@ def _build_answer_messages(
     ]
 
 
-def _answer_fallback_non_stream(query, chunks, language, mode_cfg, answer_style: str = "detailed") -> str:
+def _answer_fallback_non_stream(query, chunks, language, mode_cfg, answer_style: str = "detailed", lookup_evidence: str = "") -> str:
     """Single non-stream chat call used as a fallback when the streaming
     path produces zero tokens. Returns the model's content (may be empty
     if Ollama also returns empty for the non-stream call)."""
-    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style)
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, lookup_evidence=lookup_evidence)
     out = chat(
         mode_cfg.model,
         messages,
@@ -1045,6 +1075,7 @@ def _answer(
     think: bool = False,
     answer_style: str = "detailed",
     table_evidence: str = "",
+    lookup_evidence: str = "",
 ) -> str:
     """Final user-facing answer with empty-response safeguard.
 
@@ -1053,21 +1084,19 @@ def _answer(
     generation glitch), retries ONCE with the same payload before returning
     a clear fallback. Never returns a silent empty string.
     """
-    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence)
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence, lookup_evidence=lookup_evidence)
     out = chat(model, messages, temperature=temperature, think=think)
     if out and out.strip():
         return out
 
-    # Single retry. qwen2.5:3b occasionally returns "" on the first call after
-    # heavy prior load; the second call usually succeeds without changing the
-    # prompt. If still empty, log and return an explicit fallback.
+    # Single retry
     print(
         f"  [chain._answer] WARNING: empty content on first try, retrying once "
         f"(model={model} lang={language} chunks={len(chunks)})",
         file=sys.stderr,
         flush=True,
     )
-    messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence)
+    messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence, lookup_evidence=lookup_evidence)
     out2 = chat(model, messages_retry, temperature=temperature, think=think)
     if out2 and out2.strip():
         return out2
