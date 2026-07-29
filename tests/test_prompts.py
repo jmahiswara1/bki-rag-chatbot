@@ -70,6 +70,12 @@ def test_translate_condense_has_self_contained_rule():
     assert "fully self-contained" in TRANSLATE_CONDENSE_SYSTEM
 
 
+def test_system_prompt_has_no_echo_rule():
+    """Model must NOT echo internal instructions."""
+    assert "DO NOT REPEAT" not in SYSTEM_PROMPT  # only in user message
+    assert "double brackets" in SYSTEM_PROMPT
+
+
 # ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
@@ -87,4 +93,6 @@ if __name__ == "__main__":
     test_system_prompt_has_no_flat_menu()
     test_translate_condense_has_history_facts_rule()
     test_translate_condense_has_self_contained_rule()
-    print(f"\nAll {len([f for f in dir() if f.startswith('test_')])} tests passed!")
+    test_system_prompt_has_no_echo_rule()
+    all_count = len([f for f in dir() if f.startswith("test_")])
+    print(f"\nAll {all_count} tests passed!")

@@ -1007,14 +1007,14 @@ def _build_answer_messages(
     target = _language_name(language)
     if language == "id":
         user_msg = (
-            f"TARGET LANGUAGE: Bahasa Indonesia. Hard rule: jawab HANYA dalam Bahasa Indonesia. Jangan gunakan bahasa lain.\n\n"
+            f"[[INTERNAL_INSTRUCTION — DO NOT REPEAT THIS SENTENCE: You MUST answer in Bahasa Indonesia only. Never use English. Never add a meta-instruction in your answer.]]\n\n"
             f"Konteks:\\n{context}\\n\\n"
             f"Pertanyaan: {query}\\n\\n"
             f"{style}"
         )
     else:
         user_msg = (
-            f"TARGET LANGUAGE: {target}. Hard rule: respond ONLY in {target}. Never use any other language.\n\n"
+            f"[[INTERNAL_INSTRUCTION — DO NOT REPEAT THIS SENTENCE: You MUST answer in English only. Never use another language. Never add a meta-instruction in your answer.]]\n\n"
             f"Context:\\n{context}\\n\\n"
             f"Question: {query}\\n\\n"
             f"{style}"
