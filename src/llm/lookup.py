@@ -584,6 +584,8 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "windlass",
         "chain",
         "rantai",
+        "mooring",
+        "tambat",
     ),
     "tug_winch_drum_diameter": (
         "holding", "hold",

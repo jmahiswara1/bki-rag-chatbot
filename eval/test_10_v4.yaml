@@ -1,0 +1,92 @@
+# 10 Pertanyaan Baru — In-Scope BKI Rules for Hull 2026 (v4)
+- id: test_v4_hold_flooding_tc
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai pengurangan korosi (corrosion diminution / tc) yang digunakan dalam perhitungan kapasitas geser dasar ganda untuk evaluasi pemuatan ruang muat (hold loading) dalam kondisi banjir pada kapal bulk carrier yang sudah ada (existing)?
+  must_include:
+  - "2"
+  expected_sources:
+  - section_no: 23
+
+- id: test_v4_breakwater_cutouts
+  lang: id
+  category: rules_qa
+  question: Jika pelat pemecah ombak (breakwaters) diberi bukaan (cut-outs) untuk mengurangi beban, berapakah batas luas maksimum yang diizinkan untuk bukaan tersebut?
+  must_include:
+  - "0,2"
+  - "1.2"
+  expected_sources:
+  - section_no: 16
+
+- id: test_v4_mooring_winch_brake
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas penahanan rem (brake holding capacity) minimum yang harus dimiliki oleh derek tambat (mooring winches)?
+  must_include:
+  - "80"
+  expected_sources:
+  - section_no: 18
+
+- id: test_v4_helideck_fire
+  lang: id
+  category: rules_qa
+  question: Tindakan apa yang diwajibkan untuk dilakukan pada struktur landasan helikopter (helideck) setelah platform tersebut atau area di dekatnya mengalami insiden kebakaran?
+  must_include:
+  - "struktur"
+  expected_sources:
+  - section_no: 22
+
+- id: test_v4_coll4_c_star
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai rasio karakteristik energi deformasi (C*) yang harus dicapai agar sebuah kapal bisa mendapatkan notasi kelas perkuatan tubrukan "COLL 4"?
+  must_include:
+  - "6"
+  expected_sources:
+  - section_no: 35
+
+- id: test_v4_rudder_horn_scallops
+  lang: id
+  category: rules_qa
+  question: Apakah diperbolehkan membuat bukaan setengah lingkaran (scallops) pada area sambungan las antara pelat badan melintang (transverse webs) dari tanduk kemudi (rudder horn) dengan pelat lambung (shell plating)?
+  must_include:
+  - "tidak"
+  expected_sources:
+  - section_no: 14
+
+- id: test_v4_cone_coupling_taper
+  lang: id
+  category: rules_qa
+  question: Berapakah standar kemiringan pada diameter (taper on diameter) yang disyaratkan untuk sambungan kerucut (cone couplings) pada kemudi yang menggunakan pasak (key) tanpa sistem pengaturan hidrolik?
+  must_include:
+  - "1:8"
+  - "1:12"
+  expected_sources:
+  - section_no: 14
+
+- id: test_v4_tubular_pillars
+  lang: id
+  category: rules_qa
+  question: Apakah pilar penyangga berbentuk tabung (tubular pillars) diizinkan untuk dipasang secara internal di dalam tangki kapal?
+  must_include:
+  - "tidak"
+  expected_sources:
+  - section_no: 10
+
+- id: test_v4_single_bottom_deep_floors
+  lang: id
+  category: rules_qa
+  question: Pada konstruksi dasar tunggal (single bottom), perlengkapan struktural apa yang wajib ditambahkan pada pelat wrang yang dalam/tinggi (deep floors), terutama di bagian ceruk buritan (after peak)?
+  must_include:
+  - "stiffener"
+  expected_sources:
+  - section_no: 8
+
+- id: test_v4_shop_primer_thickness
+  lang: id
+  category: rules_qa
+  question: Untuk memastikan kualitas pengelasan tidak terganggu dan bebas dari porositas, berapakah batas ketebalan lapisan cat dasar pabrik (shop primers) yang direkomendasikan?
+  must_include:
+  - "20"
+  expected_sources:
+  - section_no: 19
