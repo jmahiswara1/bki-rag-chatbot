@@ -114,10 +114,18 @@ def eval_rules_qa(result, entry: dict) -> tuple[bool, str]:
     retrieval_hit = True
     if expected_sources:
         expected_sections = {s["section_no"] for s in expected_sources}
-        result_sections = {s.section_no for s in result.sources}
-        if not (expected_sections & result_sections):
-            retrieval_hit = False
-            failures.append(f"retrieval miss: expected {expected_sections}, got {result_sections}")
+        # Revised Opsi 2: lookup match skips retrieval, sources=[].
+        # Check lookup_match section instead of result.sources.
+        if result.lookup_match is not None:
+            lookup_section = {result.lookup_match.rule.section_no}
+            if not (expected_sections & lookup_section):
+                retrieval_hit = False
+                failures.append(f"lookup section {lookup_section} not in expected {expected_sections}")
+        else:
+            result_sections = {s.section_no for s in result.sources}
+            if not (expected_sections & result_sections):
+                retrieval_hit = False
+                failures.append(f"retrieval miss: expected {expected_sections}, got {result_sections}")
     
     # Check language
     lang_ok = result.language == entry.get("lang")
