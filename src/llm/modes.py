@@ -14,7 +14,7 @@ class ModeConfig:
 
 
 MODES = {
-    # default: rerank ON, top_k=8, temp=0.0 (deterministic), detailed answer.
+    # default: rerank ON, top_k=30→8, temp=0.0 (deterministic), detailed answer.
     # temp=0.0 for the final-answer LLM is intentional: manual QA over 26
     # questions showed 25/26 NONDETERMINISTIC at temp=0.2. Retrieval is
     # already deterministic post-embedding, and utility calls

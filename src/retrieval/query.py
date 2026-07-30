@@ -30,7 +30,7 @@ def retrieve_context(
     Args:
         query_text: original user query (any language). Kept for back-compat
             when en_query and multi_queries are None.
-        mode: 'default' (rerank, top 8 from 20) or 'fast' (no rerank, top 4).
+        mode: 'default' (rerank, top 8 from 30) or 'fast' (no rerank, top 4).
         fts_query: text for the FTS branch (English, translated). Defaults to
             query_text when None.
         en_query: English version of the query. Used to build the vector
@@ -55,7 +55,7 @@ def retrieve_context(
         candidates = hybrid_search(query_embedding, fts_query_text, top_k=4)
     else:
         # Default mode: higher match_count for recall, then rerank for precision
-        candidates = hybrid_search(query_embedding, fts_query_text, top_k=20)
+        candidates = hybrid_search(query_embedding, fts_query_text, top_k=30)
         
     if mode == "fast":
         return candidates
