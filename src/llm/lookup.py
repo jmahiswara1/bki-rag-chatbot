@@ -516,6 +516,11 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "coating", "pelapisan", "cathodic protection",
         "ICCP", "anoda korban",
     ),
+    "bow_door_equivalent_stress": (
+        "bow door", "pintu haluan", "bow doors",
+        "tegangan setara", "equivalent stress",
+        "150/k",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,

@@ -1,0 +1,101 @@
+# 10 Pertanyaan Baru (NotebookLM) — In-Scope BKI Rules for Hull 2026
+- id: test_v2_freeboard_deck_def
+  lang: id
+  category: rules_qa
+  question: Apa definisi dari "Geladak Bebas" (Freeboard deck) menurut BKI Rules for Hull?
+  must_include:
+  - "freeboard deck"
+  - "permanen"
+  expected_sources:
+  - section_no: 1
+
+- id: test_v2_tanker_towing_20k
+  lang: id
+  category: rules_qa
+  question: Pada kapal tanker, mulai ukuran berapakah (deadweight tonnage / tdw) kapal tersebut diwajibkan memiliki pengaturan penarikan darurat (emergency towing arrangements) di haluan dan buritan?
+  must_include:
+  - "20000"
+  - "penarikan darurat"
+  expected_sources:
+  - section_no: 24
+
+- id: test_v2_aluminium_coating_10
+  lang: id
+  category: rules_qa
+  question: Berapa batas maksimum kandungan aluminium yang diizinkan dalam cat pelapis (coatings) untuk bagian dalam tangki kargo kapal tanker?
+  must_include:
+  - "%"
+  - "10"
+  expected_sources:
+  - section_no: 24
+
+- id: test_v2_bow_door_stress
+  lang: id
+  category: rules_qa
+  question: Berapakah batas tegangan setara (equivalent stress) maksimum yang diizinkan untuk anggota struktur utama dan perangkat pengaman pada pintu haluan (bow doors)?
+  must_include:
+  - "150"
+  - "k"
+  expected_sources:
+  - section_no: 13
+
+- id: test_v2_bilge_well_500mm
+  lang: id
+  category: rules_qa
+  question: Untuk desain dasar ganda (double bottom), berapakah jarak vertikal minimum mutlak yang harus disediakan antara bagian bawah sumur bilga (bilge well) dengan bidang garis lunas (keel line)?
+  must_include:
+  - "500"
+  expected_sources:
+  - section_no: 8
+
+- id: test_v2_bilge_keel_thickness
+  lang: id
+  category: rules_qa
+  question: Berapa ketebalan pelat lunas bilga (bilge keel) yang disyaratkan dibandingkan dengan pelat lambung di sekitarnya?
+  must_include:
+  - "bilge keel"
+  expected_sources:
+  - section_no: 6
+
+- id: test_v2_rsd_f25_cycles
+  lang: id
+  category: rules_qa
+  question: Dalam hal Notasi Kelas terkait evaluasi kelelahan struktur (fatigue assessment), berapakah basis jumlah siklus beban untuk Notasi Kelas RSD (F25)?
+  must_include:
+  - "6,25"
+  - "10^7"
+  expected_sources:
+  - section_no: 1
+
+- id: test_v2_bottom_shell_L50
+  lang: id
+  category: rules_qa
+  question: Untuk kapal dengan panjang (L) kurang dari 50 meter, bagaimana rumus penentuan ketebalan minimum pelat dasar lambung (bottom shell plating)?
+  must_include:
+  - "1,5"
+  - "0,01"
+  - "L"
+  - "k"
+  expected_sources:
+  - section_no: 6
+
+- id: test_v2_tug_utility_K
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai faktor utilitas (utility factor / K) yang digunakan untuk menghitung batas putus minimum tali tunda (towrope) pada kapal tunda (tugs) jika gaya desain tunda (T) mencapai 1000 kN atau lebih?
+  must_include:
+  - "2,0"
+  - "1000"
+  expected_sources:
+  - section_no: 27
+
+- id: test_v2_helideck_lc1
+  lang: id
+  category: rules_qa
+  question: Saat menghitung beban desain untuk helideck pada Load Case 1 (Helikopter terikat di geladak), bagaimana rumusan matematis untuk menghitung gaya roda atau skid (P) yang bertumpu pada geladak?
+  must_include:
+  - "0,5"
+  - "G"
+  - "av"
+  expected_sources:
+  - section_no: 7
