@@ -333,6 +333,24 @@ def _pre_answer_pipeline(
         en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     timings["translate"] = time.time() - t
 
+    # 4.1. OOD pre-check (before lookup — reject clearly out-of-scope queries)
+    ood_reject_msg = _check_ood_query(query, lang)
+    if ood_reject_msg and intent.kind == "rules_qa":
+        timings.setdefault("answer", 0.0)
+        return PipelineState(
+            lang=lang,
+            intent=intent,
+            en_query="",
+            expanded=[],
+            candidates=[],
+            rejected=True,
+            reject_reason="ood_keyword",
+            timings=timings,
+            mode_cfg=mode_cfg,
+            short_circuit_msg=ood_reject_msg,
+            is_pre_answer_only=True,
+        )
+
     # 4.5. lookup-first (before retrieval — saves evidence for LLM context)
     t = time.time()
     lookup_match = None
@@ -347,6 +365,7 @@ def _pre_answer_pipeline(
                 )
             if lookup_match is not None:
                 lookup_evidence = _format_lookup_evidence(lookup_match, lang)
+                skip_retrieval = True
                 skip_retrieval = True
         except Exception as exc:
             print(
@@ -1043,6 +1062,47 @@ def _apply_guardrail(chunks: list[RetrievedChunk]) -> tuple[list[RetrievedChunk]
     if gap < settings.guardrail_top_gap and top <= 0:
         return [], True, f"flat_distribution(gap={gap:.3f})"
     return chunks, False, ""
+
+
+# Terms clearly outside scope of BKI Rules for Hull (Pt.1, Vol.II).
+# These relate to electrical installations, machinery, inland waterways,
+# welding procedure qualification, or other BKI volumes.
+_OOD_KEYWORDS: list[str] = [
+    "pompa pemadam", "fire pump",
+    "panel distribusi listrik", "ip rating",
+    "kapal sungai", "inland waterway",
+    "penyeberangan",
+    "wpqt", "welding procedure", "prosedur pengelasan",
+    "kualifikasi las", "wps",
+    "dynamic positioning", "dps kelas",
+    "sistem permesinan", "redundansi mesin",
+    "pedoman kelistrikan", "instalasi sprinkler",
+    "sistem perpipaan",
+]
+
+
+def _check_ood_query(query: str, lang: str) -> str | None:
+    """Return a rejection message if the query is clearly out-of-scope.
+
+    Checks query (original language) + ignores case/whitespace.
+    Returns None if the query appears to be in BKI hull scope.
+    """
+    query_lower = query.lower()
+    for kw in _OOD_KEYWORDS:
+        if kw in query_lower:
+            if lang == "id":
+                return (
+                    "Pertanyaan ini di luar cakupan BKI Rules for Hull (Pt.1, Vol.II). "
+                    "Dokumen ini hanya mencakup aturan struktur lambung kapal laut baja. "
+                    "Silakan merujuk ke volume BKI yang sesuai."
+                )
+            else:
+                return (
+                    "This question is outside the scope of BKI Rules for Hull (Pt.1, Vol.II). "
+                    "This document only covers hull structural rules for seagoing steel ships. "
+                    "Please refer to the appropriate BKI volume."
+                )
+    return None
 
 
 def _build_answer_messages(

@@ -500,6 +500,22 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "cyclical loading",
         "repeated loading",
     ),
+    # SPM bow chain stopper (Sec 24): only fire for SPM-specific queries.
+    # Generic "stud link chain" / "rantai" queries must NOT trigger this rule.
+    "spm_bow_chain_stopper_chain_size": (
+        "SPM", "single point mooring", "tambatan titik tunggal",
+        "penahan rantai haluan", "bow chain stopper",
+        "chafing chain", "rantai gesek",
+    ),
+    # IW underwater hull corrosion (Sec 38): only fire for in-water survey
+    # / coating queries. "notasi kelas" trigger must NOT fire for other
+    # class notations like COLL.
+    "iw_underwater_hull_corrosion": (
+        "in-water survey", "in water survey",
+        "underwater hull", "lambung bawah air",
+        "coating", "pelapisan", "cathodic protection",
+        "ICCP", "anoda korban",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
@@ -629,6 +645,27 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "pipa udara", "air pipe",
         "ventilator", "ventilasi",
         "freeboard", "geladak bebas",
+    ),
+    # hatch_corrosion_addition: block on double-skin / specific plate
+    # queries. These need Sec 23 RAG, not the generic Sec 17 table.
+    "hatch_corrosion_addition": (
+        "pelat atas dan bawah", "top and bottom plate",
+        "kulit ganda", "double skin",
+        "upper and lower plate",
+    ),
+    # spm_bow_chain_stopper_chain_size: block on anchor / equipment numeral
+    # queries. These need Sec 18 RAG, not Sec 24 SPM rules.
+    "spm_bow_chain_stopper_chain_size": (
+        "jangkar", "anchor",
+        "Equipment Numeral", "angka penunjuk",
+        "alternatif", "short link",
+    ),
+    # iw_underwater_hull_corrosion: block on collision / COLL notation
+    # queries. These need Sec 35, not Sec 38 IW rules.
+    "iw_underwater_hull_corrosion": (
+        "COLL", "tubrukan", "collision",
+        "kecepatan kritis", "v_cr",
+        "perkuatan tubrukan",
     ),
 }
 # ---------------------------------------------------------------------------
