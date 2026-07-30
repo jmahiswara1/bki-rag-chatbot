@@ -1,0 +1,76 @@
+# 5 In-Scope Questions
+- id: test_tk_double_skin
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai penambahan korosi (corrosion addition / tK) yang disyaratkan untuk pelat atas dan bawah pada penutup palka kulit ganda (double skin hatch covers) untuk kapal bulk carrier?
+  must_include:
+  - "2,0"
+  expected_sources:
+  - section_no: 23
+
+- id: test_anchor_chain_z90
+  lang: id
+  category: rules_qa
+  question: Sebagai alternatif dari penggunaan rantai jangkar tipe stud link, jenis rantai apa yang dapat digunakan untuk kapal dengan nilai Equipment Numeral (Z) hingga 90?
+  must_include:
+  - "short link"
+  expected_sources:
+  - section_no: 18
+
+- id: test_bilge_well_distance
+  lang: id
+  category: rules_qa
+  question: Pada struktur dasar ganda (double bottom), berapakah batas jarak vertikal minimum dari dasar sumur bilga (bilge well) ke bidang yang sejajar dengan garis lunas (keel line)?
+  must_include:
+  - "500"
+  expected_sources:
+  - section_no: 8
+
+- id: test_rudder_bearing_pressure
+  lang: id
+  category: rules_qa
+  question: Berapakah tekanan permukaan yang diizinkan (allowable surface pressure) untuk bantalan kemudi (rudder bearings) yang terbuat dari material sintetis dengan tingkat kekerasan lebih besar dari 60 shore?
+  must_include:
+  - "5,5"
+  expected_sources:
+  - section_no: 14
+
+- id: test_coll3_speed
+  lang: id
+  category: rules_qa
+  question: Untuk kapal yang didesain dengan perkuatan tubrukan dan memiliki notasi kelas COLL 3, berapakah nilai kecepatan kritis rata-rata minimum (v_crmin) yang harus dipenuhi?
+  must_include:
+  - "2,5"
+  expected_sources:
+  - section_no: 35
+
+# 5 Out-of-Scope Questions
+- id: test_ooc_ip_rating
+  lang: id
+  category: rules_qa
+  question: Bagaimana standar ketahanan air atau IP rating yang disyaratkan untuk panel distribusi listrik utama di dalam kamar mesin?
+  should_reject: true
+
+- id: test_ooc_fire_pump
+  lang: id
+  category: rules_qa
+  question: Berapa kapasitas minimum tekanan air yang harus dihasilkan oleh pompa pemadam kebakaran utama (main fire pump) pada kapal kargo berukuran 20.000 GT?
+  should_reject: true
+
+- id: test_ooc_dps
+  lang: id
+  category: rules_qa
+  question: Apa saja syarat redundansi pada sistem permesinan kapal yang menggunakan Dynamic Positioning System (DPS) Kelas 3?
+  should_reject: true
+
+- id: test_ooc_inland
+  lang: id
+  category: rules_qa
+  question: Bagaimana aturan perhitungan scantling (ketebalan pelat dasar) untuk kapal sungai (inland waterway vessels) dengan panjang 40 meter?
+  should_reject: true
+
+- id: test_ooc_wpq
+  lang: id
+  category: rules_qa
+  question: Bagaimana prosedur kualifikasi welding procedure qualification test (WPQT) untuk bahan las yang digunakan pada pelat baja dengan kekuatan sangat tinggi (YP47)?
+  should_reject: true

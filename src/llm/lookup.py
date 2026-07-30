@@ -657,6 +657,7 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "pelat atas dan bawah", "top and bottom plate",
         "kulit ganda", "double skin",
         "upper and lower plate",
+        "sekat", "bulkhead", "bergelombang", "corrugated",
     ),
     # spm_bow_chain_stopper_chain_size: block on anchor / equipment numeral
     # queries. These need Sec 18 RAG, not Sec 24 SPM rules.

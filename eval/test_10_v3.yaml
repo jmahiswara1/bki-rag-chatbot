@@ -1,0 +1,96 @@
+# 10 Pertanyaan Baru — In-Scope BKI Rules for Hull 2026
+- id: test_v3_ice_es4_extension
+  lang: id
+  category: rules_qa
+  question: Berapa perpanjangan vertikal (vertical extension) ke arah atas dari Upper Ice Waterline (UIWL) untuk sabuk es di area haluan, tengah, dan buritan pada kapal dengan notasi kelas es ES4?
+  must_include:
+  - "75"
+  expected_sources:
+  - section_no: 15
+
+- id: test_v3_short_deckhouse_thickness
+  lang: id
+  category: rules_qa
+  question: Bagaimana rumus untuk menghitung ketebalan pelat geladak pada bangunan atas atau rumah geladak pendek (short deckhouses) yang terpapar cuaca namun tidak dilindungi oleh pelapis geladak (sheathing)?
+  must_include:
+  - "8"
+  - "t"
+  expected_sources:
+  - section_no: 16
+
+- id: test_v3_packing_line_pressure
+  lang: id
+  category: rules_qa
+  question: Berapa nilai minimum tekanan garis paking (packing line pressure / q) yang disyaratkan untuk menghitung luas penampang bersih pada perangkat pengaman (securing devices) penutup palka?
+  must_include:
+  - "5.0"
+  expected_sources:
+  - section_no: 17
+
+- id: test_v3_wire_rope_length
+  lang: id
+  category: rules_qa
+  question: Jika tali kawat baja (wire rope) digunakan sebagai pengganti rantai jangkar pada kapal dengan panjang kurang dari 90 meter, berapakah panjang tali kawat yang diwajibkan tersebut?
+  must_include:
+  - "1"
+  - "5"
+  expected_sources:
+  - section_no: 18
+
+- id: test_v3_chain_locker_capacity
+  lang: id
+  category: rules_qa
+  question: Bagaimana perhitungan kapasitas ruang penyimpanan minimum (tanpa kotak lumpur / mud box) yang disyaratkan untuk menyimpan dua rantai jangkar haluan di dalam kotak rantai (chain locker)?
+  must_include:
+  - "1.1"
+  expected_sources:
+  - section_no: 18
+
+- id: test_v3_emergency_towing_pennant
+  lang: id
+  category: rules_qa
+  question: Pada pengaturan penarikan darurat (emergency towing arrangements) di kapal tanker, berapakah persyaratan panjang minimum untuk tali penarik (towing pennant)?
+  must_include:
+  - "50"
+  expected_sources:
+  - section_no: 24
+
+- id: test_v3_bulk_corr_bulkhead_tk
+  lang: id
+  category: rules_qa
+  question: Berapa nilai penambahan korosi (corrosion addition / tK) yang ditetapkan untuk sekat kedap air bergelombang melintang pada kapal Bulk Carrier saat mempertimbangkan kondisi ruang muat banjir (hold flooding)?
+  must_include:
+  - "3"
+  - "5"
+  expected_sources:
+  - section_no: 23
+
+- id: test_v3_tanker_min_thickness
+  lang: id
+  category: rules_qa
+  question: Berapakah batas ketebalan pelat minimum (t_min) untuk anggota kekuatan memanjang, penumpu utama, dan sekat di dalam tangki kargo dan tangki balas pada area kargo sebuah kapal tanker?
+  must_include:
+  - "6"
+  - "0"
+  - "2"
+  expected_sources:
+  - section_no: 24
+
+- id: test_v3_tug_utility_K_200
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai faktor utilitas (utility factor / K) yang digunakan untuk menghitung gaya putus minimum tali tunda (minimum breaking force) pada kapal tunda (tugs) jika gaya desain (T) kurang dari atau sama dengan 200 kN?
+  must_include:
+  - "2.5"
+  expected_sources:
+  - section_no: 27
+
+- id: test_v3_supply_vessel_side_shell
+  lang: id
+  category: rules_qa
+  question: Bagaimana ketentuan ketebalan minimum untuk pelat lambung samping (side shell plating), termasuk lajur bilga, pada kapal tipe supply vessels?
+  must_include:
+  - "7.0"
+  - "0.004"
+  expected_sources:
+  - section_no: 34
