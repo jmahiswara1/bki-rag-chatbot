@@ -193,7 +193,19 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "stringer",
         "forepeak",
         "ceruk haluan",
+        "haluan",
+        "senta",
+        "stiffener",
         "beam spacing",
+    ),
+    # framing system determination (Sec 9 A.1): L≥120m → longitudinal.
+    # Must not fire on "longitudinal strength" / "bending moment" queries.
+    "framing_system_by_length": (
+        "jenis konstruksi",
+        "framing system",
+        "framing type",
+        "type of construction",
+        "sistem konstruksi",
     ),
     # tug winch drum (Sec 27): winch drum vs towrope.
     "towing_winch_holding_capacity": (
