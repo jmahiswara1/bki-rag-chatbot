@@ -58,7 +58,8 @@ class PipelineState:
     is_pre_answer_only: bool = False
     lookup_match: object = None
     table_evidence: str = ""  # selected table row evidence for context
-    lookup_evidence: str = ""  # injected lookup rule result for LLM prioritization
+    lookup_evidence: str = ""  # injected lookup fact for LLM (skip RAG)
+    skip_retrieval: bool = False  # when True, skip retrieval + use lookup_evidence only
 
 
 @dataclass
@@ -332,10 +333,11 @@ def _pre_answer_pipeline(
         en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     timings["translate"] = time.time() - t
 
-    # 4.5. lookup-first (before retrieval — injects verified facts as LLM context)
+    # 4.5. lookup-first (before retrieval — saves evidence for LLM context)
     t = time.time()
     lookup_match = None
     lookup_evidence = ""
+    skip_retrieval = False
     if mode == "default" and intent.kind == "rules_qa":
         try:
             rules = _get_lookup_rules()
@@ -345,6 +347,7 @@ def _pre_answer_pipeline(
                 )
             if lookup_match is not None:
                 lookup_evidence = _format_lookup_evidence(lookup_match, lang)
+                skip_retrieval = True
         except Exception as exc:
             print(
                 f"  [chain] WARNING: lookup match failed, falling back to RAG "
@@ -356,81 +359,81 @@ def _pre_answer_pipeline(
 
     # 5. multi-query expansion (gated)
     expanded: list[str] = []
-    if mode == "default" and settings.enable_multi_query:
+    if mode == "default" and settings.enable_multi_query and not skip_retrieval:
         t = time.time()
         raw = _expand(en_query, temperature=mode_cfg.temperature)
         expanded = _parse_multi_query(raw, n=settings.expand_n_queries)
         timings["expand"] = time.time() - t
 
     # 6. retrieve
-    t = time.time()
-    candidates = retrieve_context(
-        query_text=query,
-        mode=mode,
-        fts_query=en_query,
-        en_query=en_query,
-        multi_queries=expanded if expanded else None,
-    )
-    timings["retrieve"] = time.time() - t
+    candidates: list[RetrievedChunk] = []
+    if skip_retrieval:
+        t = time.time()
+        timings["retrieve"] = time.time() - t
+        timings["domain_score"] = 0.0
+        timings["contradiction"] = 0.0
+        table_evidence = ""
+    else:
+        t = time.time()
+        candidates = retrieve_context(
+            query_text=query,
+            mode=mode,
+            fts_query=en_query,
+            en_query=en_query,
+            multi_queries=expanded if expanded else None,
+        )
+        timings["retrieve"] = time.time() - t
 
-    # 6.1. domain-aware scoring — boost chunks from the ship-type-specific
-    # section so they outrank competing generic narratives (e.g. query about
-    # "container ship" → Sec 39 chunks get +2.0 boost over Sec 23 bulk carrier).
-    t = time.time()
-    if en_query and mode == "default" and candidates:
-        ship_type = detect_ship_type(en_query)
-        if ship_type:
-            candidates = apply_domain_scores(candidates, ship_type)
-    timings["domain_score"] = time.time() - t
+        # 6.1. domain-aware scoring
+        t = time.time()
+        if en_query and mode == "default" and candidates:
+            ship_type = detect_ship_type(en_query)
+            if ship_type:
+                candidates = apply_domain_scores(candidates, ship_type)
+        timings["domain_score"] = time.time() - t
 
-    # 6.5. deterministic table-row selection (safe: semantic + unit + numeric gates)
-    table_evidence = ""
-    if en_query and candidates:
-        table_candidates = [(i, c) for i, c in enumerate(candidates) if c.content_type == "table"]
-        safe_selections = []
-        for rank, c in table_candidates:
-            tag = f"[Sec {c.section_no}"
-            if c.paragraph_id:
-                tag += f" | {c.paragraph_id}"
-            if c.table_no:
-                tag += f" | Table {c.table_no}"
-            tag += f" | p.{c.page_start}]" if c.page_start == c.page_end else f" | pp.{c.page_start}-{c.page_end}]"
-            sel = select_table_row(c.content, en_query, "en", table_ref=tag)
-            if sel.selected:
-                safe_selections.append((rank, sel))
-        if len(safe_selections) == 1:
-            rank, sel = safe_selections[0]
-            table_evidence = (
-                f"\n[TABLE ROW SELECTED from {sel.table_ref}]\n"
-                f"Condition: {sel.reason}\n"
-                f"Row: {sel.row_text}\n"
-                f"Value: {sel.value_text}\n"
-            )
-            # Boost the chunk that provided the table evidence so the LLM
-            # attends to it ahead of competing narratives that mention
-            # sibling tables (e.g. narrative C.1 mentioning Table 35.2
-            # when the selector confirmed Table 35.1 is the answer).
-            candidates[rank].score += 3.0
-            candidates.sort(key=lambda c: c.score, reverse=True)
+        # 6.5. deterministic table-row selection
+        table_evidence = ""
+        if en_query and candidates:
+            table_candidates = [(i, c) for i, c in enumerate(candidates) if c.content_type == "table"]
+            safe_selections = []
+            for rank, c in table_candidates:
+                tag = f"[Sec {c.section_no}"
+                if c.paragraph_id:
+                    tag += f" | {c.paragraph_id}"
+                if c.table_no:
+                    tag += f" | Table {c.table_no}"
+                tag += f" | p.{c.page_start}]" if c.page_start == c.page_end else f" | pp.{c.page_start}-{c.page_end}]"
+                sel = select_table_row(c.content, en_query, "en", table_ref=tag)
+                if sel.selected:
+                    safe_selections.append((rank, sel))
+            if len(safe_selections) == 1:
+                rank, sel = safe_selections[0]
+                table_evidence = (
+                    f"\n[TABLE ROW SELECTED from {sel.table_ref}]\n"
+                    f"Condition: {sel.reason}\n"
+                    f"Row: {sel.row_text}\n"
+                    f"Value: {sel.value_text}\n"
+                )
+                candidates[rank].score += 3.0
+                candidates.sort(key=lambda c: c.score, reverse=True)
 
-    # 6.6. contradiction detection — annotate conflicting values from
-    # different sections so the LLM can pick the most relevant source
-    # instead of listing all values as a flat menu.
-    t = time.time()
-    if en_query and mode == "default" and len(candidates) > 1:
-        anno = build_conflict_annotation(candidates, en_query)
-        if anno:
-            table_evidence = (table_evidence or "") + anno
-    timings["contradiction"] = time.time() - t
+        # 6.6. contradiction detection
+        t = time.time()
+        if en_query and mode == "default" and len(candidates) > 1:
+            anno = build_conflict_annotation(candidates, en_query)
+            if anno:
+                table_evidence = (table_evidence or "") + anno
+        timings["contradiction"] = time.time() - t
 
     # 7. guardrail (default only)
     rejected = False
     reject_reason = ""
     short_circuit_msg = ""
     is_pre_answer_only = False
-    if mode == "default" and candidates:
+    if mode == "default" and candidates and not skip_retrieval:
         candidates, rejected, reject_reason = _apply_guardrail(candidates)
-    if not candidates:
+    if not candidates and not skip_retrieval:
         if lang == "id":
             short_circuit_msg = (
                 "Konteks yang tersedia tidak cukup untuk menjawab pertanyaan ini "
@@ -459,6 +462,7 @@ def _pre_answer_pipeline(
         table_evidence=table_evidence,
         lookup_match=lookup_match,
         lookup_evidence=lookup_evidence,
+        skip_retrieval=skip_retrieval,
     )
 
 
@@ -578,7 +582,7 @@ def chain_answer_stream(
                 yield ("token", token)
     except Exception as exc:
         print(
-            f"  [chain.chain_answer_stream] ERROR: stream exception "
+            f"  [chain._stream_from_state] ERROR: stream exception "
             f"{type(exc).__name__}: {exc}",
             file=sys.stderr,
             flush=True,
@@ -587,13 +591,10 @@ def chain_answer_stream(
     state.timings["stream"] = time.time() - t_stream
 
     final_text = "".join(accumulated)
-    fallback_used = False
     if not final_text.strip():
-        # Safeguard: 1x non-stream retry (re-uses _build_answer_messages + client.chat).
-        # Mirrors _answer's retry-then-fallback pattern but only fires once here.
         print(
-            f"  [chain.chain_answer_stream] WARNING: stream produced 0 tokens, "
-            f"falling back to 1x non-stream chat (model={state.mode_cfg.model})",
+            f"  [chain._stream_from_state] WARNING: stream produced 0 tokens, "
+            f"falling back to 1x non-stream chat",
             file=sys.stderr,
             flush=True,
         )
@@ -668,7 +669,7 @@ def _stream_from_state(
                 yield ("token", token)
     except Exception as exc:
         print(
-            f"  [chain._stream_from_state] ERROR: stream exception "
+            f"  [chain.chain_answer_stream] ERROR: stream exception "
             f"{type(exc).__name__}: {exc}",
             file=sys.stderr,
             flush=True,
@@ -679,8 +680,8 @@ def _stream_from_state(
     final_text = "".join(accumulated)
     if not final_text.strip():
         print(
-            f"  [chain._stream_from_state] WARNING: stream produced 0 tokens, "
-            f"falling back to 1x non-stream chat",
+            f"  [chain.chain_answer_stream] WARNING: stream produced 0 tokens, "
+            f"falling back to 1x non-stream chat (model={state.mode_cfg.model})",
             file=sys.stderr,
             flush=True,
         )
@@ -787,6 +788,36 @@ _LOOKUP_DESC: dict[str, dict[str | None, tuple[str, str]]] = {
             "the minimum depth-to-length ratio is",
         ),
     },
+    "spm_bow_chain_stopper_chain_size": {
+        None: (
+            "ukuran standar rantai stud-link untuk bow chain stopper pada sistem SPM adalah",
+            "the standard stud-link chain size for bow chain stoppers in SPM systems is",
+        ),
+    },
+    "aluminium_helideck_fire_protection": {
+        None: (
+            "syarat perlindungan kebakaran untuk helideck berbahan aluminium atau logam titik leleh rendah adalah",
+            "the fire protection requirements for helidecks made of aluminium or low melting point metal are",
+        ),
+    },
+    "iw_underwater_hull_corrosion": {
+        None: (
+            "sistem perlindungan korosi untuk lambung bawah air kapal dengan Notasi Kelas IW adalah",
+            "the corrosion protection system for the underwater hull of IW Class Notation vessels is",
+        ),
+    },
+    "framing_system_by_length": {
+        None: (
+            "sistem konstruksi yang digunakan berdasarkan panjang kapal adalah",
+            "the framing system to use based on ship length is",
+        ),
+    },
+    "container_scantling_factors": {
+        None: (
+            "faktor-faktor yang mempengaruhi perhitungan scantling kapal kontainer adalah",
+            "the factors affecting container ship scantling calculations are",
+        ),
+    },
 }
 
 
@@ -837,17 +868,17 @@ def _format_lookup_evidence(match: object, lang: str) -> str:
     if is_id:
         return (
             "\n[LOOKUP VERIFIED — PRIMARY SOURCE]\n"
-            f"Fakta terverifikasi BKI Rules: {body}\n"
-            f"Sumber: {citation}\n"
-            f"Kutipan: \"" + rule.source_quote + "\"\n"
+            f"Fakta terverifikasi BKI Rules: {body} {citation}\n"
+            f"Kutipan verbatim: \"" + rule.source_quote + "\"\n"
+            "Gunakan HANYA citation di atas. Jangan membuat section/halaman baru.\n"
             "[/LOOKUP VERIFIED]\n"
         )
     else:
         return (
             "\n[LOOKUP VERIFIED — PRIMARY SOURCE]\n"
-            f"Verified BKI Rules fact: {body}\n"
-            f"Source: {citation}\n"
-            f"Quote: \"" + rule.source_quote + "\"\n"
+            f"Verified BKI Rules fact: {body} {citation}\n"
+            f"Verbatim quote: \"" + rule.source_quote + "\"\n"
+            "Use ONLY the citation above. Do NOT invent a different section or page.\n"
             "[/LOOKUP VERIFIED]\n"
         )
 

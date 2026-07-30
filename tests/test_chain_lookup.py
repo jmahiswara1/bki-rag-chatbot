@@ -139,22 +139,13 @@ def _make_patches():
 # Test cases
 # ---------------------------------------------------------------------------
 
-def test_chain_lookup_match_bulwark_flows_to_rag():
-    """Bulwark query must match lookup and STILL flow through to RAG + LLM (Opsi 2)."""
-    from src.core.models import RetrievedChunk
-
+def test_chain_lookup_match_bulwark_short_circuits_rag():
+    """Bulwark query must match lookup and NOT call retrieve or LLM."""
     retrieve_called = []
-
-    _dummy_chunk = RetrievedChunk(
-        section_no=6, section_title="Shell Plating", paragraph_id="K.2",
-        content_type="narrative", table_no=None, figure_no=None,
-        page_start=191, page_end=191,
-        content="bulwark guard rail height minimum 1.0 m", score=1.0,
-    )
 
     def fake_retrieve(*args, **kwargs):
         retrieve_called.append(True)
-        return [_dummy_chunk]
+        return []
 
     answer_called = []
 
@@ -176,31 +167,23 @@ def test_chain_lookup_match_bulwark_flows_to_rag():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.topic == "bulwark_guardrail_min_height"
-    # Opsi 2: lookup evidence is injected into LLM context instead of
-    # short-circuiting. RAG and LLM should both be called.
-    assert len(retrieve_called) == 1, "retrieve_context must be called even when lookup matches"
-    assert len(answer_called) == 1, "LLM _answer must be called even when lookup matches"
-    print("PASS: test_chain_lookup_match_bulwark_flows_to_rag")
+    assert len(retrieve_called) == 0, "retrieve_context must be skipped when lookup matches"
+    assert len(answer_called) >= 1, "LLM _answer MUST be called for lookup match (Revised Opsi 2)"
+    print("PASS: test_chain_lookup_match_bulwark_llm_only")
 
 
-def test_chain_lookup_match_fire_door_flows_to_rag():
-    """Hinged fire door query must match lookup then flow to RAG+LLM (Opsi 2)."""
-    from src.core.models import RetrievedChunk
-
-    _dummy_chunk = RetrievedChunk(
-        section_no=22, section_title="Structural Fire Protection", paragraph_id="C.6.6.2",
-        content_type="narrative", table_no=None, figure_no=None,
-        page_start=494, page_end=494,
-        content="fire door closing time hinged 40 s sliding 10 s", score=1.0,
-    )
-
+def test_chain_lookup_match_fire_door_hinged():
+    """Hinged fire door query must match lookup with correct param."""
     retrieve_called = []
 
     def fake_retrieve(*args, **kwargs):
         retrieve_called.append(True)
-        return [_dummy_chunk]
+        return []
+
+    answer_called = []
 
     def fake_answer(*args, **kwargs):
+        answer_called.append(True)
         return "LLM ANSWER"
 
     with patch.multiple(
@@ -217,9 +200,9 @@ def test_chain_lookup_match_fire_door_flows_to_rag():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.parameter == "hinged"
-    # Opsi 2: lookup evidence is injected into LLM context instead of short-circuiting.
-    assert len(retrieve_called) == 1, "retrieve_context must be called even when lookup matches"
-    print("PASS: test_chain_lookup_match_fire_door_flows_to_rag")
+    assert len(retrieve_called) == 0, "retrieve_context must be skipped when lookup matches"
+    assert len(answer_called) >= 1, "LLM _answer MUST be called for lookup match (Revised Opsi 2)"
+    print("PASS: test_chain_lookup_match_fire_door_llm_only")
 
 
 def test_chain_lookup_none_falls_back_to_rag():
@@ -408,21 +391,12 @@ def test_lookup_match_answer_format_en_fallback_when_en_missing():
 
 
 def test_chain_lookup_match_forepeak_stringer():
-    """Forepeak stringer spacing query must match lookup then flow to RAG+LLM (Opsi 2)."""
-    from src.core.models import RetrievedChunk
-
-    _dummy_chunk = RetrievedChunk(
-        section_no=9, section_title="Framing System", paragraph_id="A.5.2.1",
-        content_type="narrative", table_no=None, figure_no=None,
-        page_start=228, page_end=228,
-        content="forepeak stringer spacing 2.6 m", score=1.0,
-    )
-
+    """Forepeak stringer spacing query must match lookup directly."""
     retrieve_called = []
 
     def fake_retrieve(*args, **kwargs):
         retrieve_called.append(True)
-        return [_dummy_chunk]
+        return []
 
     def fake_answer(*args, **kwargs):
         return "LLM ANSWER"
@@ -441,27 +415,17 @@ def test_chain_lookup_match_forepeak_stringer():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.topic == "forepeak_stringer_spacing"
-    # Opsi 2: lookup evidence is injected into LLM context instead of short-circuiting.
-    assert len(retrieve_called) == 1, "retrieve_context must be called even when lookup matches"
+    assert len(retrieve_called) == 0
     print("PASS: test_chain_lookup_match_forepeak_stringer")
 
 
 def test_chain_lookup_match_tug_winch_drum():
-    """Tug winch drum query must match lookup then flow to RAG+LLM (Opsi 2)."""
-    from src.core.models import RetrievedChunk
-
-    _dummy_chunk = RetrievedChunk(
-        section_no=27, section_title="Tugs", paragraph_id="C.5.2.3",
-        content_type="narrative", table_no=None, figure_no=None,
-        page_start=630, page_end=630,
-        content="winch drum diameter 14 times towrope", score=1.0,
-    )
-
+    """Tug winch drum query must match lookup directly."""
     retrieve_called = []
 
     def fake_retrieve(*args, **kwargs):
         retrieve_called.append(True)
-        return [_dummy_chunk]
+        return []
 
     def fake_answer(*args, **kwargs):
         return "LLM ANSWER"
@@ -482,27 +446,17 @@ def test_chain_lookup_match_tug_winch_drum():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.topic == "tug_winch_drum_diameter"
-    # Opsi 2: lookup evidence is injected into LLM context instead of short-circuiting.
-    assert len(retrieve_called) == 1, "retrieve_context must be called even when lookup matches"
+    assert len(retrieve_called) == 0
     print("PASS: test_chain_lookup_match_tug_winch_drum")
 
 
 def test_chain_lookup_match_ship_length_l():
-    """Ship length L definition query must match lookup then flow to RAG+LLM (Opsi 2)."""
-    from src.core.models import RetrievedChunk
-
-    _dummy_chunk = RetrievedChunk(
-        section_no=1, section_title="General", paragraph_id="H.2.1",
-        content_type="narrative", table_no=None, figure_no=None,
-        page_start=22, page_end=22,
-        content="rule length L definition 96% 97%", score=1.0,
-    )
-
+    """Ship length L definition query must match lookup and cite Sec 1."""
     retrieve_called = []
 
     def fake_retrieve(*args, **kwargs):
         retrieve_called.append(True)
-        return [_dummy_chunk]
+        return []
 
     def fake_answer(*args, **kwargs):
         return "LLM ANSWER"
@@ -526,8 +480,7 @@ def test_chain_lookup_match_ship_length_l():
     assert result.lookup_match.rule.section_no == 1
     assert result.lookup_match.rule.paragraph_id == "H.2.1"
     assert result.lookup_match.rule.page_no == 22
-    # Opsi 2: lookup evidence is injected into LLM context instead of short-circuiting.
-    assert len(retrieve_called) == 1, "retrieve_context must be called even when lookup matches"
+    assert len(retrieve_called) == 0, "retrieve_context must be skipped when lookup matches"
     print("PASS: test_chain_lookup_match_ship_length_l")
 
 
@@ -536,8 +489,8 @@ def test_chain_lookup_match_ship_length_l():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    test_chain_lookup_match_bulwark_flows_to_rag()
-    test_chain_lookup_match_fire_door_flows_to_rag()
+    test_chain_lookup_match_bulwark_short_circuits_rag()
+    test_chain_lookup_match_fire_door_hinged()
     test_chain_lookup_none_falls_back_to_rag()
     test_chain_lookup_ambiguous_fire_door_falls_back()
     test_lookup_match_answer_format_id()
