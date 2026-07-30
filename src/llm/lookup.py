@@ -667,6 +667,22 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "kecepatan kritis", "v_cr",
         "perkuatan tubrukan",
     ),
+    # aluminium_helideck_fire_protection: block on coating, paint,
+    # aluminium content, and non-fire queries. These need Sec 24 or
+    # other sections, not Sec 22 aluminium fire protection.
+    "aluminium_helideck_fire_protection": (
+        "cat", "pelapis", "coating", "tangki kargo",
+        "faktor utilitas", "utility factor", "tunda",
+        "load case", "beban roda", "skid",
+        "terikat", "lash",
+    ),
+    # container_scantling_factors: block on non-container queries that
+    # incidentally match "faktor"/"scantling" (e.g. tug utility factor).
+    "container_scantling_factors": (
+        "tunda", "tug", "towing", "towrope",
+        "faktor utilitas", "utility factor",
+        "tali tunda", "batas putus",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers
