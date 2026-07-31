@@ -1,0 +1,95 @@
+# 10 Pertanyaan Baru — In-Scope BKI Rules for Hull 2026 (v5)
+- id: test_v5_machinery_deck_load
+  lang: id
+  category: rules_qa
+  question: Berapakah beban geladak (deck load / p) yang disyaratkan untuk area geladak permesinan (machinery decks)?
+  must_include:
+  - "8.0"
+  - "av"
+  expected_sources:
+  - section_no: 4
+
+- id: test_v5_second_deck_thickness
+  lang: id
+  category: rules_qa
+  question: Bagaimana rumus untuk menentukan ketebalan pelat minimum dari geladak kedua (2nd deck) pada kapal?
+  must_include:
+  - "5,5"
+  - "0,02"
+  expected_sources:
+  - section_no: 7
+
+- id: test_v5_peak_floor_thickness
+  lang: id
+  category: rules_qa
+  question: Berapakah ketebalan minimum pelat wrang (floor plates) yang terletak di bagian ceruk (peaks) kapal?
+  must_include:
+  - "0.035"
+  - "5.0"
+  expected_sources:
+  - section_no: 8
+
+- id: test_v5_shaft_tunnel_thickness
+  lang: id
+  category: rules_qa
+  question: Bagaimana ketentuan rumus untuk menentukan ketebalan pelat minimum dari terowongan poros (shaft tunnels) yang memiliki permukaan melengkung (curved surface) pada konstruksi sekat kedap air (watertight bulkheads)?
+  must_include:
+  - "0.038"
+  - "6.0"
+  expected_sources:
+  - section_no: 11
+
+- id: test_v5_propeller_post_thickness
+  lang: id
+  category: rules_qa
+  question: Pada konstruksi linggi buritan hasil fabrikasi las (welded construction), berapakah ketebalan yang disyaratkan untuk pelat tiang baling-baling (propeller post)?
+  must_include:
+  - "2.4"
+  expected_sources:
+  - section_no: 13
+
+- id: test_v5_rudder_stock_reduction
+  lang: id
+  category: rules_qa
+  question: Pada sistem perangkat kemudi mekanis, seberapa besar batas pengurangan diameter tongkat kemudi (rudder stock) di bagian atas yang hanya berfungsi untuk mentransmisikan momen torsi?
+  must_include:
+  - "0,9"
+  expected_sources:
+  - section_no: 14
+
+- id: test_v5_mooring_design_load
+  lang: id
+  category: rules_qa
+  question: Berapakah beban desain (design load) yang digunakan untuk mengevaluasi kekuatan struktur lambung pendukung (supporting hull structure) dari perangkat tambat (mooring equipment)?
+  must_include:
+  - "1,15"
+  expected_sources:
+  - section_no: 18
+
+- id: test_v5_laminated_glass_thickness
+  lang: id
+  category: rules_qa
+  question: Bagaimana formula untuk menghitung ketebalan ekuivalen (ts) jika menggunakan kaca pengaman laminasi (laminated toughened safety glass) pada jendela kapal?
+  must_include:
+  - "1"
+  - "2"
+  expected_sources:
+  - section_no: 22
+
+- id: test_v5_bulk_cargo_hold_min_thick
+  lang: id
+  category: rules_qa
+  question: Berapakah batas ketebalan pelat minimum absolut untuk sekat ruang muat kargo (cargo hold bulkheads) pada kapal Bulk Carrier?
+  must_include:
+  - "9"
+  expected_sources:
+  - section_no: 23
+
+- id: test_v5_tug_winch_rope_capacity
+  lang: id
+  category: rules_qa
+  question: Berapakah kapasitas minimum panjang tali tunda yang harus bisa digulung pada lapisan pertama (first layer) di bagian drum mesin derek tarik (towing winch drum) pada kapal tunda?
+  must_include:
+  - "50"
+  expected_sources:
+  - section_no: 27
