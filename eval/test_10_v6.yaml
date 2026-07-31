@@ -1,0 +1,91 @@
+# 10 Pertanyaan Baru — In-Scope BKI Rules for Hull 2026 (v6)
+- id: test_v6_supply_vessel_plate_addition
+  lang: id
+  category: rules_qa
+  question: Berapa penambahan ketebalan pelat yang disyaratkan untuk dinding sekat bangunan atas dan rumah geladak yang terpapar cuaca pada kapal suplai (Supply Vessels)?
+  must_include:
+  - "1"
+  expected_sources:
+  - section_no: 34
+
+- id: test_v6_dredgers_aground_bottom
+  lang: id
+  category: rules_qa
+  question: Pada kapal keruk (dredgers) yang dirancang atau berpotensi beroperasi di kondisi kandas (aground), berapakah penambahan ketebalan yang diwajibkan untuk pelat dasar datarnya (flat bottom plating)?
+  must_include:
+  - "2"
+  expected_sources:
+  - section_no: 32
+
+- id: test_v6_tug_winch_drum_diameter
+  lang: id
+  category: rules_qa
+  question: Berapakah batas minimum ukuran diameter drum mesin derek tarik (towing winch drum) pada kapal tunda (tugs) dibandingkan dengan ukuran tali tundanya?
+  must_include:
+  - "14"
+  expected_sources:
+  - section_no: 27
+
+- id: test_v6_fo_lo_tank_separation
+  lang: id
+  category: rules_qa
+  question: Apakah aturan memperbolehkan penempatan tangki bahan bakar minyak (fuel oil tanks) secara bersebelahan persis dengan tangki sirkulasi minyak pelumas (lubricating oil circulation tanks)?
+  must_include:
+  - "tidak"
+  expected_sources:
+  - section_no: 12
+
+- id: test_v6_fire_door_reopen_distance
+  lang: id
+  category: rules_qa
+  question: Dalam aturan perlindungan kebakaran struktural, jika terdapat pintu otomatis (contohnya pintu kedap) yang didesain terbuka kembali saat membentur objek, berapakah jarak maksimal pintu itu boleh terbuka kembali?
+  must_include:
+  - "1"
+  expected_sources:
+  - section_no: 22
+
+- id: test_v6_barge_midship_modulus_reduction
+  lang: id
+  category: rules_qa
+  question: Berapa toleransi persentase pengurangan yang diizinkan untuk modulus penampang tengah kapal (midship section modulus) pada kapal tongkang (barges) atau ponton jika dibandingkan dengan persyaratan umum kapal laut?
+  must_include:
+  - "5"
+  expected_sources:
+  - section_no: 31
+
+- id: test_v6_helideck_snow_load
+  lang: id
+  category: rules_qa
+  question: Dalam analisis beban struktural untuk landasan helikopter (helideck) pada kondisi helikopter sedang terikat di atas geladak, berapa beban merata yang harus diasumsikan akibat kondisi cuaca seperti salju?
+  must_include:
+  - "2"
+  expected_sources:
+  - section_no: 7
+
+- id: test_v6_main_engine_floor_plate_addition
+  lang: id
+  category: rules_qa
+  question: Bagaimana aturan BKI mengatur penambahan ketebalan pelat wrang (plate floors) pada dasar ganda yang persis berada di bawah mesin utama?
+  must_include:
+  - "3"
+  - "6"
+  expected_sources:
+  - section_no: 8
+
+- id: test_v6_elastic_stern_tube_condition
+  lang: id
+  category: rules_qa
+  question: Kondisi seperti apa yang membuat sebuah kapal kemungkinan disyaratkan menggunakan tabung buritan elastis (elastic stern tube) pada desain poros propellernya?
+  must_include:
+  - "elastis"
+  expected_sources:
+  - section_no: 13
+
+- id: test_v6_brittle_crack_arrest_steel_grade
+  lang: id
+  category: rules_qa
+  question: Jika sebuah kapal kontainer menggunakan metode desain penahan retak getas (brittle crack arrest design) untuk menangani pelat baja yang sangat tebal, apa batasan mutu baja (steel grade) untuk pelat geladak atas?
+  must_include:
+  - "e"
+  expected_sources:
+  - section_no: 39
