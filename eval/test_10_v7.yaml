@@ -1,0 +1,93 @@
+# 10 Pertanyaan Baru — In-Scope BKI Rules for Hull 2026 (v7)
+- id: test_v7_ice_belt_plating
+  lang: id
+  category: rules_qa
+  question: Bagaimana rumus perhitungan ketebalan pelat lambung (shell plating) dengan sistem gading memanjang (longitudinal framing) di dalam area sabuk es (ice belt)?
+  must_include:
+  - "f"
+  expected_sources:
+  - section_no: 15
+
+- id: test_v7_weld_factor_sheerstrake
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai faktor las (weld factor) yang disyaratkan untuk penyambungan antara pelat sudut geladak (deckstringer) dengan pelat lajur atas (sheerstrakes)?
+  must_include:
+  - "0.5"
+  expected_sources:
+  - section_no: 19
+
+- id: test_v7_fatigue_delta_sigma
+  lang: id
+  category: rules_qa
+  question: Dalam analisis kekuatan lelah (fatigue strength), apa yang dimaksud dengan parameter ΔσR?
+  must_include:
+  - "2"
+  expected_sources:
+  - section_no: 20
+
+- id: test_v7_tug_bar_keel
+  lang: id
+  category: rules_qa
+  question: Pada kapal tunda (tugs) yang menggunakan konstruksi lunas batang (bar keel), bagaimana rumus untuk menentukan dimensi tinggi dan ketebalan lunas tersebut?
+  must_include:
+  - "110"
+  - "12"
+  expected_sources:
+  - section_no: 27
+
+- id: test_v7_escort_tug_test_speed
+  lang: id
+  category: rules_qa
+  question: Berapakah rentang kecepatan uji (test speed of advance / Vt) yang normalnya digunakan untuk mengukur gaya kemudi maksimum (maximum steering force) pada Active Escort Tugs saat uji skala penuh?
+  must_include:
+  - "8"
+  - "10"
+  expected_sources:
+  - section_no: 27
+
+- id: test_v7_unmanned_barge_anchor
+  lang: id
+  category: rules_qa
+  question: Berapakah jumlah jangkar dan panjang rantai jangkar yang disyaratkan untuk tongkang dan ponton tak berawak (unmanned barges and pontoons) dibandingkan dengan persyaratan tabel kapal pada umumnya?
+  must_include:
+  - "jangkar"
+  expected_sources:
+  - section_no: 31
+
+- id: test_v7_dredger_box_keel
+  lang: id
+  category: rules_qa
+  question: Bagaimana rumus perhitungan ketebalan pelat minimum untuk lunas kotak (box keel) pada kapal keruk (dredgers), dan berapakah penambahan ketebalan untuk pelat bagian atas yang paling rawan terhadap kerusakan?
+  must_include:
+  - "10"
+  - "50"
+  expected_sources:
+  - section_no: 32
+
+- id: test_v7_sheltered_water_min_thickness
+  lang: id
+  category: rules_qa
+  question: Berapakah batas ketebalan minimum absolut yang diizinkan untuk pelat lambung (shell plating) di bagian manapun pada kapal yang secara khusus beroperasi di perairan terlindung (sheltered water service)?
+  must_include:
+  - "3.5"
+  expected_sources:
+  - section_no: 30
+
+- id: test_v7_hold_permeability
+  lang: id
+  category: rules_qa
+  question: Berapakah nilai permeabilitas yang harus diasumsikan untuk ruang muat kargo yang kosong (empty hold) dalam perhitungan stabilitas kebocoran pada kapal curah?
+  must_include:
+  - "0.95"
+  expected_sources:
+  - section_no: 23
+
+- id: test_v7_wheel_house_top_load
+  lang: id
+  category: rules_qa
+  question: Berapakah beban desain minimum (p) yang disyaratkan untuk merancang struktur pada area geladak atas ruang kemudi yang terpapar cuaca (exposed wheel house tops)?
+  must_include:
+  - "2.5"
+  expected_sources:
+  - section_no: 16

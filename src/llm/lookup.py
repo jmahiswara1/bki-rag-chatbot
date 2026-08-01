@@ -608,7 +608,9 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     "supply_deck_thickness": (
         "lokasi", "posisi", "di mana", "pintu", "lubang", "cut-out",
         "pipa udara", "ventilasi", "ruang mesin", "mesin", "compartment",
-        "hatch", "hatchway",
+        "hatch", "hatchway", "sekat", "bulkhead", "bangunan atas",
+        "superstructure", "rumah geladak", "deckhouse", "cuaca", "weather",
+        "penambahan", "addition",
     ),
     "tanker_strake_width": (
         "lokasi", "passageway", "STL", "submerged turret",
@@ -655,6 +657,7 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "pipa udara", "air pipe",
         "ventilator", "ventilasi",
         "freeboard", "geladak bebas",
+        "suplai", "supply",
     ),
     # hatch_corrosion_addition: block on double-skin / specific plate
     # queries. These need Sec 23 RAG, not the generic Sec 17 table.
@@ -687,12 +690,17 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "load case", "beban roda", "skid",
         "terikat", "lash",
     ),
+    # restricted_service_modulus_reduction: prevent over-fire on min thickness
+    "restricted_service_modulus_reduction": (
+        "thickness", "tebal", "ketebalan", "plating", "pelat",
+    ),
     # container_scantling_factors: block on non-container queries that
     # incidentally match "faktor"/"scantling" (e.g. tug utility factor).
     "container_scantling_factors": (
         "tunda", "tug", "towing", "towrope",
         "faktor utilitas", "utility factor",
         "tali tunda", "batas putus",
+        "permeabilitas", "permeability", "kosong",
     ),
 }
 # ---------------------------------------------------------------------------
