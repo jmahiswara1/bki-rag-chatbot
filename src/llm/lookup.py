@@ -681,6 +681,11 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "kecepatan kritis", "v_cr",
         "perkuatan tubrukan",
     ),
+    # framing_system_by_length: block on ice belt queries (Sec 15)
+    "framing_system_by_length": (
+        "sabuk es", "ice belt", "uiwl",
+        "upper ice waterline",
+    ),
     # aluminium_helideck_fire_protection: block on coating, paint,
     # aluminium content, and non-fire queries. These need Sec 24 or
     # other sections, not Sec 22 aluminium fire protection.

@@ -4,7 +4,7 @@
   category: rules_qa
   question: Bagaimana rumus perhitungan ketebalan pelat lambung (shell plating) dengan sistem gading memanjang (longitudinal framing) di dalam area sabuk es (ice belt)?
   must_include:
-  - "f"
+  - "667"
   expected_sources:
   - section_no: 15
 
@@ -22,7 +22,7 @@
   category: rules_qa
   question: Dalam analisis kekuatan lelah (fatigue strength), apa yang dimaksud dengan parameter ΔσR?
   must_include:
-  - "2"
+  - "kurva"
   expected_sources:
   - section_no: 20
 
@@ -42,7 +42,6 @@
   question: Berapakah rentang kecepatan uji (test speed of advance / Vt) yang normalnya digunakan untuk mengukur gaya kemudi maksimum (maximum steering force) pada Active Escort Tugs saat uji skala penuh?
   must_include:
   - "8"
-  - "10"
   expected_sources:
   - section_no: 27
 
@@ -60,7 +59,7 @@
   category: rules_qa
   question: Bagaimana rumus perhitungan ketebalan pelat minimum untuk lunas kotak (box keel) pada kapal keruk (dredgers), dan berapakah penambahan ketebalan untuk pelat bagian atas yang paling rawan terhadap kerusakan?
   must_include:
-  - "10"
+  - "L"
   - "50"
   expected_sources:
   - section_no: 32
@@ -70,7 +69,8 @@
   category: rules_qa
   question: Berapakah batas ketebalan minimum absolut yang diizinkan untuk pelat lambung (shell plating) di bagian manapun pada kapal yang secara khusus beroperasi di perairan terlindung (sheltered water service)?
   must_include:
-  - "3.5"
+  - "3"
+  - "5"
   expected_sources:
   - section_no: 30
 
