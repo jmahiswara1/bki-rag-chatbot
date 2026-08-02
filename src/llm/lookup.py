@@ -674,6 +674,11 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "Equipment Numeral", "angka penunjuk",
         "alternatif", "short link",
     ),
+    # mooring_current_speed: block on mooring line length reduction queries
+    "mooring_current_speed": (
+        "pengurangan", "reduction", "panjang", "length",
+        "persentase", "percentage",
+    ),
     # iw_underwater_hull_corrosion: block on collision / COLL notation
     # queries. These need Sec 35, not Sec 38 IW rules.
     "iw_underwater_hull_corrosion": (
@@ -681,10 +686,13 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "kecepatan kritis", "v_cr",
         "perkuatan tubrukan",
     ),
-    # framing_system_by_length: block on ice belt queries (Sec 15)
+    # framing_system_by_length: block on ice belt queries (Sec 15) and
+    # floor/double bottom spacing queries (Sec 8)
     "framing_system_by_length": (
         "sabuk es", "ice belt", "uiwl",
         "upper ice waterline",
+        "jarak", "spacing", "wrang", "floor", 
+        "dasar ganda", "double bottom",
     ),
     # aluminium_helideck_fire_protection: block on coating, paint,
     # aluminium content, and non-fire queries. These need Sec 24 or
@@ -706,6 +714,8 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "faktor utilitas", "utility factor",
         "tali tunda", "batas putus",
         "permeabilitas", "permeability", "kosong",
+        "cross-flooding", "stabilitas", "stability", 
+        "ekualisasi", "equalization",
     ),
 }
 # ---------------------------------------------------------------------------

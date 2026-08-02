@@ -1,0 +1,90 @@
+# 10 Pertanyaan Baru — In-Scope BKI Rules for Hull 2026 (v8)
+- id: test_v8_tanker_cargo_length
+  lang: id
+  category: rules_qa
+  question: Bagaimana aturan batas ukuran panjang maksimum untuk tangki kargo (l_ct,max) pada kapal tanker?
+  must_include:
+  - "0.2"
+  expected_sources:
+  - section_no: 24
+
+- id: test_v8_project_cargo_hatch_thickness
+  lang: id
+  category: rules_qa
+  question: Jika sebuah tutup palka (hatch cover) dirancang khusus untuk memuat project cargo di atasnya, berapakah ketebalan pelat minimum yang disyaratkan?
+  must_include:
+  - "6"
+  - "5"
+  expected_sources:
+  - section_no: 17
+
+- id: test_v8_air_pipe_100A_thickness
+  lang: id
+  category: rules_qa
+  question: Berapakah ketebalan kotor (gross thickness) minimum yang disyaratkan untuk pipa udara (air pipes) yang dipasang di atas geladak apabila memiliki diameter nominal pipa sebesar 100A?
+  must_include:
+  - "7"
+  expected_sources:
+  - section_no: 21
+
+- id: test_v8_sauna_door_direction
+  lang: id
+  category: rules_qa
+  question: Bagaimana pedoman keselamatan kebakaran mengatur arah bukaan pintu pada ruang sauna di atas kapal?
+  must_include:
+  - "luar"
+  expected_sources:
+  - section_no: 22
+
+- id: test_v8_rudder_bearing_clearance
+  lang: id
+  category: rules_qa
+  question: Untuk material bantalan kemudi yang terbuat dari logam (metallic bearing material), berapakah nilai panduan jarak bebas bantalan (bearing clearance) minimum yang harus dipenuhi?
+  must_include:
+  - "1000"
+  expected_sources:
+  - section_no: 14
+
+- id: test_v8_plate_floor_spacing
+  lang: id
+  category: rules_qa
+  question: Pada kapal bulk carrier dengan sistem rangka memanjang (longitudinal framing) pada dasar ganda, berapakah batas jarak maksimum antar wrang pelat (plate floors)?
+  must_include:
+  - "3"
+
+- id: test_v8_cross_flooding_time
+  lang: id
+  category: rules_qa
+  question: Menurut Section 36 (Subdivision and Stability), pada pengaturan "cross-flooding arrangement", berapakah batas waktu ekualisasi (equalization time) maksimum yang diizinkan untuk proses penyeimbangan?
+  must_include:
+  - "10"
+  expected_sources:
+  - section_no: 36
+
+- id: test_v8_bulkhead_count_L70
+  lang: id
+  category: rules_qa
+  question: Berapa jumlah minimum sekat kedap air (watertight bulkheads) yang wajib dipasang pada kapal kargo berukuran panjang (L) 70 meter jika ruang permesinannya terletak di bagian paling buritan (aft)?
+  must_include:
+  - "4"
+  expected_sources:
+  - section_no: 11
+
+- id: test_v8_fo_lo_boundary_tk
+  lang: id
+  category: rules_qa
+  question: Pada kapal kecil yang diizinkan tidak menggunakan cofferdam di antara tangki bahan bakar minyak dan tangki sirkulasi pelumas, berapakah nilai penambahan korosi (tK) minimum untuk pelat batas gabungannya (common boundary)?
+  must_include:
+  - "2"
+  - "5"
+  expected_sources:
+  - section_no: 12
+
+- id: test_v8_mooring_length_reduction
+  lang: id
+  category: rules_qa
+  question: Untuk kapal dengan Equipment Numeral (Z) lebih dari 2000, berapakah persentase maksimum pengurangan panjang individu yang diizinkan untuk tali tambat (mooring lines) dari ketentuan standarnya?
+  must_include:
+  - "7"
+  expected_sources:
+  - section_no: 18
