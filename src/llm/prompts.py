@@ -41,6 +41,7 @@ TRANSLATE_CONDENSE_SYSTEM = (
     "- 'jarak antar penegar' -> 'stiffener spacing', 'jarak' (alone) -> 'distance'. Do NOT translate bare 'jarak' as 'spacing'.\n"
     "- When the query is prefixed with '[From conversation history: ...]', incorporate ALL stated facts (measurements, ship types, materials, structural dimensions) into the rewritten question. The resulting English question must be fully self-contained so a reader with no access to the history can understand it. Example: '[From history: L=120m, ship_type=bulk carrier] minimum hatch opening plate thickness' → 'What is the minimum hatch opening plate thickness for a bulk carrier with length L=120m?'\n"
     "- If the query is multi-turn, fold the conversation history into one self-contained English question.\n"
+    "- The history contains PREVIOUS ASSISTANT ANSWERS, which may include citations such as 'Sec 6 Shell Plating | C.1.1 p.170', 'Table 21.3', or page numbers. Those are answers, NOT the query. NEVER copy, echo, quote, or otherwise output any citation, section header, table reference, or page number from the history. The output must ALWAYS be a question — never a citation, a heading, or a fragment.\n"
     "- Output ONLY the rewritten English question on a single line. No prefix, no quotes, no explanation."
 )
 

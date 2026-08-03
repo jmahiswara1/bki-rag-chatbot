@@ -1,0 +1,66 @@
+# Multi-turn conversation evaluasi — Opsi 4 (_extract_history_facts)
+# Setiap entry punya `turns`: turn dijalankan berurutan lewat chain_answer_stream
+# dengan history terakumulasi (user + assistant).
+# Checks per turn (mirror eval_rules_qa + Opsi 4):
+#   - expected_sources / must_include / must_not_contain / lang
+#   - en_query_contains: substring yang HARUS ada di result.en_query
+#     (bukti fakta L/H/B/ship_type ter-fold ke pertanyaan self-contained)
+# Entry PASS hanya jika SEMUA turn PASS.
+- id: mt_bulk_floor_spacing
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Pada kapal bulk carrier dengan sistem rangka memanjang (longitudinal framing) pada dasar ganda, berapakah batas jarak maksimum antar wrang pelat (plate floors)?
+      expected_sources:
+      - section_no: 23
+      en_query_contains:
+      - "bulk"
+      must_include:
+      - "3"
+    - question: Kalau panjang kapal L=150 m, apakah kemungkinan batas jarak antar wrang pelatnya berubah?
+      expected_sources:
+      - section_no: 23
+      en_query_contains:
+      - "150"
+    - question: "Kalau ini kapal penumpang, bagaimanakah?"
+      expected_sources:
+      - section_no: 29
+      - section_no: 8
+      en_query_contains:
+      - "passenger"
+
+- id: mt_air_pipe_thickness
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Berapakah ketebalan kotor (gross thickness) minimum yang disyaratkan untuk pipa udara (air pipes) yang dipasang di atas geladak apabila diameter nominalnya (DN) sebesar 100 mm?
+      expected_sources:
+      - section_no: 21
+      en_query_contains:
+      - "100"
+      must_include:
+      - "7"
+    - question: Kalau diameter nominalnya dinaikkan menjadi 150 mm, bagaimana ketebalan minimum yang disyaratkan?
+      expected_sources:
+      - section_no: 21
+      en_query_contains:
+      - "150"
+
+- id: mt_passenger_length_probe
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Kapal penumpang dengan panjang L=130 m, berapa jarak minimum antar wrang pelatnya?
+      expected_sources:
+      - section_no: 29
+      - section_no: 8
+      en_query_contains:
+      - "passenger"
+      - "130"
+    - question: Kalau panjang kapalnya diperbesar menjadi 180 m, apakah ada perubahan pada jarak antar wrangnya?
+      expected_sources:
+      - section_no: 29
+      - section_no: 8
+      en_query_contains:
+      - "passenger"
+      - "180"

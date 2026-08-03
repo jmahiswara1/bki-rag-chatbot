@@ -904,26 +904,49 @@ def _format_lookup_evidence(match: object, lang: str) -> str:
 
 def _extract_history_facts(history: list[dict] | None, query: str) -> str:
     """Extract key=value facts and ship type from conversation history.
-    
+
     Merges all user+assistant messages, then detects:
     - Variable assignments: L=120, H=8.5, b=600, B=20, etc.
     - Ship type via detect_ship_type()
+
+    Most-recent-wins: the LATEST user message + current query take priority
+    over older history, so a follow-up like "kalau L=150?" or "kalau ini
+    kapal tanker?" correctly overrides the value/type established earlier.
+    Facts are deduplicated by variable key.
+
     Returns a comma-separated string for the translate prompt prefix,
     or empty string if nothing is found.
     """
     if not history:
         return ""
-    all_text = " ".join(h.get("content", "") for h in history)
-    all_text += " " + query
-    all_text_en = apply_glossary(all_text)
+    latest_user = next(
+        (h.get("content", "") for h in reversed(history)
+         if h.get("role") == "user"),
+        "",
+    )
+    latest = f"{latest_user} {query}"
+    all_text = " ".join(h.get("content", "") for h in history) + " " + query
+
+    def _extract(text: str) -> list[tuple[str, str]]:
+        out: list[tuple[str, str]] = []
+        for m in re.finditer(
+            r'(?<!\w)([LHBbTtatKknfQ]\w{0,4})\s*[=:]\s*(\d+[.,]?\d*)\s*(m|mm|kN|MPa|N/mm2|%|t)?',
+            text,
+        ):
+            unit = m.group(3) or ""
+            out.append((m.group(1), f"{m.group(1)}={m.group(2)}{unit}"))
+        return out
+
+    seen: set[str] = set()
     facts: list[str] = []
-    for m in re.finditer(
-        r'(?<!\w)([LHBbTtatKknfQ]\w{0,4})\s*[=:]\s*(\d+[.,]?\d*)\s*(m|mm|kN|MPa|N/mm2|%|t)?',
-        all_text,
-    ):
-        unit = m.group(3) or ""
-        facts.append(f"{m.group(1)}={m.group(2)}{unit}")
-    ship = detect_ship_type(all_text_en)
+    for text in (latest, all_text):
+        for key, fact in _extract(text):
+            if key not in seen:
+                seen.add(key)
+                facts.append(fact)
+
+    latest_en = apply_glossary(latest)
+    ship = detect_ship_type(latest_en) or detect_ship_type(all_text)
     if ship:
         facts.append(f"ship_type={ship}")
     return ", ".join(facts)
@@ -941,11 +964,15 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     # When mode and lang are provided, the result is cached in Supabase
     # (query_condense_cache) so identical query text always produces the
     # same en_query across processes (TUI + main.py).
-    if mode is not None and lang is not None:
+    history = history or []  # accept None from direct callers (e.g. test scripts)
+    # Multi-turn follow-ups are context-dependent: the cache key does NOT
+    # include history, so the same query text in a different conversation
+    # would reuse a stale en_query. Bypass the cache whenever history exists.
+    is_multi_turn = bool(history)
+    if not is_multi_turn and mode is not None and lang is not None:
         cached = _condense_cache_get(query, lang, mode)
         if cached is not None:
             return canonicalize_condensed_query(query, cached)
-    history = history or []  # accept None from direct callers (e.g. test scripts)
     # Deterministic ID->EN substitution for BKI domain phrases before the LLM
     # call. Keeps the corpus-verified terms (e.g. 'sekat tubrukan' ->
     # 'collision bulkhead') pinned so qwen2.5:3b does not hallucinate
@@ -958,7 +985,14 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     if history_prefix:
         query_pre = f"[From conversation history: {history_prefix}] {query_pre}"
     messages = [{"role": "system", "content": prompts.TRANSLATE_CONDENSE_SYSTEM}]
+    # Multi-turn: feed the model only the PREVIOUS USER messages (the prior
+    # questions), never the assistant answers. Assistant answers are long,
+    # cite-heavy ("Sec 6 | B.4.3 p.103") and a small 3B model tends to echo
+    # those citations as the rewrite instead of producing an English question.
+    # The extracted facts prefix + prior questions give enough context.
     for h in history:
+        if is_multi_turn and h.get("role") == "assistant":
+            continue
         messages.append(h)
     messages.append({"role": "user", "content": query_pre})
     out = chat(
@@ -971,7 +1005,7 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     result = _clean_one_liner(out)
     en_query = result if result else query_pre  # fall back to substituted query if LLM empty
     en_query = canonicalize_condensed_query(query, en_query)
-    if mode is not None and lang is not None:
+    if not is_multi_turn and mode is not None and lang is not None:
         _condense_cache_put(query, lang, mode, en_query)
     return en_query
 

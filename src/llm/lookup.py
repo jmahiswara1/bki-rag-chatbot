@@ -595,6 +595,25 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "brake",
         "capacity", "kapasitas",
     ),
+    # forepeak_stringer_spacing: prevent over-fire on floor/spacing
+    # questions (Sec 8/23/29 bottom structures) and on collision bulkhead
+    # POSITION queries ("diukur dari garis tegak haluan"). The
+    # "stiffener"/"spacing"/"collision bulkhead" anchors also match these
+    # questions, which are different aspects of the same region.
+    "forepeak_stringer_spacing": (
+        "wrang",
+        "floor",
+        "plate floor",
+        "jarak antar wrang",
+        "distance between floors",
+        "dasar ganda",
+        "double bottom",
+        "bottom structure",
+        "posisi",
+        "position",
+        "diukur",
+        "measured",
+    ),
     # poisson_ratio_aluminium: prevent over-fire on questions about
     # Poisson's ratio for steel / baja. The document does not state
     # Poisson's ratio for steel explicitly (context_note on the rule),

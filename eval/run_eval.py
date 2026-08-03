@@ -22,6 +22,8 @@ from src.llm.chain import chain_answer_stream
 
 def classify_entry(entry: dict) -> str:
     """Classify entry into metric category."""
+    if entry.get("turns"):
+        return "multi_turn"
     if entry.get("expected_result"):
         return "calc-value"
     if entry.get("expect_error"):
@@ -35,6 +37,91 @@ def classify_entry(entry: dict) -> str:
     if entry.get("expect_lookup"):
         return "lookup"
     return "rules_qa"
+
+
+def _eval_multi_turn(entry: dict, debug: bool = False) -> dict:
+    """Run a multi-turn conversation.
+
+    Each turn is sent through chain_answer_stream with the ACCUMULATED
+    history (user + assistant messages) so the follow-up can reference the
+    prior turn. The entry passes iff EVERY turn passes.
+
+    Turn-level checks (reuse eval_rules_qa on a synthetic single-turn entry):
+      - expected_sources, must_include, must_not_contain, lang
+    Plus an Opsi 4-specific check: en_query_contains -> the English query
+    produced by _translate_condense must contain the given substring(s),
+    which verifies conversation facts (L=..., H=..., ship_type) were folded
+    into a self-contained English question.
+    """
+    lang = entry.get("lang", "id")
+    history: list[dict] = []
+    turn_results: list[tuple[int, bool, str]] = []
+    t0 = time.time()
+    try:
+        for i, turn in enumerate(entry.get("turns", [])):
+            q = turn["question"]
+            if debug:
+                print(f"\n  --- turn {i+1} ---")
+                print(f"  Q: {q[:100]}")
+            result = None
+            for kind, payload in chain_answer_stream(q, mode="default", history=history):
+                if kind == "done":
+                    result = payload
+                    break
+            if result is None:
+                df = time.time() - t0
+                if debug:
+                    print("    RESULT: None (no result from stream)")
+                return {"id": entry["id"], "category": "multi_turn", "pass": False,
+                        "reason": f"turn {i+1}: no result from stream", "elapsed": df,
+                        "keyword_ok": False}
+            if debug:
+                eq = result.en_query[:160] if result.en_query else "(empty)"
+                print(f"    en_query: {eq}")
+                print(f"    rejected: {result.rejected} ({result.reject_reason or 'none'}) {result.language}")
+                if result.lookup_match is not None:
+                    print(f"    lookup_match: {result.lookup_match.rule.topic} (Sec {result.lookup_match.rule.section_no})")
+                print(f"    len(sources): {len(result.sources)}")
+                if result.sources:
+                    print(f"    top sources: {[(s.section_no, round(s.score, 3)) for s in result.sources[:5]]}")
+                print(f"    answer: {result.answer[:160] if result.answer else '(empty)'}")
+
+            # Accumulate history for the next turn.
+            history.append({"role": "user", "content": q})
+            if result.answer:
+                history.append({"role": "assistant", "content": result.answer})
+
+            # Evaluate this turn as a pseudo single-turn entry.
+            pseudo = dict(turn)
+            pseudo.setdefault("lang", lang)
+            passed, reason = eval_rules_qa(result, pseudo)
+            en_kws = turn.get("en_query_contains", [])
+            if en_kws and not result.en_query:
+                passed = False
+                reason = (f"en_query empty; needs: {en_kws}"
+                          + ("; " + reason if reason else ""))
+            for kw in en_kws:
+                if _norm(kw) not in _norm(result.en_query or ""):
+                    passed = False
+                    reason = f"en_query missing keyword: {kw}" + ("; " + reason if reason else "")
+            turn_results.append({"i": i + 1, "pass": passed, "reason": reason})
+            if debug:
+                print(f"    -> {'PASS' if passed else 'FAIL'}: {reason}\n")
+    except Exception as e:
+        return {"id": entry["id"], "category": "multi_turn", "pass": False,
+                "reason": f"exception: {e}", "elapsed": time.time() - t0,
+                "keyword_ok": False}
+
+    failures = [f"turn {tr['i']} [{tr['reason']}]" for tr in turn_results if not tr["pass"]]
+    keyword_ok = all(tr["pass"] for tr in turn_results)
+    return {
+        "id": entry["id"],
+        "category": "multi_turn",
+        "pass": not failures,
+        "reason": "; ".join(failures) if failures else f"all {len(turn_results)} turns passed",
+        "elapsed": time.time() - t0,
+        "keyword_ok": keyword_ok,
+    }
 
 
 def eval_calc_value(result, entry: dict) -> tuple[bool, str]:
@@ -258,6 +345,8 @@ def eval_lookup_negative(result, entry: dict) -> tuple[bool, str]:
 # ---------- Main ----------
 def _derive_category(entry: dict) -> str:
     """Mirror of classify_entry() for validation reporting only."""
+    if entry.get("turns"):
+        return "multi_turn"
     if entry.get("expected_result"):
         return "calc-value"
     if entry.get("expect_error"):
@@ -297,9 +386,14 @@ def _print_validation(entries, source_path: str) -> None:
     for l in sorted(lang):
         print(f"  {l}: {lang[l]}")
 
-    # Sanity: all entries have id + question
-    missing = [e.get("id", "<no-id>") for e in entries
-               if not e.get("id") or not e.get("question")]
+    # Sanity: all entries have id + question (or turns for multi_turn)
+    missing = []
+    for e in entries:
+        if not e.get("id"):
+            missing.append("<no-id>")
+            continue
+        if not e.get("question") and not e.get("turns"):
+            missing.append(e["id"])
     if missing:
         print(f"\nWARN: missing id/question in: {missing}")
 
@@ -360,7 +454,16 @@ def main():
         entry_id = entry["id"]
         category = classify_entry(entry)
         
-        print(f"[{entry_id}] {entry['question'][:60]}...")
+        label = entry.get("question", entry.get("turns", [{}])[0].get("question", ""))
+        print(f"[{entry_id}] {label[:60]}...")
+        
+        # Multi-turn: run turns sequentially with accumulated history.
+        if category == "multi_turn":
+            r = _eval_multi_turn(entry, debug=args.debug)
+            results.append(r)
+            status = "PASS" if r["pass"] else "FAIL"
+            print(f"  {status}: {r['reason']}\n")
+            continue
         
         try:
             t0 = time.time()
