@@ -240,6 +240,25 @@ def _pre_answer_pipeline(
         intent = classify_with_llm(query, temperature=mode_cfg.temperature)
     timings["intent"] = time.time() - t
 
+    # 2.5. OOD pre-check must run before calculation short-circuit too.
+    # An out-of-scope query can still be phrased as a calculation request.
+    ood_reject_msg = _check_ood_query(query, lang)
+    if ood_reject_msg:
+        timings.setdefault("answer", 0.0)
+        return PipelineState(
+            lang=lang,
+            intent=intent,
+            en_query="",
+            expanded=[],
+            candidates=[],
+            rejected=True,
+            reject_reason="ood_keyword",
+            timings=timings,
+            mode_cfg=mode_cfg,
+            short_circuit_msg=ood_reject_msg,
+            is_pre_answer_only=True,
+        )
+
     # 3. calc short-circuit
     if intent.kind == "calculation":
         t = time.time()
@@ -332,24 +351,6 @@ def _pre_answer_pipeline(
     else:
         en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
     timings["translate"] = time.time() - t
-
-    # 4.1. OOD pre-check (before lookup — reject clearly out-of-scope queries)
-    ood_reject_msg = _check_ood_query(query, lang)
-    if ood_reject_msg and intent.kind == "rules_qa":
-        timings.setdefault("answer", 0.0)
-        return PipelineState(
-            lang=lang,
-            intent=intent,
-            en_query="",
-            expanded=[],
-            candidates=[],
-            rejected=True,
-            reject_reason="ood_keyword",
-            timings=timings,
-            mode_cfg=mode_cfg,
-            short_circuit_msg=ood_reject_msg,
-            is_pre_answer_only=True,
-        )
 
     # 4.5. lookup-first (before retrieval — saves evidence for LLM context)
     t = time.time()
@@ -909,10 +910,11 @@ def _extract_history_facts(history: list[dict] | None, query: str) -> str:
     - Variable assignments: L=120, H=8.5, b=600, B=20, etc.
     - Ship type via detect_ship_type()
 
-    Most-recent-wins: the LATEST user message + current query take priority
-    over older history, so a follow-up like "kalau L=150?" or "kalau ini
-    kapal tanker?" correctly overrides the value/type established earlier.
-    Facts are deduplicated by variable key.
+    Most-recent-wins: facts are scanned in priority order
+    (1) the CURRENT query, (2) the previous user message, (3) the whole
+    history, and deduplicated by variable key — so a follow-up like
+    "kalau L=150?" or "kalau ini kapal tanker?" correctly overrides the
+    value/type established earlier in the conversation.
 
     Returns a comma-separated string for the translate prompt prefix,
     or empty string if nothing is found.
@@ -924,7 +926,6 @@ def _extract_history_facts(history: list[dict] | None, query: str) -> str:
          if h.get("role") == "user"),
         "",
     )
-    latest = f"{latest_user} {query}"
     all_text = " ".join(h.get("content", "") for h in history) + " " + query
 
     def _extract(text: str) -> list[tuple[str, str]]:
@@ -939,14 +940,18 @@ def _extract_history_facts(history: list[dict] | None, query: str) -> str:
 
     seen: set[str] = set()
     facts: list[str] = []
-    for text in (latest, all_text):
+    for text in (query, latest_user, all_text):
         for key, fact in _extract(text):
             if key not in seen:
                 seen.add(key)
                 facts.append(fact)
 
-    latest_en = apply_glossary(latest)
-    ship = detect_ship_type(latest_en) or detect_ship_type(all_text)
+    query_en = apply_glossary(query)
+    ship = (
+        detect_ship_type(query_en)
+        or detect_ship_type(apply_glossary(latest_user))
+        or detect_ship_type(all_text)
+    )
     if ship:
         facts.append(f"ship_type={ship}")
     return ", ".join(facts)
@@ -1110,6 +1115,7 @@ _OOD_KEYWORDS: list[str] = [
     "kualifikasi las", "wps",
     "dynamic positioning", "dps kelas",
     "sistem permesinan", "redundansi mesin",
+    "propeller", "baling-baling",
     "pedoman kelistrikan", "instalasi sprinkler",
     "sistem perpipaan",
 ]

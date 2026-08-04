@@ -54,13 +54,15 @@
       expected_sources:
       - section_no: 29
       - section_no: 8
+      - section_no: 6
       en_query_contains:
       - "passenger"
       - "130"
-    - question: Kalau panjang kapalnya diperbesar menjadi 180 m, apakah ada perubahan pada jarak antar wrangnya?
+    - question: Kalau panjang kapalnya L=180 m, apakah ada perubahan pada jarak antar wrangnya?
       expected_sources:
       - section_no: 29
       - section_no: 8
+      - section_no: 6
       en_query_contains:
       - "passenger"
       - "180"

@@ -1,0 +1,109 @@
+# OOD guardrail precision set.
+# OOD entries must be rejected; near-miss entries are in BKI Hull scope and
+# must remain answerable.  This set deliberately includes one calculation-
+# shaped OOD query to exercise the pre-calculation guardrail path.
+- id: ood_precision_electrical_panel_id
+  lang: id
+  question: Berapa IP rating minimum panel distribusi listrik utama di kamar mesin?
+  should_reject: true
+
+- id: ood_precision_fire_pump_en
+  lang: en
+  question: What pressure and capacity are required for the main fire pump?
+  should_reject: true
+
+- id: ood_precision_machinery_dps_id
+  lang: id
+  question: Apa persyaratan redundansi sistem permesinan untuk kapal dengan Dynamic Positioning System kelas 3?
+  should_reject: true
+
+- id: ood_precision_inland_vessel_en
+  lang: en
+  question: What scantling rules apply to an inland waterway vessel?
+  should_reject: true
+
+- id: ood_precision_welding_wpqt_id
+  lang: id
+  question: Bagaimana prosedur welding procedure qualification test untuk sambungan las pelat baja?
+  should_reject: true
+
+- id: ood_precision_navigation_radar_en
+  lang: en
+  question: What is the required range and accuracy of the ship navigation radar?
+  should_reject: true
+
+- id: ood_precision_engine_overhaul_id
+  lang: id
+  question: Bagaimana prosedur overhaul mesin induk dan penentuan interval perawatannya?
+  should_reject: true
+
+- id: ood_precision_propeller_pitch_en
+  lang: en
+  question: How should controllable pitch propeller performance be tested?
+  should_reject: true
+
+- id: ood_precision_classification_fee_id
+  lang: id
+  question: Berapa biaya dan jadwal pembayaran sertifikasi klasifikasi kapal?
+  should_reject: true
+
+- id: ood_precision_fire_pump_calc_id
+  lang: id
+  question: Hitung kapasitas minimum pompa pemadam kebakaran untuk kapal kargo.
+  should_reject: true
+
+- id: near_miss_collision_bulkhead_id
+  lang: id
+  question: Berapa tebal minimum pelat sekat tubrukan menurut aturan lambung?
+  expected_sources:
+  - section_no: 11
+  must_include:
+  - tebal
+
+- id: near_miss_frame_modulus_en
+  lang: en
+  question: How is the section modulus of tween deck frames determined?
+  expected_sources:
+  - section_no: 9
+  must_include:
+  - section modulus
+
+- id: near_miss_ventilator_coaming_en
+  lang: en
+  question: What is the minimum height of a ventilator coaming on the weather deck?
+  expected_sources:
+  - section_no: 21
+  must_include:
+  - coaming
+
+- id: near_miss_side_scuttle_id
+  lang: id
+  question: Berapa luas minimum jendela lambung atau side scuttle pada kapal?
+  expected_sources:
+  - section_no: 22
+  must_include:
+  - side scuttle
+
+- id: near_miss_hatch_cover_pressure_en
+  lang: en
+  question: What pressure must hatch cover stoppers withstand against longitudinal forces?
+  expected_sources:
+  - section_no: 17
+  must_include:
+  - pressure
+
+- id: near_miss_frame_spacing_en
+  lang: en
+  question: How is frame spacing defined in the hull framing rules?
+  expected_sources:
+  - section_no: 9
+  must_include:
+  - spacing
+
+- id: near_miss_cargo_deck_plate_id
+  lang: id
+  question: Bagaimana menentukan tebal pelat dek kargo berdasarkan beban pL?
+  expected_sources:
+  - section_no: 7
+  must_include:
+  - pL
