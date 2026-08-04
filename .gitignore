@@ -43,8 +43,20 @@ handoff-fase*.md
 # Ad-hoc demo / exploratory content (CLI experiments, not shipped code)
 demos/
 
-# Ad-hoc / private script helpers (underscore-prefixed)
-scripts/_*.py
+# Ad-hoc / one-off scripts kept locally (not shipped code).
+# scripts/setup_check.py IS tracked (referenced by README); all other
+# experiment / analysis / wrapper scaffolding stays local and uncommitted.
+scripts/*
+!scripts/setup_check.py
+
+# One-off scratch eval slices (kept local; not part of the regression sets)
+eval/holdout_set_all_qa.yaml
+eval/holdout_set_alu_steel.yaml
+eval/holdout_set_hard.yaml
+eval/holdout_set_v1_short.yaml
+eval/holdout_set_v1_tiny.yaml
+eval/holdout_set_v3_short.yaml
+eval/holdout_set_v3_tiny.yaml
 
 # Throwaway eval-run transcripts (created by ad-hoc shell invocations)
 golden_run*.txt
