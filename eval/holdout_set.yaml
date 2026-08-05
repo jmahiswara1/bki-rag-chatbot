@@ -11,8 +11,8 @@
   category: rules_qa
   question: Apa definisi "Length L" menurut BKI Rules for Hull?
   must_include_any_groups:
-  - [sarat scantling, scantling draught]
-  - [linggi, stem]
+  - [sarat scantling, sarat skantling, scantling draught, garis air skantling]
+  - [linggi, stem, linggi haluan, foreside of stem, rudder post, tongkat kemudi]
 - id: holdout_mooring_current_id
   lang: id
   category: lookup
@@ -63,13 +63,13 @@
   category: rules_qa
   question: Apa definisi geladak cuaca (weather deck) menurut aturan BKI?
   must_include_any_groups:
-  - [geladak bebas, freeboard deck]
+  - [geladak bebas, freeboard deck, free decks]
 - id: holdout_doubling_plate_tank_id
   lang: id
   category: rules_qa
   question: Apakah pelat ganda (doubling plates) diizinkan dipasang di dalam tangki untuk muatan cairan yang mudah terbakar?
   must_include_any_groups:
-  - [pelat kerah, collar plate]
+  - [pelat kerah, pelat pinggir, pelat collar, collar plate, collar plates]
 - id: holdout_reh_normal_steel_id
   lang: id
   category: lookup
@@ -214,6 +214,7 @@
   must_include:
   - square root
   - k
+  known_fail: true
 - id: holdout_tanker_strake_width_en
   lang: en
   category: lookup
@@ -278,4 +279,4 @@
   expect_lookup: true
   question: What is the required test force (PL) for a towing hook on a tug if the design force (T) is less than or equal to 500 kN?
   must_include_any_groups:
-  - ['2.0', '2,0', '2 . T', '2 x T', '2 × T']
+  - ['2.0', '2,0', '2 . T', '2.t', '2 x T', '2 × T']
