@@ -217,6 +217,14 @@ def select_formula(
     """
     ranked = rank_formulas(query, candidates)
 
+    l_val = None
+    l_match = re.search(r"L\s*[=:]\s*([\d.,]+)", query, flags=re.IGNORECASE)
+    if l_match:
+        try:
+            l_val = float(l_match.group(1).replace(",", "."))
+        except ValueError:
+            pass
+
     # Extract query keywords (cleaned, lowercased) for the title-match signal.
     clean_query = re.sub(r"\w+\s*[=:]\s*[\d.,]+\s*\w*?", "", query, flags=re.IGNORECASE).lower()
 
@@ -226,6 +234,22 @@ def select_formula(
     is_deck = any(kw in clean_query for kw in ["dek", "geladak", "deck"])
     
     is_shell = any(kw in clean_query for kw in ["kulit", "lambung", "shell"]) or is_bottom or is_side
+
+    # Floor/forepeak queries must win over the broad "alas" -> bottom synonym.
+    is_floor_peak = any(kw in clean_query for kw in ["ceruk", "fore peak", "forepeak"])
+    if is_floor_peak:
+        floor_code = None
+        if "height" in clean_query or "tinggi" in clean_query:
+            floor_code = "FLOOR_HEIGHT_FOREPEAK"
+        elif l_val is not None:
+            floor_code = "FLOOR_PEAK_THICKNESS"
+        if floor_code:
+            for f, _score in ranked:
+                if f.code == floor_code:
+                    return f, ranked
+            for f in list_verified_formulas():
+                if f.code == floor_code:
+                    return f, ranked
 
     # If domain is strictly identified, restrict candidates
     if is_shell and not is_deck:
@@ -250,15 +274,6 @@ def select_formula(
 
     if not ranked:
         return None, []
-
-    # 2. Extract L value to determine branching for bottom/side plating
-    l_val = None
-    l_match = re.search(r"L\s*[=:]\s*([\d.,]+)", query, flags=re.IGNORECASE)
-    if l_match:
-        try:
-            l_val = float(l_match.group(1).replace(",", "."))
-        except ValueError:
-            pass
 
     if is_bottom and not is_side:
         # Check if it might be a floor/peak query first, which contains "alas" but shouldn't match BOTTOM_PLATING strictly

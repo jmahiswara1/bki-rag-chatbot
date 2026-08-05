@@ -4,6 +4,20 @@ from src.calc.engine import calculate, _parse_variables
 from tests.test_calc import _SEEDED_FORMULAS
 
 class TestShellPlatingSelector:
+    def test_floor_peak_beats_bottom_synonym(self):
+        query = "Hitung tebal pelat alas di ceruk dengan L=100"
+        candidates = search_formulas(query)
+        best, _ = select_formula(query, candidates)
+        assert best is not None
+        assert best.code == "FLOOR_PEAK_THICKNESS"
+
+    def test_forepeak_floor_height_selects_dedicated_formula(self):
+        query = "Floor plate height in fore peak with H=12"
+        candidates = search_formulas(query)
+        best, _ = select_formula(query, candidates)
+        assert best is not None
+        assert best.code == "FLOOR_HEIGHT_FOREPEAK"
+
     def test_bottom_greater_90(self):
         query = "hitung tebal pelat alas (bottom), L=100 m, pB=60 kN/m2, jarak penegar 600 mm, mild steel"
         candidates = search_formulas(query)

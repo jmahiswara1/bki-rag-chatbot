@@ -320,7 +320,7 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
              )
     
     # Custom message for missing k when high tensile is mentioned
-    if 'k' not in parsed_values and re.search(r"high\s*tensile|ht", query, re.IGNORECASE):
+    if 'k' not in parsed_values and re.search(r"high\s*tensile|\bht\b", query, re.IGNORECASE):
         # We need to block the missing_vars check and return a custom message
         missing_vars = [v for v in missing_vars if v.symbol != 'k']
         return CalculationResult(
