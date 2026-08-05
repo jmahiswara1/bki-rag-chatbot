@@ -428,6 +428,14 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "dredger", "dredgers", "bottom transverses",
         "transverses dasar", "single bottom", "dasar tunggal",
     ),
+    "bottom_shell_formula_l_less_90": (
+        "bottom shell plating", "bottom plating", "bottom shell",
+        "pelat dasar lambung", "pelat kulit dasar", "pelat alas",
+    ),
+    "bottom_shell_formula_l_greater_90": (
+        "bottom shell plating", "bottom plating", "bottom shell",
+        "pelat dasar lambung", "pelat kulit dasar", "pelat alas",
+    ),
     # Container scantling factors are specific to container ships. Generic
     # words such as "scantling" and "calculation" are too broad by themselves.
     "container_scantling_factors": (
@@ -727,6 +735,14 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     ),
     "windows_side_scuttles_iso_test": (
         "round or oval openings", "area", "luas",
+    ),
+    "bottom_shell_formula_l_less_90": (
+        "less than 90", "l < 90", "l<90", "under 90",
+        "kurang dari 90", "di bawah 90",
+    ),
+    "bottom_shell_formula_l_greater_90": (
+        "90 meters or greater", "90 m or greater", "l >= 90", "l≥90",
+        "90 meter atau lebih", "90 m atau lebih", "sama dengan atau lebih",
     ),
     # spm_bow_chain_stopper_chain_size: block on anchor / equipment numeral
     # queries. These need Sec 18 RAG, not Sec 24 SPM rules.
