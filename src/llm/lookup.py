@@ -238,9 +238,11 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     # ship rule length L definition (Sec 1 H.2.1).
     # Generics banned: bare "length l" / bare "panjang l".
     "ship_length_l_definition": (
+        "term length l", "definisi length l",
         "rule length",
-        "definisi panjang kapal",
+        "definisi length kapal",
         "definition of ship length",
+        "definisi panjang kapal",
         "panjang aturan",
         "scantling draught",
         "foreside of stem",
@@ -403,9 +405,24 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "superstructure plating", "superstructure deck",
         "pelat superstruktur", "pelat bangunan atas",
     ),
+    "weather_deck_definition": (
+        "weather deck", "geladak cuaca", "free deck", "free decks",
+    ),
+    "doubling_plate_tank_permission": (
+        "doubling plates", "doubling plate", "pelat ganda",
+        "flammable liquid", "muatan cairan mudah terbakar",
+    ),
     "windows_side_scuttles_iso_test": (
         "windows and side scuttles", "windows", "side scuttles",
         "jendela dan side scuttle", "jendela kapal",
+    ),
+    "weather_deck_definition": (
+        "weather deck", "geladak cuaca", "free deck", "free decks",
+        "exposed to the sea", "terpapar laut",
+    ),
+    "doubling_plate_tank_permission": (
+        "doubling plates", "doubling plate", "pelat ganda",
+        "flammable liquid", "flammable liquids", "muatan cairan mudah terbakar",
     ),
     "dredger_bottom_transverse_spacing": (
         "dredger", "dredgers", "bottom transverses",
