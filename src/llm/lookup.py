@@ -399,6 +399,24 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "tk palka",
         "hatch corrosion",
     ),
+    "superstructure_corrosion_addition": (
+        "superstructure plating", "superstructure deck",
+        "pelat superstruktur", "pelat bangunan atas",
+    ),
+    "windows_side_scuttles_iso_test": (
+        "windows and side scuttles", "windows", "side scuttles",
+        "jendela dan side scuttle", "jendela kapal",
+    ),
+    "dredger_bottom_transverse_spacing": (
+        "dredger", "dredgers", "bottom transverses",
+        "transverses dasar", "single bottom", "dasar tunggal",
+    ),
+    # Container scantling factors are specific to container ships. Generic
+    # words such as "scantling" and "calculation" are too broad by themselves.
+    "container_scantling_factors": (
+        "container ship", "container vessel",
+        "kapal kontainer", "kapal peti kemas",
+    ),
     # Build 7D: restrict hatch_cover_deflection to deflection-specific
     # queries. Trigger set includes generic phrases ('hatch cover',
     # 'penutup palka') that incidentally match hatch corrosion queries; the
@@ -417,6 +435,7 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     # not just "kapal suplai" alone. Prevents misfire on location / position /
     # ventilation / engine-room queries that mention "kapal suplai" incidentally.
     "supply_deck_thickness": (
+        "supply vessel", "kapal suplai",
         "tebal", "thickness", "ketebalan",
         "pelat geladak", "deck plating",
     ),
@@ -627,7 +646,7 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     "supply_deck_thickness": (
         "lokasi", "posisi", "di mana", "pintu", "lubang", "cut-out",
         "pipa udara", "ventilasi", "ruang mesin", "mesin", "compartment",
-        "hatch", "hatchway", "sekat", "bulkhead", "bangunan atas",
+        "sekat", "bulkhead", "bangunan atas",
         "superstructure", "rumah geladak", "deckhouse", "cuaca", "weather",
         "penambahan", "addition",
     ),
@@ -682,9 +701,15 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     # queries. These need Sec 23 RAG, not the generic Sec 17 table.
     "hatch_corrosion_addition": (
         "pelat atas dan bawah", "top and bottom plate",
-        "kulit ganda", "double skin",
         "upper and lower plate",
         "sekat", "bulkhead", "bergelombang", "corrugated",
+    ),
+    "superstructure_corrosion_addition": (
+        "hatch", "hatch cover", "shell plating", "side shell",
+        "kulit ganda", "double skin",
+    ),
+    "windows_side_scuttles_iso_test": (
+        "round or oval openings", "area", "luas",
     ),
     # spm_bow_chain_stopper_chain_size: block on anchor / equipment numeral
     # queries. These need Sec 18 RAG, not Sec 24 SPM rules.
