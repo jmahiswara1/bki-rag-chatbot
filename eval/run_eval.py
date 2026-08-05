@@ -182,6 +182,10 @@ def _norm(s: str) -> str:
     """
     s = unicodedata.normalize("NFKC", s)
     s = s.lower().replace(",", ".")
+    s = re.sub(r"(?<=\d)\s*%", " percent", s)
+    s = re.sub(r"\bsqrt\b", "square root", s)
+    s = s.replace("√", " square root ")
+    s = s.replace("·", " x ").replace("×", " x ")
     s = s.translate({0x2113: ord("l")})
     return re.sub(r"\s+", "", s)
 
@@ -226,6 +230,9 @@ def eval_rules_qa(result, entry: dict) -> tuple[bool, str]:
     for kw in entry.get("must_include", []):
         if _norm(kw) not in answer_norm:
             failures.append(f"missing keyword: {kw}")
+    for group in entry.get("must_include_any_groups", []):
+        if not any(_norm(kw) in answer_norm for kw in group):
+            failures.append(f"no equivalent keyword hit: {group}")
     for bad in entry.get("must_not_contain", []):
         if _norm(bad) in answer_norm:
             failures.append(f"forbidden substring present: {bad}")
@@ -275,7 +282,9 @@ def eval_lookup(result, entry: dict) -> tuple[bool, str]:
     for kw in entry.get("must_include", []):
         if _norm(kw) not in answer_norm:
             failures.append(f"missing keyword: {kw}")
-            failures.append(f"missing keyword: {kw}")
+    for group in entry.get("must_include_any_groups", []):
+        if not any(_norm(kw) in answer_norm for kw in group):
+            failures.append(f"no equivalent keyword hit: {group}")
     for bad in entry.get("must_not_contain", []):
         if _norm(bad) in answer_norm:
             failures.append(f"forbidden substring present: {bad}")

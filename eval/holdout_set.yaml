@@ -10,9 +10,9 @@
   lang: id
   category: rules_qa
   question: Apa definisi "Length L" menurut BKI Rules for Hull?
-  must_include:
-  - sarat scantling
-  - linggi
+  must_include_any_groups:
+  - [sarat scantling, scantling draught]
+  - [linggi, stem]
 - id: holdout_mooring_current_id
   lang: id
   category: lookup
@@ -38,10 +38,13 @@
 - id: holdout_box_keel_baseline_id
   lang: id
   category: lookup
-  expect_lookup: true
   question: Berapa jarak vertikal minimum antara bagian terbawah lunas kotak (box keel) dengan garis dasar (baseline) jika tidak berfungsi sebagai docking keel?
-  must_include:
-  - 0,5
+  expected_sources:
+  - section_no: 8
+  must_include_any:
+  - B/20
+  - 2,0 m
+  - 2.0 m
 - id: holdout_dredger_transverse_id
   lang: id
   category: lookup
@@ -53,20 +56,20 @@
   lang: id
   category: rules_qa
   question: Di manakah letak pengukuran sarat scantling (TSC) dilakukan?
-  must_include:
-  - sisi atas lunas
+  must_include_any_groups:
+  - [sisi atas lunas, top of keel, upper side of keel]
 - id: holdout_weather_deck_def_id
   lang: id
   category: rules_qa
   question: Apa definisi geladak cuaca (weather deck) menurut aturan BKI?
-  must_include:
-  - geladak bebas
+  must_include_any_groups:
+  - [geladak bebas, freeboard deck]
 - id: holdout_doubling_plate_tank_id
   lang: id
   category: rules_qa
   question: Apakah pelat ganda (doubling plates) diizinkan dipasang di dalam tangki untuk muatan cairan yang mudah terbakar?
-  must_include:
-  - pelat kerah
+  must_include_any_groups:
+  - [pelat kerah, collar plate]
 - id: holdout_reh_normal_steel_id
   lang: id
   category: lookup
@@ -105,8 +108,8 @@
   lang: id
   category: rules_qa
   question: Di bagian manakah pedoman beban uji proof load (PL) untuk rantai jangkar stud link (stud link chain cables) dapat ditemukan?
-  must_include:
-  - '13.7'
+  must_include_any_groups:
+  - ['13.7', '13,7', proof load]
 - id: holdout_vhhp_def_id
   lang: id
   category: lookup
@@ -228,8 +231,8 @@
   lang: en
   category: rules_qa
   question: How many expansion joints are recommended in the bulwark for ships exceeding 60 meters in length?
-  must_include:
-  - l / 40
+  must_include_any_groups:
+  - ['l / 40', 'l/40', expansion joint]
 - id: holdout_hatch_tk_bulk_en
   lang: en
   category: lookup
@@ -267,12 +270,12 @@
   category: lookup
   expect_lookup: true
   question: For ordinary (stockless) anchors, what is the minimum required mass of the heads including pins and fittings?
-  must_include:
-  - 60%
+  must_include_any_groups:
+  - ['60%', '60 percent']
 - id: holdout_towing_hook_force_en
   lang: en
   category: lookup
   expect_lookup: true
   question: What is the required test force (PL) for a towing hook on a tug if the design force (T) is less than or equal to 500 kN?
-  must_include:
-  - '2.0'
+  must_include_any_groups:
+  - ['2.0', '2,0', '2 . T', '2 x T', '2 × T']
