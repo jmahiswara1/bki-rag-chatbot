@@ -207,14 +207,28 @@
   question: For single bottom longitudinally framed dredgers, what is the maximum general spacing for bottom transverses?
   must_include:
   - '3.6'
-- id: holdout_bottom_shell_thick_en
+- id: holdout_bottom_shell_thick_l50_en
   lang: en
   category: rules_qa
-  question: What is the minimum required thickness for bottom shell plating of a ship with a length of 50 meters or greater?
-  must_include:
-  - square root
-  - k
-  known_fail: true
+  question: What formula applies to the minimum bottom shell plating thickness for ships with length L less than 90 meters?
+  expected_sources:
+  - section_no: 6
+  must_include_any_groups:
+  - [bottom shell plating, bottom plating]
+  - [sqrt, square root, √]
+  - [pB, bottom load]
+  - [k, material factor]
+- id: holdout_bottom_shell_thick_l100_en
+  lang: en
+  category: rules_qa
+  question: What formula applies to the minimum bottom shell plating thickness for ships with length L of 90 meters or greater?
+  expected_sources:
+  - section_no: 6
+  must_include_any_groups:
+  - [bottom shell plating, bottom plating]
+  - [sqrt, square root, √]
+  - [pB, bottom load]
+  - [k, material factor]
 - id: holdout_tanker_strake_width_en
   lang: en
   category: lookup
