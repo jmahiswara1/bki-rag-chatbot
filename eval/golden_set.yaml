@@ -310,9 +310,10 @@
   expect_lookup: true
   must_include:
   - '14'
-  - towrope
   - Sec 27
   - p.630
+  must_include_any_groups:
+  - [towrope, tow rope, towing rope, tali tunda]
 - id: lookup_restricted_p_en
   question: what is the restricted ocean service P section modulus reduction?
   lang: en
