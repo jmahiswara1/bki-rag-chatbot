@@ -195,6 +195,37 @@ def test_gate_33c_past_participle_not_broken():
     assert intent.kind == "rules_qa", f"expected rules_qa, got {intent.kind}"
 
 
+def test_gate_40_rule_limit_ask_with_L_is_rules_qa():
+    """Build 40: asking a rule limit (maksimum/minimum) with a numeric param
+    (L=120m) is rules_qa — the number is context, not a computation input."""
+    query = "Berapa jarak maksimum antar gading (frame spacing) untuk kapal dengan L=120m?"
+    intent = classify(query)
+    assert intent.kind == "rules_qa", f"expected rules_qa, got {intent.kind}"
+    assert intent.confidence == "high"
+
+
+def test_gate_40_rule_limit_ask_english():
+    """Build 40: English 'maximum ... L=150m' rule-limit ask is rules_qa."""
+    query = "What is the maximum frame spacing for a ship with L=150m?"
+    intent = classify(query)
+    assert intent.kind == "rules_qa", f"expected rules_qa, got {intent.kind}"
+
+
+def test_gate_40_compute_imperative_with_L_stays_calc():
+    """Build 40: compute imperative ('hitung') with L stays calculation —
+    the gate must not over-fire on explicit computation requests."""
+    query = "Hitung tebal web penumpu tengah dengan L=100"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
+def test_gate_40_assignment_without_imperative_stays_calc():
+    """Build 40: assignment-style query without a question cue stays calc."""
+    query = "moment of inertia for L=100"
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+
+
 if __name__ == "__main__":
     test_calc_high_with_numbers_and_imperative()
     test_calc_high_with_numbers_and_topical()

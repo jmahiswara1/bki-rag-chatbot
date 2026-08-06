@@ -290,6 +290,30 @@ GLOSSARY = (
     ("kapal niaga", "merchant ship"),
     ("sumur bilga", "bilge well"),
     ("dasar tunggal", "single bottom"),
+    # ── Direction / position terms (Build 41) ──
+    # These pin fore/aft direction so the 3B condense step cannot swap
+    # 'buritan' (aft) to 'bow' or 'bagian haluan' (forward) to 'stern'.
+    # The LLM sees the pre-substituted English and is told to keep it
+    # verbatim. Only NON-AMBIGUOUS ship-direction phrases are included;
+    # bare 'haluan'/'buritan'/'di depan'/'di belakang' are intentionally
+    # NOT mapped (they appear in non-directional contexts, e.g. 'di depan
+    # dermaga').
+    ("di bagian buritan", "in the aft part"),
+    ("bagian buritan", "aft part"),
+    ("di bagian haluan", "in the forward part"),
+    ("bagian haluan", "forward part"),
+    ("di buritan", "at the aft"),
+    ("buritan kapal", "aft end of the ship"),
+    ("haluan kapal", "forward end of the ship"),
+    ("di haluan", "at the forward"),
+    # Freeing ports: pin the compound so condense cannot drift to
+    # 'freeboard' (a different rule topic).
+    ("freeing ports", "freeing ports"),
+    ("freeing port", "freeing port"),
+    ("lubang pembuangan air", "freeing port"),
+    ("lubang pembuangan", "freeing port"),
+    ("luas freeing", "freeing port area"),
+    ("freeing port area", "freeing port area"),
     # ── Single words / shorter phrases last ──
     ("penampang", "section"),
     ("pengaku", "stiffener"),

@@ -309,6 +309,32 @@ def test_hentaman_to_slamming():
     assert "slamming" in out
 
 
+# --- Build 41: direction terms pin fore/aft so condense cannot drift ---
+
+def test_bagian_buritan_to_aft_part():
+    out = apply_glossary("ketebalan pelat bangunan atas di bagian buritan").lower()
+    assert "aft part" in out
+    assert "bow" not in out
+
+def test_bagian_haluan_to_forward_part():
+    out = apply_glossary("struktur di bagian haluan").lower()
+    assert "forward part" in out
+    assert "stern" not in out
+
+def test_di_buritan_to_at_the_aft():
+    out = apply_glossary("geladak di buritan").lower()
+    assert "at the aft" in out
+
+def test_freeing_ports_pinned():
+    out = apply_glossary("Berapa luas minimum freeing ports pada bulwark?").lower()
+    assert "freeing ports" in out
+    assert "freeboard" not in out
+
+def test_bare_depan_not_mapped():
+    out = apply_glossary("struktur di depan kapal").lower()
+    assert "depan" in out
+
+
 # ---------- Runner ----------
 
 if __name__ == "__main__":

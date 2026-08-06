@@ -24,6 +24,7 @@ def retrieve_context(
     fts_query: str | None = None,
     en_query: str | None = None,
     multi_queries: list[str] | None = None,
+    vector_query: str | None = None,
 ) -> list[RetrievedChunk]:
     """Retrieve chunks based on the mode.
 
@@ -34,18 +35,24 @@ def retrieve_context(
         fts_query: text for the FTS branch (English, translated). Defaults to
             query_text when None.
         en_query: English version of the query. Used to build the vector
-            embedding (so the vector branch sees English, matching FTS).
+            embedding when vector_query is None.
         multi_queries: optional list of paraphrased English queries. When
             provided, their embeddings are averaged with the en_query embedding
             to form a single robust vector for one RPC call.
+        vector_query: optional text for the vector branch ONLY (Build 41).
+            When set, the embedding is built from this (typically the ORIGINAL
+            user query in its source language) so a mistranslated en_query
+            cannot drift the semantic direction (e.g. buritan -> 'bow').
+            The FTS branch still uses fts_query/en_query as the English anchor.
     """
     fts_query_text = fts_query if fts_query is not None else query_text
+    vector_source = vector_query if vector_query is not None else en_query
 
-    if en_query is not None and multi_queries:
-        vectors = embed_batch([en_query, *multi_queries])
+    if vector_source is not None and multi_queries:
+        vectors = embed_batch([vector_source, *multi_queries])
         query_embedding = _mean_vectors(vectors)
-    elif en_query is not None:
-        query_embedding = embed(en_query)
+    elif vector_source is not None:
+        query_embedding = embed(vector_source)
     else:
         # Back-compat path: original code used query_text directly.
         query_embedding = embed(query_text)

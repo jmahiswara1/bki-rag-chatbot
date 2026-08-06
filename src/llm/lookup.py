@@ -158,6 +158,89 @@ _MULTI_PARAM_TOPICS: frozenset[str] = frozenset(
 
 _PARAM_BONUS: int = 2
 
+# Some rules are ship-type-specific. Their equipment/measurement phrase alone
+# must not select the specialized value for a generic or different ship type.
+REQUIRED_CONTEXT_TERMS: dict[str, tuple[str, ...]] = {
+    "supply_bulwark_plating_thickness": (
+        "supply vessel", "supply vessels", "kapal suplai",
+    ),
+}
+
+ASPECT_TERMS: dict[str, tuple[str, ...]] = {
+    "position": (
+        "position", "location", "located", "where", "posisi", "lokasi",
+        "ditempatkan", "letak",
+    ),
+    "spacing": (
+        "spacing", "frame spacing", "stiffener spacing", "distance between frames",
+        "space", "spasi", "jarak", "jarak gading", "jarak penegar", "wrang", "gading",
+    ),
+    "thickness": (
+        "thickness", "plate thickness", "plating thickness", "ketebalan",
+        "tebal", "tebal pelat",
+    ),
+    "holding_capacity": (
+        "holding capacity", "kapasitas penahan", "brake holding", "kapasitas rem",
+    ),
+    "time": (
+        "time", "seconds", "activation time", "waktu", "detik", "diaktifkan",
+    ),
+    "angle": (
+        "angle", "heel", "angle of heel", "sudut", "kemiringan",
+    ),
+}
+
+LOOKUP_ASPECTS: dict[str, frozenset[str]] = {
+    "collision_bulkhead_barge": frozenset({"position"}),
+    "collision_bulkhead_position": frozenset({"position"}),
+    "forepeak_stringer_spacing": frozenset({"spacing"}),
+    "dredger_bottom_transverse_spacing": frozenset({"spacing"}),
+    "supply_bulwark_plating_thickness": frozenset({"thickness"}),
+    "mooring_winch_brake_holding": frozenset({"holding_capacity"}),
+    "towing_winch_holding_capacity": frozenset({"holding_capacity"}),
+    "emergency_release_activation_time": frozenset({"time"}),
+    "supply_stowrack_heel_angle": frozenset({"angle"}),
+}
+
+LOOKUP_EXCLUDED_ASPECTS: dict[str, frozenset[str]] = {
+    "collision_bulkhead_barge": frozenset({"spacing", "thickness"}),
+    "collision_bulkhead_position": frozenset({"spacing", "thickness"}),
+}
+
+
+def _detected_aspects(text: str) -> set[str]:
+    normalized = _normalize(text)
+    return {
+        aspect for aspect, terms in ASPECT_TERMS.items()
+        if any(_term_matches(normalized, term) for term in terms)
+    }
+
+
+def validate_lookup_precision(
+    query_id: str,
+    query_en: str,
+    match: LookupMatch,
+) -> tuple[bool, str]:
+    """Validate topic/ship/aspect precision before bypassing RAG."""
+    original = _normalize(query_id or "")
+    combined = _normalize(f"{query_id} {query_en}")
+    topic = match.rule.topic
+
+    required_context = REQUIRED_CONTEXT_TERMS.get(topic)
+    if required_context and not any(_term_matches(original, term) for term in required_context):
+        return False, f"missing_required_context:{topic}"
+
+    expected = LOOKUP_ASPECTS.get(topic)
+    if expected:
+        detected = _detected_aspects(combined)
+        excluded = LOOKUP_EXCLUDED_ASPECTS.get(topic, frozenset())
+        if detected & excluded:
+            return False, f"excluded_aspect:{','.join(sorted(detected & excluded))}"
+        if not detected & expected:
+            return False, f"missing_aspect:{','.join(sorted(expected))}"
+
+    return True, "ok"
+
 
 # ---------------------------------------------------------------------------
 # Anchor terms (per-topic). Required for a topic to be eligible.
@@ -565,6 +648,86 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "tegangan setara", "equivalent stress",
         "150/k",
     ),
+    # --- 10QA build (sql/033): anchors for new lookup topics. Each anchor
+    # is topic-distinctive so near-miss questions do not false-fire. ---
+    # machinery casing: requires casing language, not just "mesin"/"kamarnya".
+    "machinery_casing_min_thickness": (
+        "casing walls",
+        "casing tops",
+        "casing",
+        "machinery space casing",
+        "casing kamar mesin",
+    ),
+    # supply stowracks: requires stowrack + deck cargo context.
+    "supply_stowrack_heel_angle": (
+        "stowracks",
+        "stowrack",
+        "stow rack",
+        "rak penyimpanan kargo",
+        "kargo geladak",
+        "deck cargo",
+    ),
+    # supply bulwark plating: requires bulwark + thickness language.
+    "supply_bulwark_plating_thickness": (
+        "bulwark plating",
+        "pelat kubu-kubu",
+        "ketebalan bulwark",
+        "pelat bulwark",
+        "supply vessel",
+        "supply vessels",
+        "kapal suplai",
+    ),
+    # cargo pump room skylight: skylight + pump room context.
+    "cargo_pump_room_skylight": (
+        "skylights",
+        "skylight",
+        "cargo pump room",
+        "cargo pump rooms",
+        "kamar pompa kargo",
+        "jendela atap",
+    ),
+    # mooring winch brake: brake + holding capacity on a mooring winch.
+    "mooring_winch_brake_holding": (
+        "mooring winch",
+        "mooring winches",
+        "derek tambat",
+        "brake",
+        "rem derek",
+        "holding capacity",
+        "kapasitas penahanan",
+        "brakes",
+    ),
+    # warping drum / chock distance: warping drum + distance/position.
+    "warping_drum_chock_distance": (
+        "warping drum",
+        "warping drums",
+        "tromol gulung",
+        "chock",
+        "lubang tali",
+    ),
+    # sauna door: sauna + door/opening direction.
+    "sauna_door_opening_direction": (
+        "sauna door",
+        "sauna",
+        "pintu sauna",
+        "ruang sauna",
+    ),
+    # cargo hold bulkhead min thickness: cargo hold bulkhead + bulk carrier.
+    "cargo_hold_bulkhead_min_thickness": (
+        "cargo hold bulkhead",
+        "cargo hold bulkheads",
+        "sekat ruang muat",
+        "sekat ruang muat kargo",
+    ),
+    # emergency release activation time: requires emergency release language.
+    # Distinct from towing winch holding capacity / drum diameter.
+    "emergency_release_activation_time": (
+        "emergency release system",
+        "emergency release systems",
+        "sistem rilis darurat",
+        "emergency release",
+        "rilis darurat",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
@@ -794,6 +957,48 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "cross-flooding", "stabilitas", "stability", 
         "ekualisasi", "equalization",
     ),
+    # --- 10QA build (sql/033): exclude gates for the new lookup topics.
+    # Prevent cross-topic fire between machinery casing / cargo hold bulkhead
+    # thickness, and between supply bulwark and other bulwark aspects. ---
+    "machinery_casing_min_thickness": (
+        "skylight", "jendela atap", "coaming",
+        "pump room", "kamar pompa",
+    ),
+    "cargo_hold_bulkhead_min_thickness": (
+        "corrugated", "bergelombang",
+        "upper", "lower", "topside",
+        "hopper", "frame",
+    ),
+    "supply_bulwark_plating_thickness": (
+        "height", "tinggi",
+        "guard rail", "pagar",
+    ),
+    "supply_stowrack_heel_angle": (
+        "thickness", "tebal", "ketebalan",
+        "plating", "pelat",
+    ),
+    "mooring_winch_brake_holding": (
+        "towing winch", "tali tunda", "towrope", "towing",
+        "drum", "diameter",
+    ),
+    "warping_drum_chock_distance": (
+        "brake", "rem", "holding",
+        "towing", "tunda",
+    ),
+    "sauna_door_opening_direction": (
+        "insulation", "insulasi",
+        "wood", "kayu",
+        "bench", "bangku",
+    ),
+    "cargo_pump_room_skylight": (
+        "coaming", "ventilator",
+    ),
+    "emergency_release_activation_time": (
+        "holding", "hold",
+        "capacity", "kapasitas",
+        "drum", "diameter",
+        "brake", "rem",
+    ),
 }
 # ---------------------------------------------------------------------------
 # Normalisation helpers
@@ -899,11 +1104,21 @@ def match_lookup(
         return None
 
     search_text = _normalize(f"{query_id} {query_en}")
+    # Subject-specific context must come from the user's current query. The
+    # condensed English query is allowed to add a translation, but it must not
+    # inject a ship type that was absent from the original question.
+    original_text = _normalize(query_id) if query_id and query_id.strip() else search_text
 
     candidates: list[tuple[LookupRule, tuple[str, ...], int, int]] = []
     # candidate = (rule, matched_terms, total_score, param_bonus)
 
     for rule in rules:
+        required_context = REQUIRED_CONTEXT_TERMS.get(rule.topic)
+        if required_context is not None and not any(
+            _term_matches(original_text, term) for term in required_context
+        ):
+            continue
+
         # Anchor gate: skip rules whose topic requires an anchor but the
         # query does not carry any of the topic-distinctive phrases.
         topic_anchors = ANCHOR_TERMS.get(rule.topic)

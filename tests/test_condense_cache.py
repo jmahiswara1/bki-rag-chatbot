@@ -11,6 +11,8 @@ from src.llm.chain import (
     _condense_cache_put,
     _translate_condense,
     canonicalize_condensed_query,
+    query_needs_history,
+    validate_en_query_fidelity,
     CONDENSE_CACHE_VERSION,
 )
 
@@ -114,13 +116,49 @@ class TestCondenseCache:
     def test_translate_condense_cache_hit_skips_llm(self):
         with patch("src.llm.chain._condense_cache_get") as mock_get, \
              patch("src.llm.chain._condense_cache_put") as mock_put:
-            mock_get.return_value = "cached en query"
+            mock_get.return_value = "what is a ship"
 
             result = _translate_condense(
                 "apa itu kapal", [], temperature=0.0, mode="default", lang="id"
             )
-            assert result == "cached en query"
+            assert result == "what is a ship"
             mock_put.assert_not_called()
+
+    def test_invalid_cache_hit_is_ignored_and_regenerated(self):
+        """A cached query from another topic must not short-circuit condense."""
+        query = "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?"
+        with patch("src.llm.chain._condense_cache_get") as mock_get, \
+             patch("src.llm.chain._condense_cache_put") as mock_put, \
+             patch("src.llm.chain.chat") as mock_chat, \
+             patch("src.llm.chain._clean_one_liner") as mock_clean:
+            mock_get.return_value = "What is the emergency release time?"
+            mock_chat.return_value = "What aluminium alloy series are permitted for hull structure?"
+            mock_clean.return_value = mock_chat.return_value
+
+            result = _translate_condense(
+                query, [], temperature=0.0, mode="default", lang="id"
+            )
+
+            mock_chat.assert_called_once()
+            assert "aluminium alloy" in result.lower()
+            mock_put.assert_called_once()
+            assert "emergency release" not in mock_put.call_args.args[3].lower()
+
+    def test_invalid_generated_query_is_not_persisted(self):
+        """If generation drifts, only the current-query fallback is stored."""
+        query = "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?"
+        with patch("src.llm.chain._condense_cache_get", return_value=None), \
+             patch("src.llm.chain._condense_cache_put") as mock_put, \
+             patch("src.llm.chain.chat", return_value="What is the emergency release time?"), \
+             patch("src.llm.chain._clean_one_liner", return_value="What is the emergency release time?"):
+            result = _translate_condense(
+                query, [], temperature=0.0, mode="default", lang="id"
+            )
+
+            assert "aluminium" in result.lower() or "paduan" in result.lower()
+            stored = mock_put.call_args.args[3]
+            assert "emergency release" not in stored.lower()
+            assert "aluminium" in stored.lower() or "paduan" in stored.lower()
 
     def test_translate_condense_cache_miss_calls_llm_and_stores(self):
         with patch("src.llm.chain._condense_cache_get") as mock_get, \
@@ -460,6 +498,121 @@ class TestCondenseCache:
         assert "thickness" in r
 
 class TestCondenseBypass:
+    def test_fidelity_rejects_unrelated_previous_topic(self):
+        valid, reason = validate_en_query_fidelity(
+            "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?",
+            "What is the maximum time allowed for the emergency release system?",
+        )
+        assert not valid
+        assert reason.startswith("topic_drift")
+
+    def test_fidelity_accepts_valid_technical_paraphrase(self):
+        valid, reason = validate_en_query_fidelity(
+            "Berapa waktu maksimum emergency release system setelah diaktifkan?",
+            "What is the maximum allowed emergency release time after activation?",
+        )
+        assert valid
+        assert reason in {"ok", "generic_query"}
+
+    def test_drifted_condense_falls_back_to_current_query(self):
+        from src.llm.chain import _pre_answer_pipeline
+        from src.core.models import Intent
+
+        with patch("src.llm.chain._translate_condense") as mock_tc, \
+             patch("src.llm.chain.classify") as mock_classify, \
+             patch("src.llm.chain.retrieve_context") as mock_retrieve:
+            mock_classify.return_value = Intent("rules_qa", "high", "heuristic")
+            mock_tc.return_value = "What is the emergency release system time?"
+            mock_retrieve.return_value = []
+
+            state = _pre_answer_pipeline(
+                "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?",
+                [],
+                "default",
+            )
+
+            assert "aluminium" in state.en_query.lower() or "paduan" in state.en_query.lower()
+            assert "emergency release" not in state.en_query.lower()
+
+    def test_invalid_condense_never_reaches_retrieval(self):
+        from src.llm.chain import _pre_answer_pipeline
+        from src.core.models import Intent
+
+        with patch("src.llm.chain._translate_condense") as mock_tc, \
+             patch("src.llm.chain._get_lookup_rules", return_value=[]), \
+             patch("src.llm.chain.classify") as mock_classify, \
+             patch("src.llm.chain.retrieve_context", return_value=[]) as mock_retrieve:
+            mock_classify.return_value = Intent("rules_qa", "high", "heuristic")
+            mock_tc.return_value = "What is the emergency release time?"
+
+            _pre_answer_pipeline(
+                "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?",
+                [],
+                "default",
+            )
+
+            kwargs = mock_retrieve.call_args.kwargs
+            assert "aluminium" in kwargs["fts_query"].lower() or "paduan" in kwargs["fts_query"].lower()
+            assert "emergency release" not in kwargs["fts_query"].lower()
+
+    def test_pipeline_exposes_condense_diagnostics(self):
+        from src.llm.chain import _pre_answer_pipeline
+        from src.core.models import Intent
+
+        with patch("src.llm.chain._translate_condense", return_value="What is the emergency release time?"), \
+             patch("src.llm.chain._get_lookup_rules", return_value=[]), \
+             patch("src.llm.chain.classify", return_value=Intent("rules_qa", "high", "heuristic")), \
+             patch("src.llm.chain.retrieve_context", return_value=[]):
+            state = _pre_answer_pipeline(
+                "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?",
+                [],
+                "default",
+            )
+
+        assert state.diagnostics["original_query"].startswith("Seri paduan")
+        assert state.diagnostics["condense_valid"] is False
+        assert str(state.diagnostics["condense_reason"]).startswith("fallback:")
+        assert "emergency release" not in state.diagnostics["retrieval_query"]
+
+    def test_complete_new_question_does_not_need_history(self):
+        history = [
+            {"role": "user", "content": "What is the emergency release time?"},
+            {"role": "assistant", "content": "Three seconds."},
+        ]
+        assert not query_needs_history(
+            "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?",
+            history,
+        )
+
+    def test_explicit_follow_up_needs_history(self):
+        history = [{"role": "user", "content": "What is the plate thickness?"}]
+        assert query_needs_history("Bagaimana kalau untuk kapal tanker?", history)
+        assert query_needs_history("What about L=150 m?", history)
+
+    def test_standalone_id_question_isolated_from_history(self):
+        from src.llm.chain import _pre_answer_pipeline
+        from src.core.models import Intent
+
+        previous = [
+            {"role": "user", "content": "What is the emergency release time?"},
+            {"role": "assistant", "content": "Three seconds."},
+        ]
+        with patch("src.llm.chain._translate_condense") as mock_tc, \
+             patch("src.llm.chain.classify") as mock_classify, \
+             patch("src.llm.chain.retrieve_context") as mock_retrieve:
+            mock_classify.return_value = Intent("rules_qa", "high", "heuristic")
+            mock_tc.return_value = "what aluminium alloy series are permitted"
+            mock_retrieve.return_value = []
+
+            _pre_answer_pipeline(
+                "Seri paduan aluminium apa saja yang diizinkan untuk struktur lambung?",
+                previous,
+                "default",
+            )
+
+            mock_tc.assert_called_once()
+            assert mock_tc.call_args.args[1] == []
+
     def test_translate_condense_bypassed_for_en_no_history_default(self):
         """Build P4: EN query with no history bypasses translation in default mode."""
         from src.llm.chain import _pre_answer_pipeline
@@ -491,7 +644,7 @@ class TestCondenseBypass:
         """Build P4: EN query WITH history STILL calls translation to condense."""
         from src.llm.chain import _pre_answer_pipeline
         with patch("src.llm.chain._translate_condense") as mock_tc:
-            mock_tc.return_value = "condensed query"
+            mock_tc.return_value = "what about the side plating?"
             with patch("src.llm.chain.classify") as mock_classify, \
                  patch("src.llm.chain.retrieve_context") as mock_retrieve, \
                  patch("src.llm.chain._apply_guardrail") as mock_guardrail, \
@@ -510,4 +663,4 @@ class TestCondenseBypass:
                 )
                 
                 mock_tc.assert_called_once()
-                assert state.en_query == "condensed query"
+                assert state.en_query == "what about the side plating?"

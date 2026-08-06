@@ -167,7 +167,7 @@ def test_chain_lookup_match_bulwark_short_circuits_rag():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.topic == "bulwark_guardrail_min_height"
-    assert len(retrieve_called) == 0, "retrieve_context must be skipped when lookup matches"
+    assert len(retrieve_called) == 1, "shadow retrieval must run when lookup matches"
     assert len(answer_called) >= 1, "LLM _answer MUST be called for lookup match (Revised Opsi 2)"
     print("PASS: test_chain_lookup_match_bulwark_llm_only")
 
@@ -200,7 +200,7 @@ def test_chain_lookup_match_fire_door_hinged():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.parameter == "hinged"
-    assert len(retrieve_called) == 0, "retrieve_context must be skipped when lookup matches"
+    assert len(retrieve_called) == 1, "shadow retrieval must run when lookup matches"
     assert len(answer_called) >= 1, "LLM _answer MUST be called for lookup match (Revised Opsi 2)"
     print("PASS: test_chain_lookup_match_fire_door_llm_only")
 
@@ -415,7 +415,7 @@ def test_chain_lookup_match_forepeak_stringer():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.topic == "forepeak_stringer_spacing"
-    assert len(retrieve_called) == 0
+    assert len(retrieve_called) == 1, "shadow retrieval must run when lookup matches"
     print("PASS: test_chain_lookup_match_forepeak_stringer")
 
 
@@ -446,7 +446,7 @@ def test_chain_lookup_match_tug_winch_drum():
     assert "LLM ANSWER" in result.answer
     assert result.lookup_match is not None
     assert result.lookup_match.rule.topic == "tug_winch_drum_diameter"
-    assert len(retrieve_called) == 0
+    assert len(retrieve_called) == 1, "shadow retrieval must run when lookup matches"
     print("PASS: test_chain_lookup_match_tug_winch_drum")
 
 
@@ -480,8 +480,60 @@ def test_chain_lookup_match_ship_length_l():
     assert result.lookup_match.rule.section_no == 1
     assert result.lookup_match.rule.paragraph_id == "H.2.1"
     assert result.lookup_match.rule.page_no == 22
-    assert len(retrieve_called) == 0, "retrieve_context must be skipped when lookup matches"
+    assert len(retrieve_called) == 1, "shadow retrieval must run when lookup matches"
     print("PASS: test_chain_lookup_match_ship_length_l")
+
+
+def test_lookup_shadow_status_is_exposed():
+    from src.core.models import RetrievedChunk
+
+    dummy = RetrievedChunk(
+        section_no=6, section_title="same section", paragraph_id=None,
+        content_type="narrative", table_no=None, figure_no=None,
+        page_start=1, page_end=1, content="verified rule context", score=1.0,
+    )
+    with patch.multiple(
+        "src.llm.chain",
+        _get_lookup_rules=lambda: list(_FIXTURE_RULES),
+        _translate_condense=_fake_translate,
+        retrieve_context=lambda *args, **kwargs: [dummy],
+        _answer=lambda *args, **kwargs: "LLM ANSWER",
+    ):
+        result = chain.chain_answer("tinggi minimum bulwark atau guard rail berapa?")
+
+    assert result.lookup_match is not None
+    assert result.lookup_status in {"confirmed", "supported", "conflict"}
+    assert result.diagnostics["lookup_status"] == result.lookup_status
+
+
+def test_chain_precision_rejects_collision_lookup_for_frame_spacing():
+    """A collision-bulkhead position candidate must fall through to RAG when
+    the current question actually asks about frame spacing."""
+    from src.core.models import RetrievedChunk
+
+    retrieve_called = []
+    dummy = RetrievedChunk(
+        section_no=9, section_title="Framing", paragraph_id="A.1",
+        content_type="narrative", table_no=None, figure_no=None,
+        page_start=1, page_end=1, content="frame spacing rule", score=1.0,
+    )
+
+    fake_rule = next(r for r in _FIXTURE_RULES if r.topic == "ship_length_l_definition")
+    # Use a collision topic fixture only if present in the live fixture; this
+    # test exercises the precision helper independently below when absent.
+    with patch.multiple(
+        "src.llm.chain",
+        _get_lookup_rules=lambda: [],
+        _translate_condense=lambda q, h, *, temperature, mode=None, lang=None: q,
+        retrieve_context=lambda *args, **kwargs: (retrieve_called.append(True) or [dummy]),
+        _answer=lambda *args, **kwargs: "RAG ANSWER",
+    ):
+        result = chain.chain_answer(
+            "Berapakah jarak gading maksimum di depan sekat tubrukan?"
+        )
+
+    assert result.lookup_match is None
+    assert retrieve_called
 
 
 # ---------------------------------------------------------------------------

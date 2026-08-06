@@ -5,7 +5,12 @@ Tests match_lookup() with hand-crafted LookupRule fixtures (no DB calls).
 import sys
 sys.path.insert(0, r"E:\Project\bki-rag-chatbot")
 
-from src.llm.lookup import LookupRule, LookupMatch, match_lookup
+from src.llm.lookup import (
+    LookupRule,
+    LookupMatch,
+    match_lookup,
+    validate_lookup_precision,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -432,6 +437,97 @@ _RULES: list[LookupRule] = [
         source_quote="c = 0 for welded joints subjected to constant stress cycles (stress range spectrum C) = 0,15 welded joints subjected to variable stress cycles (corresponding to stress range spectrum A or B)",
         trigger_terms=("fatigue correction factor", "faktor koreksi fatik", "correction factor c", "faktor koreksi c", "0.15", "0,15", "variable stress", "tegangan variabel", "welded joints", "sambungan las"),
         context_note="Build 17: c = 0.15 for welded joints with variable stress cycles.",
+    ),
+    # --- 10QA build (sql/033): fixtures for 8 new lookup topics. ---
+    LookupRule(
+        topic="machinery_casing_min_thickness", parameter=None,
+        value_text="Ketebalan pelat dinding casing dan bagian atas casing kamar mesin tidak boleh kurang dari 5,0 mm.",
+        value_text_en="The plate thickness of the casing walls and casing tops is not to be less than 5,0 mm.",
+        value_text_id="Ketebalan pelat dinding casing dan bagian atas casing kamar mesin tidak boleh kurang dari 5,0 mm.",
+        value_num=5.0, unit="mm", section_no=27, paragraph_id=None, page_no=627,
+        source_quote="The plate thickness of the casing walls and casing tops is not to be less than 5,0 mm.",
+        trigger_terms=("casing walls", "casing tops", "machinery space casing", "casing kamar mesin", "casing", "dinding casing", "bagian atas casing", "5.0", "5,0"),
+        context_note="Sec 27 p627: minimum machinery space casing plate thickness.",
+    ),
+    LookupRule(
+        topic="supply_stowrack_heel_angle", parameter=None,
+        value_text="Rak penyimpanan kargo geladak (stowracks) pada kapal suplai harus dirancang untuk menahan beban pada sudut kemiringan sebesar 30°.",
+        value_text_en="On-deck stowracks for deck cargo on supply vessels are to be designed for a load at an angle of heel of 30°.",
+        value_text_id="Rak penyimpanan kargo geladak (stowracks) pada kapal suplai harus dirancang untuk menahan beban pada sudut kemiringan sebesar 30°.",
+        value_num=30.0, unit="deg", section_no=34, paragraph_id=None, page_no=668,
+        source_quote="On deck stowracks for deck cargo are to be fitted which are effectively attached to the deck. The stowracks are to be designed for a load at an angle of heel of 30°.",
+        trigger_terms=("stowracks", "stowrack", "deck cargo", "stow rack", "kargo geladak", "sudut kemiringan", "angle of heel", "rak penyimpanan", "30"),
+        context_note="Sec 34 p668: stowracks designed for angle of heel 30 deg.",
+    ),
+    LookupRule(
+        topic="supply_bulwark_plating_thickness", parameter=None,
+        value_text="Ketebalan pelat kubu-kubu (bulwark plating) pada kapal suplai tidak boleh kurang dari 7,5 mm.",
+        value_text_en="The thickness of the bulwark plating is not to be less than 7,5 mm.",
+        value_text_id="Ketebalan pelat kubu-kubu (bulwark plating) pada kapal suplai tidak boleh kurang dari 7,5 mm.",
+        value_num=7.5, unit="mm", section_no=34, paragraph_id=None, page_no=668,
+        source_quote="The thickness of the bulwark plating is not to be less than 7,5 mm.",
+        trigger_terms=("bulwark plating", "pelat kubu-kubu", "pelat bulwark", "ketebalan bulwark", "bulwark", "kubu-kubu", "7.5", "7,5"),
+        context_note="Sec 34 p668: supply-vessel bulwark plating minimum thickness.",
+    ),
+    LookupRule(
+        topic="cargo_pump_room_skylight", parameter=None,
+        value_text="Jendela atap (skylights) pada kamar pompa kargo harus terbuat dari baja, tidak boleh mengandung kaca, dan harus dapat ditutup dari luar kamar pompa.",
+        value_text_en="Skylights to cargo pump rooms shall be of steel, shall not contain any glass and shall be capable of being closed from outside the pump room.",
+        value_text_id="Jendela atap (skylights) pada kamar pompa kargo harus terbuat dari baja, tidak boleh mengandung kaca, dan harus dapat ditutup dari luar kamar pompa.",
+        value_num=None, unit=None, section_no=22, paragraph_id=None, page_no=542,
+        source_quote="Skylights to cargo pump rooms shall be of steel, shall not contain any glass and shall be capable of being closed from outside the pump room.",
+        trigger_terms=("skylights", "skylight", "cargo pump rooms", "cargo pump room", "kamar pompa kargo", "jendela atap", "glass", "kaca"),
+        context_note="Sec 22 p542: cargo pump room skylights steel, no glass, closable from outside.",
+    ),
+    LookupRule(
+        topic="mooring_winch_brake_holding", parameter=None,
+        value_text="Rem derek tambat (mooring winches) harus memiliki kapasitas penahanan yang cukup untuk mencegah terulurnya tali ketika tegangan tali mencapai 80% dari beban putus minimum desain kapal (MBLSD).",
+        value_text_en="Each winch should be fitted with brakes the holding capacity of which is sufficient to prevent unreeling of the mooring line when the rope tension is equal to 80% of the ship design minimum breaking load.",
+        value_text_id="Rem derek tambat (mooring winches) harus memiliki kapasitas penahanan yang cukup untuk mencegah terulurnya tali ketika tegangan tali mencapai 80% dari beban putus minimum desain kapal (MBLSD).",
+        value_num=80.0, unit="% MBLSD", section_no=18, paragraph_id=None, page_no=406,
+        source_quote="Each winch should be fitted with brakes the holding capacity of which is sufficient to prevent unreeling of the mooring line when the rope tension is equal to 80% of the ship design minimum breaking load of the mooring line.",
+        trigger_terms=("mooring winches", "mooring winch", "derek tambat", "brake", "rem derek", "brakes", "holding capacity", "kapasitas penahanan", "unreel", "terulur", "rope tension", "tegangan tali", "80%", "MBLSD", "minimum breaking load"),
+        context_note="Sec 18 p406: mooring winch brake holding 80% MBLSD. Distinct from towing winch holding capacity.",
+    ),
+    LookupRule(
+        topic="warping_drum_chock_distance", parameter=None,
+        value_text="Tromol gulung (warping drums) sebaiknya ditempatkan tidak lebih dari 20 m dari lubang tali (chock), diukur sepanjang jalur tali.",
+        value_text_en="Warping drums should preferably be positioned not more than 20 m away from the chock, measured along the lead of the rope.",
+        value_text_id="Tromol gulung (warping drums) sebaiknya ditempatkan tidak lebih dari 20 m dari lubang tali (chock), diukur sepanjang jalur tali.",
+        value_num=20.0, unit="m", section_no=18, paragraph_id=None, page_no=407,
+        source_quote="Warping drums should preferably be positioned not more than 20 m away from the chock, measured along the lead of the rope.",
+        trigger_terms=("warping drums", "warping drum", "tromol gulung", "chock", "lubang tali", "20 m", "lead of the rope", "jalur tali", "posisi"),
+        context_note="Sec 18 p407: recommended max distance of warping drums from chock.",
+    ),
+    LookupRule(
+        topic="sauna_door_opening_direction", parameter=None,
+        value_text="Pintu ruang sauna harus dapat membuka ke arah luar dengan cara didorong.",
+        value_text_en="The sauna door shall open outwards by pushing.",
+        value_text_id="Pintu ruang sauna harus dapat membuka ke arah luar dengan cara didorong.",
+        value_num=None, unit=None, section_no=22, paragraph_id=None, page_no=503,
+        source_quote="The sauna door shall open outwards by pushing.",
+        trigger_terms=("sauna door", "sauna", "pintu sauna", "ruang sauna", "open outwards", "membuka ke luar", "pushing", "didorong", "arah bukaan"),
+        context_note="Sec 22 p503: sauna door opens outwards by pushing.",
+    ),
+    LookupRule(
+        topic="cargo_hold_bulkhead_min_thickness", parameter=None,
+        value_text="Ketebalan pelat sekat ruang muat kargo (cargo hold bulkheads) pada kapal curah dalam kondisi apa pun tidak boleh kurang dari 9,0 mm.",
+        value_text_en="The scantlings of the cargo hold bulkheads are not to be less than those required for a watertight bulkhead. The plate thickness is in no case to be taken less than 9,0 mm.",
+        value_text_id="Ketebalan pelat sekat ruang muat kargo (cargo hold bulkheads) pada kapal curah dalam kondisi apa pun tidak boleh kurang dari 9,0 mm.",
+        value_num=9.0, unit="mm", section_no=23, paragraph_id="B.8.2", page_no=554,
+        source_quote="The plate thickness is in no case to be taken less than 9,0 mm.",
+        trigger_terms=("cargo hold bulkheads", "cargo hold bulkhead", "sekat ruang muat", "sekat ruang muat kargo", "bulk carrier", "kapal curah", "9.0", "9,0", "bulkheads"),
+        context_note="Sec 23 B.8.2 p554: minimum absolute plate thickness for cargo hold bulkheads.",
+    ),
+    LookupRule(
+        topic="emergency_release_activation_time", parameter=None,
+        value_text="Sistem rilis darurat (emergency release system) pada derek tunda harus berfungsi secepat yang wajar dan dalam waktu maksimum 3 detik setelah diaktifkan.",
+        value_text_en="The emergency release system is to function as quickly as is reasonably practicable and within a maximum of three seconds after activation.",
+        value_text_id="Sistem rilis darurat (emergency release system) pada derek tunda harus berfungsi secepat yang wajar dan dalam waktu maksimum 3 detik setelah diaktifkan.",
+        value_num=3.0, unit="s", section_no=27, paragraph_id="C.6.2.4", page_no=632,
+        source_quote="The emergency release system is to function as quickly as is reasonably practicable and within a maximum of three seconds after activation.",
+        trigger_terms=("emergency release system", "emergency release systems", "sistem rilis darurat", "emergency release", "rilis darurat", "activation", "setelah diaktifkan", "after activation", "three seconds", "3 detik", "three seconds after"),
+        context_note="Sec 27 C.6.2.4 p632: emergency release within max three seconds after activation.",
     ),
 ]
 
@@ -1710,6 +1806,197 @@ def test_fatigue_c_paraphrase_en_fires():
     assert match is not None
     assert match.rule.topic == "fatigue_correction_factor"
     print("PASS: test_fatigue_c_paraphrase_en_fires")
+
+
+# --- 10QA build: new lookup topic tests ---
+
+
+def test_machinery_casing_min_thickness_fires():
+    match = match_lookup(
+        query_id="Berapakah batas minimum ketebalan pelat yang disyaratkan untuk dinding casing dan bagian atas casing kamar mesin pada kapal tunda?",
+        query_en="What is the minimum required plate thickness for casing walls and casing tops of the machinery space on tugs?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "machinery_casing_min_thickness"
+    assert match.rule.section_no == 27
+    print("PASS: test_machinery_casing_min_thickness_fires")
+
+
+def test_supply_stowrack_heel_angle_fires():
+    match = match_lookup(
+        query_id="Pada geladak kapal suplai, rak penyimpanan kargo geladak harus dirancang kuat untuk menahan beban pada asumsi sudut kemiringan sebesar berapa derajat?",
+        query_en="On the deck of supply vessels, deck cargo stowracks must be designed to withstand loads at an assumed angle of heel of how many degrees?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "supply_stowrack_heel_angle"
+    assert match.rule.value_num == 30.0
+    print("PASS: test_supply_stowrack_heel_angle_fires")
+
+
+def test_supply_bulwark_plating_thickness_fires():
+    match = match_lookup(
+        query_id="Berapakah ketebalan minimum pelat kubu-kubu yang disyaratkan untuk kapal suplai?",
+        query_en="What is the minimum bulwark plating thickness required for supply vessels?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "supply_bulwark_plating_thickness"
+    assert match.rule.value_num == 7.5
+    print("PASS: test_supply_bulwark_plating_thickness_fires")
+
+
+def test_supply_bulwark_plating_requires_supply_context():
+    generic = match_lookup(
+        query_id="Berapakah ketebalan minimum pelat kubu-kubu (bulwark plating)?",
+        query_en="What is the minimum bulwark plating thickness?",
+        rules=_RULES,
+    )
+    tanker = match_lookup(
+        query_id="Berapakah ketebalan bulwark plating untuk kapal tanker?",
+        query_en="What is the bulwark plating thickness for a tanker?",
+        rules=_RULES,
+    )
+    assert generic is None
+    assert tanker is None
+
+
+def test_supply_bulwark_plating_accepts_supply_context_in_either_language():
+    match_id = match_lookup(
+        query_id="Berapakah ketebalan minimum pelat kubu-kubu kapal suplai?",
+        query_en="",
+        rules=_RULES,
+    )
+    match_en = match_lookup(
+        query_id="",
+        query_en="What is the minimum bulwark plating thickness for supply vessels?",
+        rules=_RULES,
+    )
+    assert match_id is not None
+    assert match_id.rule.topic == "supply_bulwark_plating_thickness"
+    assert match_en is not None
+    assert match_en.rule.topic == "supply_bulwark_plating_thickness"
+
+
+def test_supply_context_cannot_be_injected_by_condensed_query():
+    match = match_lookup(
+        query_id="Berapakah ketebalan minimum pelat kubu-kubu?",
+        query_en="What is the minimum bulwark plating thickness for supply vessels?",
+        rules=_RULES,
+    )
+    assert match is None
+
+
+def test_collision_bulkhead_position_rejects_frame_spacing_aspect():
+    rule = LookupRule(
+        topic="collision_bulkhead_position", parameter=None,
+        value_text="position", value_num=None, unit=None,
+        section_no=11, paragraph_id="A.2.1.1", page_no=247,
+        source_quote="A collision bulkhead shall be located.",
+        trigger_terms=("collision bulkhead", "position"),
+    )
+    match = LookupMatch(rule=rule, matched_terms=("collision bulkhead",), score=3)
+    precise, reason = validate_lookup_precision(
+        "Berapakah jarak gading maksimum di depan sekat tubrukan?",
+        "What is the maximum frame spacing near the collision bulkhead?",
+        match,
+    )
+    assert not precise
+    assert reason.startswith("excluded_aspect:spacing")
+
+
+def test_collision_bulkhead_barge_position_remains_precise():
+    rule = LookupRule(
+        topic="collision_bulkhead_barge", parameter=None,
+        value_text="position", value_num=None, unit=None,
+        section_no=31, paragraph_id="C.3", page_no=723,
+        source_quote="The collision bulkhead is to be located.",
+        trigger_terms=("barge", "collision bulkhead"),
+    )
+    match = LookupMatch(rule=rule, matched_terms=("barge", "collision bulkhead"), score=3)
+    precise, reason = validate_lookup_precision(
+        "Di manakah posisi sekat tubrukan pada tongkang?",
+        "Where is the collision bulkhead located on a barge?",
+        match,
+    )
+    assert precise
+    assert reason == "ok"
+
+
+def test_cargo_pump_room_skylight_fires():
+    match = match_lookup(
+        query_id="Bagaimana ketentuan desain untuk jendela atap pada kamar pompa kargo kapal tanker terkait material dan kaca?",
+        query_en="What are the design requirements for skylights in cargo pump rooms of tankers regarding material and glass?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "cargo_pump_room_skylight"
+    assert match.rule.section_no == 22
+    print("PASS: test_cargo_pump_room_skylight_fires")
+
+
+def test_mooring_winch_brake_holding_fires():
+    match = match_lookup(
+        query_id="Pada derek tambat, rem derek harus memiliki kapasitas penahanan yang cukup untuk mencegah terulurnya tali ketika tegangan mencapai berapa persen dari beban putus minimum?",
+        query_en="On mooring winches, the brake must have sufficient holding capacity to prevent unreeling of the line when the tension reaches what percentage of the minimum breaking load?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "mooring_winch_brake_holding"
+    assert match.rule.value_num == 80.0
+    print("PASS: test_mooring_winch_brake_holding_fires")
+
+
+def test_warping_drum_chock_distance_fires():
+    match = match_lookup(
+        query_id="Berapakah batas jarak maksimum penempatan tromol gulung dari lubang tali jika diukur sepanjang jalur tali tambat?",
+        query_en="What is the maximum distance limit for placing warping drums from the chock measured along the mooring line lead?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "warping_drum_chock_distance"
+    assert match.rule.value_num == 20.0
+    print("PASS: test_warping_drum_chock_distance_fires")
+
+
+def test_sauna_door_opening_direction_fires():
+    match = match_lookup(
+        query_id="Berdasarkan aturan perlindungan kebakaran struktural, bagaimana ketentuan arah bukaan pintu untuk ruang sauna di kapal?",
+        query_en="Based on structural fire protection rules, what is the requirement for the door opening direction of sauna rooms on ships?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "sauna_door_opening_direction"
+    assert match.rule.section_no == 22
+    print("PASS: test_sauna_door_opening_direction_fires")
+
+
+def test_cargo_hold_bulkhead_min_thickness_fires():
+    match = match_lookup(
+        query_id="Berapakah ketebalan pelat minimum mutlak yang disyaratkan untuk sekat ruang muat kargo pada kapal curah?",
+        query_en="What is the absolute minimum plate thickness required for cargo hold bulkheads on bulk carriers?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "cargo_hold_bulkhead_min_thickness"
+    assert match.rule.value_num == 9.0
+    assert match.rule.section_no == 23
+    print("PASS: test_cargo_hold_bulkhead_min_thickness_fires")
+
+
+def test_emergency_release_activation_time_fires():
+    match = match_lookup(
+        query_id="Berapa waktu maksimum yang diizinkan untuk berfungsinya sistem rilis darurat (emergency release system) pada derek tunda (towing winch) setelah diaktifkan?",
+        query_en="What is the maximum time allowed for the emergency release system of a towing winch to function after activation?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "emergency_release_activation_time"
+    assert match.rule.value_num == 3.0
+    assert match.rule.section_no == 27
+    assert match.rule.paragraph_id == "C.6.2.4"
+    print("PASS: test_emergency_release_activation_time_fires")
 
 
 if __name__ == "__main__":

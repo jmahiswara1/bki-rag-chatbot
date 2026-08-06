@@ -82,10 +82,33 @@ def classify(query: str, history: list[dict] | None = None) -> Intent:
     
     # Check for topical terms (only count with numeric assignment)
     has_topical = any(term in q for term in _CALC_TERMS)
-    
+
+    # Rules-QA gate (build 40): a question ASKING ABOUT A RULE LIMIT is
+    # rules_qa even when it carries a numeric parameter (e.g. L=120m).
+    # Pattern: question cue ("berapa"/"apa"/"berapakah") + a quantitative
+    # rule word (maksimum/minimum/diizinkan/diperbolehkan) + a number.
+    # These ask "what does the rule say?" — the number is context, not a
+    # computation input. Without this gate they would be misrouted to the
+    # calc engine (e.g. "Berapa jarak maksimum antar gading ... L=120m").
+    # Deliberately does NOT match compute imperatives ("hitung ... L=100"),
+    # which stay calculation (tests test_gate_33a* cover that).
+    has_rule_limit_ask = (
+        is_quest
+        and has_num
+        and re.search(
+            r"\b(?:maksimum|minimum|max|min|diizinkan|dizinkan|diperbolehkan|allowed|permitted)\w*",
+            q,
+        ) is not None
+    )
+
     # Branch 1: has_num AND (has_imper OR topical hit) -> calculation (high)
-    if has_num and (has_imper or has_topical):
+    # But rules-QA gate overrides when the query asks about a rule limit.
+    if has_num and (has_imper or has_topical) and not has_rule_limit_ask:
         return Intent(kind="calculation", confidence="high", source="heuristic")
+
+    # Branch 1b (build 40): rule-limit ask -> rules_qa high (deterministic).
+    if has_rule_limit_ask:
+        return Intent(kind="rules_qa", confidence="high", source="heuristic")
     
     # Branch 2: has_imper AND NOT has_num AND NOT is_quest -> calculation (low, ambiguous)
     if has_imper and not has_num and not is_quest:

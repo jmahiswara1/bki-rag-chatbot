@@ -35,6 +35,8 @@ class ChainResult:
     rejected: bool = False
     reject_reason: str = ""
     lookup_match: object = None
+    diagnostics: dict[str, object] = field(default_factory=dict)
+    lookup_status: str = "none"
 
 
 @dataclass
@@ -60,6 +62,9 @@ class PipelineState:
     table_evidence: str = ""  # selected table row evidence for context
     lookup_evidence: str = ""  # injected lookup fact for LLM (skip RAG)
     skip_retrieval: bool = False  # when True, skip retrieval + use lookup_evidence only
+    diagnostics: dict[str, object] = field(default_factory=dict)
+    lookup_status: str = "none"
+    lookup_source: RetrievedChunk | None = None
 
 
 @dataclass
@@ -76,6 +81,8 @@ class ChainStreamResult:
     reject_reason: str = ""
     token_count: int = 0
     lookup_match: object = None
+    diagnostics: dict[str, object] = field(default_factory=dict)
+    lookup_status: str = "none"
 
 
 # ---------------------------------------------------------------------------
@@ -214,6 +221,207 @@ def canonicalize_condensed_query(original_query: str, en_query: str) -> str:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Build 41: fore/aft direction canonicalization. The 3B condense step is
+# told to keep the glossary-substituted English verbatim, but sometimes it
+# still swaps direction (e.g. original 'bagian buritan' -> 'at the bow').
+# This deterministic post-pass fixes the direction whenever the ORIGINAL
+# query pins an aft/forward location and the condensed query drifted the
+# other way. Only activates on a direction-pinned trigger; never does a
+# global word swap.
+# ---------------------------------------------------------------------------
+
+# Original-query triggers that pin AFT location.
+_AFT_TRIGGER = re.compile(r"\bburitan\b|bagian\s+buritan|di\s+buritan", re.IGNORECASE)
+# Original-query triggers that pin FORWARD location.
+_FWD_TRIGGER = re.compile(r"\bhaluan\b|bagian\s+haluan|di\s+haluan|geladak\s+depan", re.IGNORECASE)
+
+# en_query phrases that mean FORWARD (wrong when original pinned AFT).
+_FWD_PHRASES = (
+    re.compile(r"\bat\s+the\s+bow\b", re.IGNORECASE),
+    re.compile(r"\bin\s+the\s+bow\b", re.IGNORECASE),
+    re.compile(r"\bforward\b", re.IGNORECASE),
+    re.compile(r"\bbow\b", re.IGNORECASE),
+)
+# en_query phrases that mean AFT (wrong when original pinned FORWARD).
+_AFT_PHRASES = (
+    re.compile(r"\bat\s+the\s+stern\b", re.IGNORECASE),
+    re.compile(r"\bin\s+the\s+stern\b", re.IGNORECASE),
+    re.compile(r"\bstern\b", re.IGNORECASE),
+    re.compile(r"\baft\b", re.IGNORECASE),
+)
+
+# Follow-up markers are intentionally conservative. A complete new technical
+# question should not inherit unrelated prior topics just because a history
+# list exists; only explicit references to prior context enable condensation.
+_FOLLOW_UP_QUERY = re.compile(
+    r"(?:\b(?:kalau|jika|bila|yang\s+tadi|sebelumnya|tersebut|yang\s+sama|"
+    r"bagaimana\s+dengan|bagaimana\s+kalau|what\s+about|how\s+about|"
+    r"the\s+previous|the\s+same|above|also\s+for)\b|"
+    r"\b(?:ini|itu)\b\s*(?:berlaku|juga|sama)|"
+    r"^(?:dan|lalu|kemudian)\b)",
+    re.IGNORECASE,
+)
+
+
+def query_needs_history(query: str, history: list[dict] | None) -> bool:
+    """Return whether *query* is an explicit follow-up needing history.
+
+    Standalone technical questions are deliberately isolated from previous
+    turns. This prevents a small condense model from copying an earlier
+    question into ``en_query``. Short continuation-style queries and explicit
+    references such as ``L=150`` or ``bagaimana dengan tanker`` still use
+    history.
+    """
+    if not history:
+        return False
+
+    text = (query or "").strip()
+    if not text:
+        return True
+
+    if _FOLLOW_UP_QUERY.search(text):
+        return True
+
+    # A bare variable/value request is normally a continuation of the prior
+    # turn, not a new document question.
+    if re.fullmatch(
+        r"(?:[A-Za-z][A-Za-z0-9_ ]{0,20}\s*[=:]\s*[-+]?\d+(?:[.,]\d+)?\s*(?:m|mm|kN|MPa|%)?)",
+        text,
+        re.IGNORECASE,
+    ):
+        return True
+
+    # A sufficiently complete question is standalone unless it explicitly
+    # contains one of the follow-up references above.
+    return False
+
+
+def canonicalize_direction_query(original_query: str, en_query: str) -> str:
+    """Deterministic post-condense canonicalization for fore/aft direction.
+
+    - If the ORIGINAL query pins an AFT location and the condensed query
+      drifted to a FORWARD phrase, replace the FORWARD phrase with 'aft'.
+    - If the ORIGINAL query pins a FORWARD location and the condensed query
+      drifted to an AFT phrase, replace it with 'forward'.
+    - Otherwise return en_query untouched.
+    """
+    pinned_aft = _AFT_TRIGGER.search(original_query) is not None
+    pinned_fwd = _FWD_TRIGGER.search(original_query) is not None
+
+    out = en_query
+    if pinned_aft:
+        for pat in _FWD_PHRASES:
+            if pat.search(out):
+                out = pat.sub("aft", out)
+                break
+    if pinned_fwd:
+        for pat in _AFT_PHRASES:
+            if pat.search(out):
+                out = pat.sub("forward", out)
+                break
+    return out
+
+
+_FIDELITY_STOP_WORDS = frozenset(
+    "a an and are as at be by for from how in is it of on or the to what when "
+    "where which who why with yang dan atau untuk pada dengan dalam dari apa "
+    "berapa bagaimana apakah di ke yang ini itu kapal menurut aturan harus "
+    "does do not is not was were shall should can may the".split()
+)
+_TECHNICAL_FIDELITY_HINTS = frozenset(
+    "aluminium alloy emergency release system corrosion addition manholes "
+    "cargo tank dry spaces bulwark plating superstructure bulkhead thickness "
+    "towing winch mooring dredger tanker structure hull kapal pelat sekat "
+    "tangki lambung baja paduan".split()
+)
+
+
+def _fidelity_tokens(text: str) -> set[str]:
+    """Return meaningful tokens used by the conservative condense validator."""
+    normalized = re.sub(r"[^\w.=/%+-]", " ", (text or "").casefold())
+    tokens = set(re.findall(r"[a-z\d][a-z\d._/%+-]*", normalized))
+    return {
+        token for token in tokens
+        if token not in _FIDELITY_STOP_WORDS
+        and (len(token) >= 4 or any(ch.isdigit() for ch in token))
+    }
+
+
+def validate_en_query_fidelity(original_query: str, en_query: str) -> tuple[bool, str]:
+    """Check that a condensed query still represents the current question.
+
+    This is deliberately a conservative lexical guard, not a second semantic
+    model call. The glossary creates a bilingual bridge for Indonesian terms;
+    the validator then requires meaningful subject/parameter overlap. A query
+    from an earlier turn (for example ``emergency release``) has no overlap
+    with a new aluminium/manhole question and is rejected.
+    """
+    glossary_query = apply_glossary(original_query)
+    original = _fidelity_tokens(glossary_query)
+    condensed = _fidelity_tokens(en_query)
+    if not condensed:
+        return False, "empty_condensed_query"
+    if not original:
+        return True, "no_fidelity_tokens"
+
+    # Very generic utility text has no reliable subject token to compare. Do
+    # not reject it solely because an English paraphrase shares no literal
+    # token; technical Indonesian queries normally pass through the glossary
+    # and therefore are validated below.
+    if (
+        glossary_query.casefold() == (original_query or "").casefold()
+        and not any(ch.isdigit() for ch in original_query)
+        and not original & _TECHNICAL_FIDELITY_HINTS
+    ):
+        return True, "generic_query"
+
+    required_numbers = {
+        token for token in original if any(ch.isdigit() for ch in token)
+    }
+    missing_numbers = required_numbers - condensed
+    if missing_numbers:
+        return False, f"missing_parameters:{','.join(sorted(missing_numbers))}"
+
+    overlap = original & condensed
+    # A meaningful overlap is required for technical queries. One shared
+    # subject token is enough here because glossary/canonicalization can split
+    # a bilingual compound differently (``geladak depan`` -> ``forward deck``).
+    # The zero-overlap case is the important failure mode: it catches a
+    # condensed question copied from an unrelated previous turn.
+    minimum_overlap = 1
+    if len(overlap) < minimum_overlap:
+        return False, f"topic_drift:overlap={','.join(sorted(overlap)) or 'none'}"
+    return True, "ok"
+
+
+def _validated_condensed_query(
+    original_query: str,
+    candidate: str,
+    *,
+    validate: bool = True,
+) -> tuple[str, str]:
+    """Canonicalize a candidate and fall back when fidelity validation fails."""
+    candidate = canonicalize_condensed_query(original_query, candidate)
+    candidate = canonicalize_direction_query(original_query, candidate)
+    if not validate:
+        return candidate, "validation_skipped"
+
+    # Direct utility callers without a language/mode context retain the
+    # existing behavior; the pipeline supplies both and enables the guard.
+    if not original_query.strip() or not candidate.strip():
+        return candidate, "validation_skipped"
+
+    valid, reason = validate_en_query_fidelity(original_query, candidate)
+    if valid:
+        return candidate, reason
+
+    fallback = apply_glossary(original_query)
+    fallback = canonicalize_condensed_query(original_query, fallback)
+    fallback = canonicalize_direction_query(original_query, fallback)
+    return fallback, f"fallback:{reason}"
+
+
 def _pre_answer_pipeline(
     query: str,
     history: list[dict] | None,
@@ -227,6 +435,20 @@ def _pre_answer_pipeline(
     timings: dict[str, float] = {}
     history = history or []
     mode_cfg = MODES[mode]
+    diagnostics: dict[str, object] = {
+        "original_query": query,
+        "history_used": False,
+        "en_query": "",
+        "condense_valid": True,
+        "condense_reason": "not_run",
+        "lookup_topic": None,
+        "retrieval_query": None,
+        "retrieval_fallback": False,
+        "lookup_status": "none",
+        "crosscheck_reason": "not_run",
+    }
+    lookup_source: RetrievedChunk | None = None
+    lookup_status = "none"
 
     # 1. detect language
     t = time.time()
@@ -342,14 +564,35 @@ def _pre_answer_pipeline(
 
     # 4. translate + condense
     t = time.time()
+    needs_history = query_needs_history(query, history)
+    condense_history = history if needs_history else []
+    diagnostics["history_used"] = needs_history
     # T7-DEF3 (P4): Unified bypass for EN queries.
     # If the user explicitly asks in English AND there is no history (stand-alone),
     # bypass _translate_condense entirely. This prevents qwen2.5 from mistranslating
     # the EN query into ID. This applies uniformly to BOTH default and fast modes.
-    if lang == "en" and not history:
+    if lang == "en" and not needs_history:
         en_query = query
     else:
-        en_query = _translate_condense(query, history, temperature=mode_cfg.temperature, mode=mode, lang=lang)
+        en_query = _translate_condense(
+            query,
+            condense_history,
+            temperature=mode_cfg.temperature,
+            mode=mode,
+            lang=lang,
+        )
+    # Validate at the pipeline boundary as well as inside the helper. This
+    # protects callers/tests that replace the condense helper and, more
+    # importantly, guarantees retrieval and lookup never consume a drifted
+    # query from an earlier turn.
+    en_query, _condense_reason = _validated_condensed_query(query, en_query)
+    diagnostics["en_query"] = en_query
+    diagnostics["condense_reason"] = _condense_reason
+    diagnostics["condense_valid"] = not _condense_reason.startswith("fallback:")
+    # Keep one explicit, validated query for every downstream retrieval
+    # consumer. No raw LLM condense result may reach FTS, reranking helpers,
+    # table selection, or contradiction detection.
+    retrieval_query = en_query
     timings["translate"] = time.time() - t
 
     # 4.5. lookup-first (before retrieval — saves evidence for LLM context)
@@ -365,9 +608,18 @@ def _pre_answer_pipeline(
                     query_id=query, query_en=en_query, rules=rules,
                 )
             if lookup_match is not None:
+                precise, precision_reason = _lookup.validate_lookup_precision(
+                    query_id=query,
+                    query_en=en_query,
+                    match=lookup_match,
+                )
+                diagnostics["lookup_precision"] = precision_reason
+                if not precise:
+                    lookup_match = None
+            if lookup_match is not None:
                 lookup_evidence = _format_lookup_evidence(lookup_match, lang)
-                skip_retrieval = True
-                skip_retrieval = True
+                lookup_status = "candidate"
+                diagnostics["lookup_topic"] = lookup_match.rule.topic
         except Exception as exc:
             print(
                 f"  [chain] WARNING: lookup match failed, falling back to RAG "
@@ -393,28 +645,108 @@ def _pre_answer_pipeline(
         timings["domain_score"] = 0.0
         timings["contradiction"] = 0.0
         table_evidence = ""
+        # Lookup match: surface the verified source as a RetrievedChunk so
+        # the CLI Sources panel and /source command show where the answer
+        # came from, even though retrieval is skipped.
+        if lookup_match is not None:
+            rule = lookup_match.rule
+            desc = _LOOKUP_DESC.get(rule.topic, {}).get(rule.parameter)
+            if desc is not None:
+                # desc = (id_text, en_text); _LOOKUP_DESC may be referenced
+                # before its module-level definition in some call paths, so
+                # fall back to the topic name if unavailable.
+                title = desc[0] if lang == "id" else desc[1]
+            else:
+                title = rule.topic
+            candidates = [
+                RetrievedChunk(
+                    section_no=rule.section_no,
+                    section_title=title,
+                    paragraph_id=rule.paragraph_id,
+                    content_type="lookup",
+                    table_no=None,
+                    figure_no=None,
+                    page_start=rule.page_no or 0,
+                    page_end=rule.page_no or 0,
+                    content=rule.localized_text(lang),
+                    score=float(lookup_match.score),
+                )
+            ]
+            lookup_source = candidates[0]
     else:
         t = time.time()
+        diagnostics["retrieval_query"] = retrieval_query
+        diagnostics["retrieval_fallback"] = _condense_reason.startswith("fallback:")
+        # Build 41: the vector branch embeds a glossary-stabilized query so
+        # Indonesian domain terms ('geladak bangunan atas' -> 'superstructure
+        # deck', 'bagian buritan' -> 'aft part') match the EN chunk text.
+        # Raw ID queries retrieve Sec 29 poorly (cross-lingual gap); using
+        # the raw query directly made it WORSE for recall. The glossary
+        # substitution preserves direction (aft/forward) deterministically.
+        # The FTS branch still uses en_query as the English term anchor.
+        vector_q = apply_glossary(query) if lang == "id" else None
         candidates = retrieve_context(
             query_text=query,
             mode=mode,
-            fts_query=en_query,
-            en_query=en_query,
+            fts_query=retrieval_query,
+            en_query=retrieval_query,
             multi_queries=expanded if expanded else None,
+            vector_query=vector_q,
         )
         timings["retrieve"] = time.time() - t
 
+        if lookup_match is not None:
+            rule_section = lookup_match.rule.section_no
+            crosscheck_candidates = list(candidates)
+            same_section = any(c.section_no == rule_section for c in crosscheck_candidates)
+            if same_section:
+                lookup_status = "confirmed"
+                diagnostics["crosscheck_reason"] = "matching_section"
+                crosscheck_note = "[DOCUMENT CROSS-CHECK — CONSISTENT]\n"
+            else:
+                lookup_status = "supported" if not crosscheck_candidates else "conflict"
+                diagnostics["crosscheck_reason"] = (
+                    "no_retrieval_hits" if not crosscheck_candidates
+                    else "no_matching_section"
+                )
+                crosscheck_note = (
+                    "[LOOKUP VERIFIED — NO CROSS-CHECK HIT]\n"
+                    if not crosscheck_candidates
+                    else "[DOCUMENT CROSS-CHECK — CONFLICT]\n"
+                )
+            lookup_evidence += (
+                f"\n{crosscheck_note}"
+                "The lookup fact is a candidate evidence source. "
+                "Use it only when the current question context agrees; "
+                "do not silently override conflicting document context.\n"
+            )
+            rule = lookup_match.rule
+            lookup_source = RetrievedChunk(
+                section_no=rule.section_no,
+                section_title=rule.topic,
+                paragraph_id=rule.paragraph_id,
+                content_type="lookup",
+                table_no=None,
+                figure_no=None,
+                page_start=rule.page_no or 0,
+                page_end=rule.page_no or 0,
+                content=rule.localized_text(lang),
+                score=float(lookup_match.score),
+            )
+            candidates = [lookup_source, *candidates]
+            diagnostics["lookup_status"] = lookup_status
+
         # 6.1. domain-aware scoring
         t = time.time()
-        if en_query and mode == "default" and candidates:
-            ship_type = detect_ship_type(en_query)
+        if retrieval_query and mode == "default" and candidates:
+            ship_type = detect_ship_type(retrieval_query)
             if ship_type:
                 candidates = apply_domain_scores(candidates, ship_type)
         timings["domain_score"] = time.time() - t
 
         # 6.5. deterministic table-row selection
         table_evidence = ""
-        if en_query and candidates:
+        if retrieval_query and candidates:
             table_candidates = [(i, c) for i, c in enumerate(candidates) if c.content_type == "table"]
             safe_selections = []
             for rank, c in table_candidates:
@@ -424,7 +756,7 @@ def _pre_answer_pipeline(
                 if c.table_no:
                     tag += f" | Table {c.table_no}"
                 tag += f" | p.{c.page_start}]" if c.page_start == c.page_end else f" | pp.{c.page_start}-{c.page_end}]"
-                sel = select_table_row(c.content, en_query, "en", table_ref=tag)
+                sel = select_table_row(c.content, retrieval_query, "en", table_ref=tag)
                 if sel.selected:
                     safe_selections.append((rank, sel))
             if len(safe_selections) == 1:
@@ -440,8 +772,8 @@ def _pre_answer_pipeline(
 
         # 6.6. contradiction detection
         t = time.time()
-        if en_query and mode == "default" and len(candidates) > 1:
-            anno = build_conflict_annotation(candidates, en_query)
+        if retrieval_query and mode == "default" and len(candidates) > 1:
+            anno = build_conflict_annotation(candidates, retrieval_query)
             if anno:
                 table_evidence = (table_evidence or "") + anno
         timings["contradiction"] = time.time() - t
@@ -483,6 +815,9 @@ def _pre_answer_pipeline(
         lookup_match=lookup_match,
         lookup_evidence=lookup_evidence,
         skip_retrieval=skip_retrieval,
+        diagnostics=diagnostics,
+        lookup_status=lookup_status,
+        lookup_source=lookup_source,
     )
 
 
@@ -510,6 +845,8 @@ def chain_answer(
             en_query=state.en_query,
             expanded=state.expanded,
             lookup_match=state.lookup_match,
+            diagnostics=state.diagnostics,
+            lookup_status=state.lookup_status,
         )
 
     t = time.time()
@@ -535,6 +872,8 @@ def chain_answer(
         rejected=state.rejected,
         reject_reason=state.reject_reason,
         lookup_match=state.lookup_match,
+        diagnostics=state.diagnostics,
+        lookup_status=state.lookup_status,
     )
 
 
@@ -579,6 +918,8 @@ def chain_answer_stream(
             reject_reason=state.reject_reason,
             token_count=0,
             lookup_match=state.lookup_match,
+            diagnostics=state.diagnostics,
+            lookup_status=state.lookup_status,
         ))
         return
 
@@ -636,6 +977,8 @@ def chain_answer_stream(
         reject_reason=state.reject_reason,
         token_count=len(accumulated),
         lookup_match=state.lookup_match,
+        diagnostics=state.diagnostics,
+        lookup_status=state.lookup_status,
     ))
 
 
@@ -666,6 +1009,7 @@ def _stream_from_state(
             reject_reason=state.reject_reason,
             token_count=0,
             lookup_match=state.lookup_match,
+            diagnostics=state.diagnostics,
         ))
         return
 
@@ -721,6 +1065,7 @@ def _stream_from_state(
         reject_reason=state.reject_reason,
         token_count=len(accumulated),
         lookup_match=state.lookup_match,
+        diagnostics=state.diagnostics,
     ))
 
 
@@ -836,6 +1181,60 @@ _LOOKUP_DESC: dict[str, dict[str | None, tuple[str, str]]] = {
         None: (
             "faktor-faktor yang mempengaruhi perhitungan scantling kapal kontainer adalah",
             "the factors affecting container ship scantling calculations are",
+        ),
+    },
+    "machinery_casing_min_thickness": {
+        None: (
+            "ketebalan pelat dinding casing dan bagian atas casing kamar mesin tidak boleh kurang dari",
+            "the plate thickness of the machinery space casing walls and casing tops is not to be less than",
+        ),
+    },
+    "supply_stowrack_heel_angle": {
+        None: (
+            "rak penyimpanan kargo geladak (stowracks) pada kapal suplai harus dirancang untuk menahan beban pada sudut kemiringan sebesar",
+            "on-deck stowracks for deck cargo on supply vessels are to be designed for a load at an angle of heel of",
+        ),
+    },
+    "supply_bulwark_plating_thickness": {
+        None: (
+            "ketebalan pelat kubu-kubu (bulwark plating) pada kapal suplai tidak boleh kurang dari",
+            "the supply-vessel bulwark plating thickness is not to be less than",
+        ),
+    },
+    "cargo_pump_room_skylight": {
+        None: (
+            "ketentuan jendela atap (skylights) pada kamar pompa kargo adalah",
+            "the requirements for cargo pump room skylights are",
+        ),
+    },
+    "mooring_winch_brake_holding": {
+        None: (
+            "rem derek tambat (mooring winches) harus memiliki kapasitas penahanan yang cukup untuk mencegah terulurnya tali ketika tegangan tali mencapai",
+            "the mooring winch brake holding capacity must prevent unreeling of the mooring line when the rope tension reaches",
+        ),
+    },
+    "warping_drum_chock_distance": {
+        None: (
+            "tromol gulung (warping drums) sebaiknya ditempatkan tidak lebih dari",
+            "warping drums should preferably be positioned not more than",
+        ),
+    },
+    "sauna_door_opening_direction": {
+        None: (
+            "ketentuan arah bukaan pintu ruang sauna adalah",
+            "the sauna door opening direction requirement is",
+        ),
+    },
+    "cargo_hold_bulkhead_min_thickness": {
+        None: (
+            "ketebalan pelat sekat ruang muat kargo (cargo hold bulkheads) pada kapal curah dalam kondisi apa pun tidak boleh kurang dari",
+            "the cargo hold bulkhead plate thickness on bulk carriers is in no case to be taken less than",
+        ),
+    },
+    "emergency_release_activation_time": {
+        None: (
+            "sistem rilis darurat (emergency release system) pada derek tunda harus berfungsi secepat yang wajar dan dalam waktu maksimum",
+            "the emergency release system is to function as quickly as is reasonably practicable and within a maximum of",
         ),
     },
 }
@@ -977,7 +1376,17 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     if not is_multi_turn and mode is not None and lang is not None:
         cached = _condense_cache_get(query, lang, mode)
         if cached is not None:
-            return canonicalize_condensed_query(query, cached)
+            out_c, reason = _validated_condensed_query(
+                query,
+                cached,
+                validate=mode is not None and lang is not None,
+            )
+            # A stale cache row may contain a complete answer to an unrelated
+            # earlier topic. Do not return its fallback here: bypass the row,
+            # regenerate from the current query, and replace it only with a
+            # validated result.
+            if not reason.startswith("fallback:"):
+                return out_c
     # Deterministic ID->EN substitution for BKI domain phrases before the LLM
     # call. Keeps the corpus-verified terms (e.g. 'sekat tubrukan' ->
     # 'collision bulkhead') pinned so qwen2.5:3b does not hallucinate
@@ -1009,7 +1418,11 @@ def _translate_condense(query, history, *, temperature, mode=None, lang=None) ->
     )
     result = _clean_one_liner(out)
     en_query = result if result else query_pre  # fall back to substituted query if LLM empty
-    en_query = canonicalize_condensed_query(query, en_query)
+    en_query, _reason = _validated_condensed_query(
+        query,
+        en_query,
+        validate=mode is not None and lang is not None,
+    )
     if not is_multi_turn and mode is not None and lang is not None:
         _condense_cache_put(query, lang, mode, en_query)
     return en_query
@@ -1097,8 +1510,17 @@ def _apply_guardrail(chunks: list[RetrievedChunk]) -> tuple[list[RetrievedChunk]
     second = chunks[1].score if len(chunks) > 1 else top
     if top < settings.guardrail_min_top_score:
         return [], True, f"top_below_min({top:.3f}<{settings.guardrail_min_top_score})"
+    # Build 41: drop the `top <= 0` condition from flat_distribution. The
+    # cross-encoder legitimately returns NEGATIVE scores for valid in-domain
+    # pairs (e.g. -0.34 for a correct Sec 8 hit), and a small gap is normal
+    # when several candidates are equally relevant. The absolute floor
+    # (guardrail_min_top_score, -2.0) already rejects OOD queries; the gap
+    # check without `top <= 0` would reject flat distributions even when the
+    # top is clearly above the OOD floor. Removing `top <= 0` means in-domain
+    # hits above the floor are always accepted, while OOD stays rejected by
+    # the floor itself.
     gap = top - second
-    if gap < settings.guardrail_top_gap and top <= 0:
+    if gap < settings.guardrail_top_gap and top < settings.guardrail_min_top_score + 0.5:
         return [], True, f"flat_distribution(gap={gap:.3f})"
     return chunks, False, ""
 
