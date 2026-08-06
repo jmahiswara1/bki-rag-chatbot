@@ -101,8 +101,18 @@ def rank_formulas(query: str, formulas: list[Formula]) -> list[tuple[Formula, fl
                 if indo_term in ["kulit", "kulit luar", "lambung"]:
                     expanded_keywords.add("shell")
     
+    is_slenderness_query = any(
+        kw in (query or "").lower()
+        for kw in ["slenderness", "kelangsingan", "net thickness", "ketebalan bersih"]
+    )
     scored_formulas = []
     for formula in formulas:
+        # The slenderness criterion must only ever be considered when the
+        # query explicitly asks for net plate thickness / slenderness. It
+        # would otherwise win generic plate-thickness questions by keyword
+        # overlap and disrupt the shell-plating selector.
+        if formula.code == "PLATE_NET_THICKNESS_SLENDERNESS" and not is_slenderness_query:
+            continue
         # Combine title, code, and notes for matching
         text_to_match = f"{formula.code} {formula.title} {formula.notes or ''}".lower()
         formula_keywords = set(re.findall(r"\w+", text_to_match))
@@ -160,6 +170,8 @@ def _parse_query_var_names(query: str) -> set[str]:
     b_match = re.search(r"\bb\s*[=:]\s*[\d.,]+", query, flags=re.IGNORECASE)
     if b_match:
         found.add("a")
+        # Build 42: the slenderness formula consumes 'b' directly.
+        found.add("b")
     
     for alias, symbol in nl_aliases.items():
         alias_pattern = re.escape(alias) + r"[\s=:]+[\d.,]+"
@@ -234,6 +246,15 @@ def select_formula(
     is_deck = any(kw in clean_query for kw in ["dek", "geladak", "deck"])
     
     is_shell = any(kw in clean_query for kw in ["kulit", "lambung", "shell"]) or is_bottom or is_side
+    # Build 42: a plate-thickness question carrying stiffener-spacing data
+    # (jarak penegar / spacing / pelat) is about shell/deck plating, not
+    # about floor web / peak thicknesses. Treat spacing-queries as shell
+    # candidates so FLOOR_PEAK_THICKNESS is filtered out of the picker.
+    if not is_shell and any(
+        kw in clean_query
+        for kw in ["jarak penegar", "stiffener spacing", "spacing", "frame spacing"]
+    ) and any(kw in clean_query for kw in ["pelat", "plate", "tebal", "thickness"]):
+        is_shell = True
 
     # Floor/forepeak queries must win over the broad "alas" -> bottom synonym.
     is_floor_peak = any(kw in clean_query for kw in ["ceruk", "fore peak", "forepeak"])
@@ -250,6 +271,30 @@ def select_formula(
             for f in list_verified_formulas():
                 if f.code == floor_code:
                     return f, ranked
+
+    # Build 42: net plate thickness / slenderness queries must route to the
+    # Sec 3 F.2.2.1 criterion instead of the shell-plating formulas. The
+    # presence of a stiffener-spacing value (b in mm) plus 'net thickness' /
+    # 'slenderness' / 'kelangsingan' is the distinguishing signal.
+    is_slenderness = any(
+        kw in clean_query
+        for kw in ["slenderness", "kelangsingan", "net thickness", "ketebalan bersih"]
+    )
+    if is_slenderness:
+        for f, _score in ranked:
+            if f.code == "PLATE_NET_THICKNESS_SLENDERNESS":
+                return f, ranked
+        for f in list_verified_formulas():
+            if f.code == "PLATE_NET_THICKNESS_SLENDERNESS":
+                return f, ranked
+    else:
+        # Only the slenderness formula is relevant to slenderness queries;
+        # hide it from every other domain's candidate list so generic plate
+        # questions do not surface it in a clarification picker.
+        ranked = [
+            (f, s) for f, s in ranked
+            if f.code != "PLATE_NET_THICKNESS_SLENDERNESS"
+        ]
 
     # If domain is strictly identified, restrict candidates
     if is_shell and not is_deck:
@@ -484,7 +529,11 @@ def _row_to_formula(row: dict) -> Formula:
     """
     # Explicitly construct Variable objects (not positional)
     variables = []
-    for v in row["variables"]:
+    raw_vars = row["variables"]
+    if isinstance(raw_vars, str):
+        import json
+        raw_vars = json.loads(raw_vars)
+    for v in raw_vars:
         variables.append(
             Variable(
                 symbol=v["symbol"],

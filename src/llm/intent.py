@@ -46,6 +46,16 @@ _CALC_TERMS = (
     "pelat sisi",
     "bottom plating",
     "side plating",
+    # Build 42: net thickness / slenderness plate queries. These carry design
+    # data (spacing + material) and ask for a computed minimum, so they are
+    # calculation requests even without an explicit 'hitung' imperative.
+    "ketebalan bersih",
+    "net thickness",
+    "slenderness",
+    "kelangsingan",
+    "stiffener spacing",
+    "jarak antar penegar",
+    "nilai b",
 )
 
 
@@ -92,9 +102,25 @@ def classify(query: str, history: list[dict] | None = None) -> Intent:
     # calc engine (e.g. "Berapa jarak maksimum antar gading ... L=120m").
     # Deliberately does NOT match compute imperatives ("hitung ... L=100"),
     # which stay calculation (tests test_gate_33a* cover that).
+    #
+    # Build 42 exception: when the query supplies DESIGN DATA for a computed
+    # minimum (e.g. "stiffener spacing = 600 mm, mild steel" + "ketebalan
+    # bersih minimum"), the number is an INPUT to a formula, not a rule-limit
+    # question. In that case the gate must NOT override to rules_qa.
+    has_calc_design_data = (
+        has_num
+        and (
+            any(term in q for term in (
+                "ketebalan bersih", "net thickness", "slenderness",
+                "stiffener spacing", "jarak antar penegar", "nilai b",
+            ))
+            or re.search(r"(?:spacing|nilai\s+b)\s*[=:]\s*\d+\s*mm", q) is not None
+        )
+    )
     has_rule_limit_ask = (
         is_quest
         and has_num
+        and not has_calc_design_data
         and re.search(
             r"\b(?:maksimum|minimum|max|min|diizinkan|dizinkan|diperbolehkan|allowed|permitted)\w*",
             q,

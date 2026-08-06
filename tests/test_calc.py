@@ -651,6 +651,58 @@ class TestCalculate:
         # Now there are 3 warnings because 5000 > 100 triggers the new sanity bound warning
         assert len(result.warnings) == 3
 
+    def test_slenderness_net_plate_thickness(self):
+        """Build 42: tp >= (b / C) * sqrt(1/k) with b=600, C=100, k=1 -> 6.0 mm."""
+        formula = Formula(
+            code="PLATE_NET_THICKNESS_SLENDERNESS",
+            title="Net plate thickness (slenderness criterion)",
+            section_no=3,
+            paragraph_id="F.2.2.1",
+            page_no=60,
+            expression="(b / C) * sqrt(1 / k)",
+            variables=[
+                Variable(symbol="b", name="Stiffener spacing", unit="mm", required=True),
+                Variable(symbol="C", name="Slenderness coefficient", unit="", required=True, default=100),
+                Variable(symbol="k", name="Material factor", unit="", required=True, default=1.0),
+            ],
+            result_unit="mm",
+        )
+        query = (
+            "Jarak antar penegar (stiffener spacing atau nilai b) = 600 mm. "
+            "Menggunakan baja standar (mild steel). "
+            "Berapa ketebalan bersih minimum (tp) pelat lambung tersebut?"
+        )
+        result = calculate(query, formula)
+
+        assert result.success is True
+        assert result.result is not None
+        assert abs(result.result - 6.0) < 1e-6
+        assert result.result_unit == "mm"
+        assert "F.2.2.1" in result.message
+        assert "6.0000" in result.message
+
+    def test_slenderness_other_structure_c125(self):
+        """Build 42: C=125 for non-hull structures -> b=600 -> 4.8 mm."""
+        formula = Formula(
+            code="PLATE_NET_THICKNESS_SLENDERNESS",
+            title="Net plate thickness (slenderness criterion)",
+            section_no=3,
+            paragraph_id="F.2.2.1",
+            page_no=60,
+            expression="(b / C) * sqrt(1 / k)",
+            variables=[
+                Variable(symbol="b", name="Stiffener spacing", unit="mm", required=True),
+                Variable(symbol="C", name="Slenderness coefficient", unit="", required=True, default=100),
+                Variable(symbol="k", name="Material factor", unit="", required=True, default=1.0),
+            ],
+            result_unit="mm",
+        )
+        result = calculate("nilai b = 600 mm, C=125, mild steel", formula)
+
+        assert result.success is True
+        assert result.result is not None
+        assert abs(result.result - 4.8) < 1e-6
+
 
 class TestOptionalVariableDefaults:
     """Tests for optional variable default values (FIX #2a)."""

@@ -226,6 +226,19 @@ def test_gate_40_assignment_without_imperative_stays_calc():
     assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
 
 
+def test_gate_42_slenderness_net_thickness_is_calculation():
+    """Build 42: net plate thickness with design data (spacing + steel grade)
+    must route to calculation, not be misread as a rule-limit question."""
+    query = (
+        "Jarak antar penegar (stiffener spacing atau nilai b) = 600 mm. "
+        "Menggunakan baja standar (mild steel). "
+        "Berapa ketebalan bersih minimum (tp) pelat lambung tersebut?"
+    )
+    intent = classify(query)
+    assert intent.kind == "calculation", f"expected calculation, got {intent.kind}"
+    assert intent.confidence == "high"
+
+
 if __name__ == "__main__":
     test_calc_high_with_numbers_and_imperative()
     test_calc_high_with_numbers_and_topical()

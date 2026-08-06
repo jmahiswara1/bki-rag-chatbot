@@ -65,6 +65,7 @@ class PipelineState:
     diagnostics: dict[str, object] = field(default_factory=dict)
     lookup_status: str = "none"
     lookup_source: RetrievedChunk | None = None
+    calc_evidence: str = ""  # verified calculation result handed to the LLM
 
 
 @dataclass
@@ -529,6 +530,29 @@ def _pre_answer_pipeline(
                 best, clarification_list = select_formula(query, candidate_formulas)
                 if best is not None:
                     calc_result = calculate(query, best)
+                    if calc_result.success:
+                        # A successful calculation still reaches the LLM so the
+                        # answer is phrased naturally; the NUMBER is fixed and
+                        # verified by sympy, so the LLM must not change it.
+                        calc_evidence = calc_result.message
+                        timings["calc"] = time.time() - t
+                        diagnostics["calc_formula"] = best.code
+                        diagnostics["calc_result"] = calc_result.result
+                        return PipelineState(
+                            lang=lang,
+                            intent=intent,
+                            en_query="",
+                            expanded=[],
+                            candidates=[],
+                            rejected=False,
+                            reject_reason="",
+                            timings=timings,
+                            mode_cfg=mode_cfg,
+                            short_circuit_msg="",
+                            is_pre_answer_only=False,
+                            calc_evidence=calc_evidence,
+                            diagnostics=diagnostics,
+                        )
                     message = calc_result.message
                 else:
                     formula_list = "\n".join([
@@ -860,6 +884,7 @@ def chain_answer(
         answer_style=state.mode_cfg.answer_style,
         table_evidence=state.table_evidence,
         lookup_evidence=state.lookup_evidence,
+        calc_evidence=state.calc_evidence,
     )
     return ChainResult(
         answer=answer,
@@ -927,7 +952,8 @@ def chain_answer_stream(
     messages = _build_answer_messages(query, state.candidates, state.lang,
                                        answer_style=state.mode_cfg.answer_style,
                                        table_evidence=state.table_evidence,
-                                       lookup_evidence=state.lookup_evidence)
+                                       lookup_evidence=state.lookup_evidence,
+                                       calc_evidence=state.calc_evidence)
     accumulated: list[str] = []
     t_stream = time.time()
     try:
@@ -959,7 +985,7 @@ def chain_answer_stream(
             file=sys.stderr,
             flush=True,
         )
-        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style, lookup_evidence=state.lookup_evidence)
+        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style, lookup_evidence=state.lookup_evidence, calc_evidence=state.calc_evidence)
         if final_text and final_text.strip():
             fallback_used = True
             yield ("token", final_text)
@@ -1017,7 +1043,8 @@ def _stream_from_state(
     messages = _build_answer_messages(query, state.candidates, state.lang,
                                        answer_style=state.mode_cfg.answer_style,
                                        table_evidence=state.table_evidence,
-                                       lookup_evidence=state.lookup_evidence)
+                                       lookup_evidence=state.lookup_evidence,
+                                       calc_evidence=state.calc_evidence)
     accumulated: list[str] = []
     t_stream = time.time()
     try:
@@ -1049,7 +1076,7 @@ def _stream_from_state(
             file=sys.stderr,
             flush=True,
         )
-        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style, lookup_evidence=state.lookup_evidence)
+        final_text = _answer_fallback_non_stream(query, state.candidates, state.lang, state.mode_cfg, answer_style=state.mode_cfg.answer_style, lookup_evidence=state.lookup_evidence, calc_evidence=state.calc_evidence)
         if final_text and final_text.strip():
             yield ("token", final_text)
     state.timings["total"] = time.time() - t_total
@@ -1574,6 +1601,7 @@ def _build_answer_messages(
     answer_style: str = "detailed",
     table_evidence: str = "",
     lookup_evidence: str = "",
+    calc_evidence: str = "",
 ) -> list[dict]:
     """Build a FRESH messages list for one _answer call.
 
@@ -1584,6 +1612,16 @@ def _build_answer_messages(
     context = prompts.build_context(chunks, table_evidence=table_evidence)
     if lookup_evidence:
         context = lookup_evidence + "\n" + context
+    if calc_evidence:
+        calc_block = (
+            "\n[CALCULATION RESULT — VERIFIED, DO NOT CHANGE THE NUMBER]\n"
+            "The following value was computed deterministically by the rules "
+            "engine. State it in natural language; do not recompute, approximate, "
+            "or alter the numeric result.\n"
+            f"{calc_evidence}\n"
+            "[/CALCULATION RESULT]\n"
+        )
+        context = calc_block + "\n" + context
     style = prompts.answer_style_instruction(answer_style)
     target = _language_name(language)
     if language == "id":
@@ -1608,11 +1646,11 @@ def _build_answer_messages(
     ]
 
 
-def _answer_fallback_non_stream(query, chunks, language, mode_cfg, answer_style: str = "detailed", lookup_evidence: str = "") -> str:
+def _answer_fallback_non_stream(query, chunks, language, mode_cfg, answer_style: str = "detailed", lookup_evidence: str = "", calc_evidence: str = "") -> str:
     """Single non-stream chat call used as a fallback when the streaming
     path produces zero tokens. Returns the model's content (may be empty
     if Ollama also returns empty for the non-stream call)."""
-    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, lookup_evidence=lookup_evidence)
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, lookup_evidence=lookup_evidence, calc_evidence=calc_evidence)
     out = chat(
         mode_cfg.model,
         messages,
@@ -1629,6 +1667,7 @@ def _answer(
     answer_style: str = "detailed",
     table_evidence: str = "",
     lookup_evidence: str = "",
+    calc_evidence: str = "",
 ) -> str:
     """Final user-facing answer with empty-response safeguard.
 
@@ -1637,7 +1676,7 @@ def _answer(
     generation glitch), retries ONCE with the same payload before returning
     a clear fallback. Never returns a silent empty string.
     """
-    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence, lookup_evidence=lookup_evidence)
+    messages = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence, lookup_evidence=lookup_evidence, calc_evidence=calc_evidence)
     out = chat(model, messages, temperature=temperature, think=think)
     if out and out.strip():
         return out
@@ -1649,7 +1688,7 @@ def _answer(
         file=sys.stderr,
         flush=True,
     )
-    messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence, lookup_evidence=lookup_evidence)
+    messages_retry = _build_answer_messages(query, chunks, language, answer_style=answer_style, table_evidence=table_evidence, lookup_evidence=lookup_evidence, calc_evidence=calc_evidence)
     out2 = chat(model, messages_retry, temperature=temperature, think=think)
     if out2 and out2.strip():
         return out2

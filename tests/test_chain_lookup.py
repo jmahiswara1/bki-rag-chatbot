@@ -506,6 +506,38 @@ def test_lookup_shadow_status_is_exposed():
     assert result.diagnostics["lookup_status"] == result.lookup_status
 
 
+def test_calculation_success_uses_llm_with_verified_number():
+    """Build 43: a successful calculation must still reach the LLM, with the
+    computed number fixed and unchanged by the model."""
+    from unittest.mock import patch
+    from src.calc.registry import select_formula, search_formulas
+
+    query = (
+        "Jarak antar penegar (stiffener spacing atau nilai b) = 600 mm. "
+        "Menggunakan baja standar (mild steel). "
+        "Berapa ketebalan bersih minimum (tp) pelat lambung tersebut?"
+    )
+    captured = {}
+
+    def fake_answer(*args, **kwargs):
+        captured["calc_evidence"] = kwargs.get("calc_evidence", "")
+        return "LLM PRESENTED ANSWER"
+
+    with patch.multiple(
+        "src.llm.chain",
+        _get_lookup_rules=lambda: [],
+        _translate_condense=lambda q, h, *, temperature, mode=None, lang=None: q,
+        retrieve_context=lambda *args, **kwargs: [],
+        _answer=fake_answer,
+        _answer_fallback_non_stream=fake_answer,
+    ):
+        result = chain.chain_answer(query, mode="default")
+
+    assert "LLM PRESENTED ANSWER" in result.answer
+    assert captured["calc_evidence"]
+    assert "6.0000" in captured["calc_evidence"]
+
+
 def test_chain_precision_rejects_collision_lookup_for_frame_spacing():
     """A collision-bulkhead position candidate must fall through to RAG when
     the current question actually asks about frame spacing."""

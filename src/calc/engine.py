@@ -56,6 +56,11 @@ def _parse_variables(
     alias_matched_ranges = []
     
     for alias, symbol in nl_aliases.items():
+        # Build 42: 'nilai b' / stiffener-spacing aliases normally map to 'a',
+        # but the slenderness formula uses symbol 'b' directly. Prefer the
+        # formula's own 'b' variable when present.
+        if symbol == "a" and any(v.symbol.lower() == "b" for v in formula.variables):
+            symbol = "b"
         # alias [optional =:] value [optional unit]
         # Changed value group to include optional negative sign
         alias_pattern = re.escape(alias) + r"[\s=:]+(-?\d+(?:[.,]\d+)?)(?:\s+([a-zA-Z0-9/^*-]+)(?!\w*\s*[=:]))?"
@@ -128,7 +133,8 @@ def _parse_variables(
         # Hard-coded symbol aliases for BKI variable notation:
         # b = stiffener spacing (mapped to 'a' when formula has 'a' but not 'b')
         _symbol_aliases = {"b": "a"}
-        effective_name = _symbol_aliases.get(var_name.lower(), var_name)
+        has_b_variable = any(v.symbol.lower() == "b" for v in formula.variables)
+        effective_name = var_name.lower() if has_b_variable else _symbol_aliases.get(var_name.lower(), var_name)
         for var in formula.variables:
             if (var.symbol.lower() == effective_name.lower() or 
                 var.name.lower() == var_name.lower()):
@@ -421,14 +427,22 @@ def calculate(query: str, formula: Formula) -> CalculationResult:
             citation += f", p.{formula.page_no}"
         citation += ")"
         
-        # Format result message
-        result_str = f"{result:.4f}"
+        # Format result message. Use a locale-friendly decimal form: strip
+        # trailing zeros and use a comma for fractional values so '6.0000'
+        # is not misread as 6000 (thousands separator). Whole values keep
+        # the comma for BKI-style readability (e.g. '6,0').
+        result_rounded = round(result, 3)
+        if result_rounded == int(result_rounded):
+            result_str = f"{int(result_rounded)},0"
+        else:
+            result_str = str(result_rounded).replace(".", ",")
         unit_str = formula.result_unit or ""
+        substitution_str = str(substituted_expr)
         
         message = (
             f"Calculation result:\n"
             f"Formula: {formula.expression}\n"
-            f"Substitution: {substituted_expr}\n"
+            f"Substitution: {substitution_str}\n"
             f"Result: {result_str} {unit_str}\n\n"
             f"Source: {citation}"
         )
