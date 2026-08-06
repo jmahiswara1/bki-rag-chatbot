@@ -1,0 +1,56 @@
+# General RAG regression set — in-document questions NOT covered by lookup.
+# These verify the retrieval + generation path finds the correct section
+# for questions whose terms are not in lookup_rules (Build 41).
+- id: rag_floor_spacing_double_bottom
+  lang: id
+  category: rules_qa
+  question: Berapa jarak maksimum wrang (floors) pada konstruksi dasar ganda (double bottom)?
+  expected_sources:
+  - section_no: 8
+
+- id: rag_strength_deck_thickness
+  lang: id
+  category: rules_qa
+  question: Bagaimana ketentuan ketebalan pelat geladak kekuatan (strength deck)?
+  expected_sources:
+  - section_no: 7
+
+- id: rag_freeing_ports_area
+  lang: id
+  category: rules_qa
+  question: Berapa luas minimum freeing ports pada bulwark?
+  expected_sources:
+  - section_no: 21
+  must_include_any_groups:
+  - ["freeing", "freeing ports", "lubang"]
+
+- id: rag_frame_spacing_L120
+  lang: id
+  category: rules_qa
+  question: Berapa jarak maksimum antar gading (frame spacing) untuk kapal dengan L=120m?
+  expected_sources:
+  - section_no: 9
+
+- id: rag_section_modulus_hull
+  lang: id
+  category: rules_qa
+  question: Bagaimana cara menghitung section modulus penampang melintang kapal?
+  expected_sources:
+  - section_no: 5
+
+- id: rag_buckling_strength
+  lang: id
+  category: rules_qa
+  question: Apa ketentuan buckling strength pada struktur kapal?
+  expected_sources:
+  - section_no: 3
+
+- id: rag_superstructure_strengthening_aft
+  lang: id
+  category: rules_qa
+  question: Berapa ketebalan pelat pada bangunan atas (superstructure) di bagian buritan?
+  expected_sources:
+  - section_no: 16
+  must_not_contain:
+  - "bow"
+  - "haluan"

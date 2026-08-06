@@ -1,0 +1,120 @@
+# 10QA regression set — lookup-verified facts (sql/033 + sql/030).
+# Every value below is PDF-verified against data/bki_hull_2026.pdf.
+- id: 10qa_emergency_release_time
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapa waktu maksimum yang diizinkan untuk berfungsinya sistem rilis darurat (emergency release system) pada derek tunda (towing winch) setelah diaktifkan?
+  expected_sources:
+  - section_no: 27
+  must_include:
+  - "3"
+  - "detik"
+
+- id: 10qa_casing_min_thickness
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapakah batas minimum ketebalan pelat yang disyaratkan untuk dinding casing (casing walls) dan bagian atas casing (casing tops) kamar mesin pada kapal tunda?
+  expected_sources:
+  - section_no: 27
+  must_include:
+  - "5,0"
+  - "mm"
+
+- id: 10qa_stowrack_heel_angle
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Pada geladak kapal suplai (supply vessels), rak penyimpanan kargo geladak (stowracks) harus dirancang kuat untuk menahan beban pada asumsi sudut kemiringan (angle of heel) sebesar berapa derajat?
+  expected_sources:
+  - section_no: 34
+  must_include:
+  - "30"
+  must_include_any_groups:
+  - ["30°", "derajat", "deg"]
+
+- id: 10qa_bulwark_plating_supply
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapakah ketebalan minimum pelat kubu-kubu (bulwark plating) yang disyaratkan untuk kapal suplai (supply vessels)?
+  expected_sources:
+  - section_no: 34
+  must_include:
+  - "7,5"
+  - "mm"
+
+- id: 10qa_pump_room_skylight
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Bagaimana ketentuan desain untuk jendela atap (skylights) pada kamar pompa kargo (cargo pump rooms) kapal tanker terkait material dan kaca?
+  expected_sources:
+  - section_no: 22
+  must_include:
+  - "baja"
+  - "kaca"
+  must_not_contain:
+  - "tidak ditemukan"
+  - "tidak tersedia"
+
+- id: 10qa_mooring_winch_brake
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Pada derek tambat (mooring winches), rem derek harus memiliki kapasitas penahanan (holding capacity) yang cukup untuk mencegah terulurnya tali ketika tegangan mencapai berapa persen dari beban putus minimum?
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - "80"
+  - "beban putus"
+  must_include_any_groups:
+  - ["80%", "persen"]
+
+- id: 10qa_warping_drum_chock
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapakah batas jarak maksimum penempatan tromol gulung (warping drums) dari lubang tali (chock) jika diukur sepanjang jalur tali tambat?
+  expected_sources:
+  - section_no: 18
+  must_include:
+  - "20"
+  - "meter"
+
+- id: 10qa_sauna_door_direction
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berdasarkan aturan perlindungan kebakaran struktural (structural fire protection), bagaimana ketentuan arah bukaan pintu untuk ruang sauna di kapal?
+  expected_sources:
+  - section_no: 22
+  must_include:
+  - "luar"
+  must_not_contain:
+  - "tidak ditemukan"
+  - "tidak tersedia"
+
+- id: 10qa_cargo_hold_bulkhead
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapakah ketebalan pelat minimum mutlak yang disyaratkan untuk sekat ruang muat kargo (cargo hold bulkheads) pada kapal curah (bulk carrier)?
+  expected_sources:
+  - section_no: 23
+  must_include:
+  - "9,0"
+  - "mm"
+
+- id: 10qa_dredger_bottom_transverses
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Pada kapal keruk (dredgers) yang dirancang atau diperkirakan akan beroperasi dalam kondisi kandas (aground), berapakah spasi maksimum yang diizinkan untuk bottom transverses?
+  expected_sources:
+  - section_no: 32
+  must_include:
+  - "3,6"
+  must_include_any_groups:
+  - ["meter", "m", "3,6 m"]
