@@ -8,6 +8,7 @@ Markup injection safety: every string that originates from the LLM or
 from chunk content is wrapped in rich.text.Text(...) or
 escaped. Only labels we own carry markup tags.
 """
+import os
 from typing import Iterator
 from rich.console import Console
 from rich.live import Live
@@ -67,7 +68,7 @@ def _render_source_panel(sources: list, console: Console) -> None:
     """Render sources table with a Rule separator. Sources are model-derived
     and may contain arbitrary characters; everything dynamic goes through
     Text with markup=False (or str() for purely numeric fields)."""
-    console.print(Rule(f"Sources ({len(sources)})", style="dim cyan"))
+    console.print(f"[bold]Sources ({len(sources)})[/bold]")
     table = Table(
         box=None,
         show_header=True,
@@ -118,7 +119,7 @@ def _render_footer(result: ChainStreamResult, mode: str, console: Console) -> No
         parts.append(f"total={total_s:.1f}s")
     if result.rejected:
         parts.append(f"rejected: {result.reject_reason}")
-    console.print(Rule("  ".join(parts), style="dim cyan"))
+    console.print("[dim]" + "  |  ".join(parts) + "[/dim]")
 def render_turn(query: str, state: AppState, console: Console, history: list | None = None) -> ChainStreamResult:
     """Execute one REPL turn: stream the chain, render live, finalize.
 
@@ -173,7 +174,7 @@ def render_turn(query: str, state: AppState, console: Console, history: list | N
     # Final answer with Rule separator above. Use Text() because the
     # content is model-derived and may contain '[' / ']' which would
     # otherwise be interpreted as rich markup.
-    console.print(Rule("Answer", style="dim cyan"))
+    console.print("[bold]Answer:[/bold]")
     console.print(Text(format_for_cli(final.answer or "")))
     # Source panel: WAJIB for grounded answers (sources non-kosong);
     # SKIP for calc stub and guardrail reject (sources == [] or rejected).
@@ -183,5 +184,22 @@ def render_turn(query: str, state: AppState, console: Console, history: list | N
         # Reason lives in the footer; keep panel absent.
         pass
     # else (calc stub, sources=[]): nothing -- intentional, per spec.
+    if os.getenv("RAG_DEBUG", "").lower() in {"1", "true", "yes", "on"}:
+        _render_debug_panel(final, console)
     _render_footer(final, state.mode, console)
     return final
+
+
+def _render_debug_panel(result: ChainStreamResult, console: Console) -> None:
+    """Render pipeline diagnostics only when RAG_DEBUG is enabled."""
+    diagnostics = result.diagnostics or {}
+    if not diagnostics:
+        return
+    console.print(Rule("Debug", style="dim yellow"))
+    for key in (
+        "original_query", "en_query", "history_used", "condense_valid",
+        "condense_reason", "lookup_topic", "retrieval_query",
+        "retrieval_fallback",
+    ):
+        if key in diagnostics:
+            console.print(f"[dim]{key}:[/dim] {diagnostics[key]}")

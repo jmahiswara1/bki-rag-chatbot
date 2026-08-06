@@ -17,7 +17,6 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.styles import Style
 from rich.console import Console
-from rich.rule import Rule
 
 from src.cli.commands import HELP_TEXT, parse_command
 from src.cli.exceptions import OllamaUnavailable, RetrievalError, SupabaseUnavailable
@@ -38,12 +37,10 @@ def _parse_args(argv: list[str] | None = None) -> str:
 
 def _print_header(console: Console, mode: str) -> None:
     cfg = MODES[mode]
-    console.print(Rule(style="bold cyan"))
     console.print(
         f"[bold]BKI Hull RAG[/bold]  |  {mode}  |  {cfg.model}"
+        f"  ·  [dim]/help  ·  Ctrl-D exit[/dim]"
     )
-    console.print("[dim]Ctrl-D exit  |  /help[/dim]")
-    console.print(Rule(style="bold cyan"))
 
 
 def _handle_mode_command(arg: str, state: AppState, console: Console) -> None:
@@ -223,4 +220,4 @@ def run(argv: list[str] | None = None) -> None:
             state.history.append({"role": "assistant", "content": result.answer})
             state.last_result = result
         
-        console.print(Rule(style="bold cyan"))
+        console.print()

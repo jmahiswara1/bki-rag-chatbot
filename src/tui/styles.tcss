@@ -1,0 +1,180 @@
+Screen {
+    background: #0b0b0b;
+    color: #e5e5e5;
+}
+
+Header {
+    background: #0b0b0b;
+    color: #ffffff;
+    height: 1;
+    padding: 0 1;
+}
+
+Footer {
+    background: #0b0b0b;
+    color: #888888;
+}
+
+#app-body {
+    height: 1fr;
+}
+
+#sidebar {
+    width: 28;
+    min-width: 22;
+    background: #0b0b0b;
+    border-right: solid #3a3a3a;
+    padding: 1 2;
+}
+
+#brand {
+    color: #ffffff;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#tagline, #sidebar-note, .section-label {
+    color: #777777;
+}
+
+.section-label {
+    margin-top: 3;
+    text-style: bold;
+}
+
+#new-chat {
+    width: 100%;
+    margin-top: 1;
+    border: none;
+    background: #0b0b0b;
+    color: #e5e5e5;
+    text-style: bold;
+}
+
+#chat-column {
+    width: 1fr;
+    height: 1fr;
+}
+
+#transcript {
+    height: 1fr;
+    padding: 1 3;
+}
+
+#welcome {
+    color: #888888;
+    margin: 2 1;
+    width: 75%;
+}
+
+.user-turn, .assistant-turn, .system-turn, .error-turn, .streaming-turn, .sources-turn {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 1;
+    padding: 0 1;
+    background: #0b0b0b;
+    border: none;
+}
+
+.user-turn {
+    color: #bdbdbd;
+}
+
+.assistant-turn {
+    color: #e5e5e5;
+}
+
+.streaming-turn {
+    color: #bdbdbd;
+}
+
+.loading-turn {
+    width: 100%;
+    max-width: 100%;
+    color: #888888;
+    padding: 0 1;
+    margin-bottom: 1;
+}
+
+.sources-turn {
+    color: #999999;
+    border: solid #3a3a3a;
+    padding: 1;
+}
+
+.error-turn {
+    color: #d0d0d0;
+    border: solid #777777;
+    padding: 1;
+}
+
+#composer-row {
+    dock: bottom;
+    height: auto;
+    padding: 0 1 1 1;
+    background: #0b0b0b;
+    border-top: solid #3a3a3a;
+}
+
+#composer-box {
+    width: 100%;
+    height: auto;
+    border: solid #555555;
+    padding: 0 1;
+}
+
+#composer {
+    width: 100%;
+    height: 1;
+    min-height: 1;
+    max-height: 3;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #0b0b0b;
+    color: #ffffff;
+    padding: 0 1;
+}
+
+#composer:focus {
+    border: none;
+    background: #111111;
+    color: #ffffff;
+}
+
+#composer-actions {
+    width: 100%;
+    height: 1;
+    align-horizontal: right;
+    padding-top: 0;
+    border-top: solid #2a2a2a;
+}
+
+#composer-hint {
+    width: 1fr;
+    color: #666666;
+    padding-top: 0;
+}
+
+#send {
+    margin-left: 1;
+    min-width: 7;
+    border: none;
+    background: #0b0b0b;
+    color: #e5e5e5;
+}
+
+#status-row {
+    height: 1;
+    padding: 0 2;
+    background: #0b0b0b;
+    border-top: solid #222222;
+}
+
+#mode-status, #service-status {
+    color: #777777;
+    margin-right: 3;
+}
+
+#transcript {
+    scrollbar-size: 1 1;
+}

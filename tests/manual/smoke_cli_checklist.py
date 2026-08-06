@@ -294,7 +294,7 @@ check("KeyboardInterrupt caught in prompt loop", "KeyboardInterrupt" in source)
 check("EOFError caught for Ctrl-D", "EOFError" in source)
 check("Empty input handled (continue)", "if not text" in source)
 check("exit/quit bare words handled", '"exit"' in source or "'exit'" in source)
-check("Turn separator (Rule) rendered", "Rule" in source)
+check("Turn separator rendered (blank line)", "console.print()" in source)
 check("KeyboardInterrupt caught during render_turn", "cancelled" in source)
 
 # ======================================================================

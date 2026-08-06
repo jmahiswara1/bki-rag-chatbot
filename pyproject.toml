@@ -18,7 +18,11 @@ dependencies = [
     "Pillow>=10.0",
     "tf-keras",
     "PyYAML>=6.0",
+    "textual>=0.50",
 ]
+
+[project.scripts]
+bki-hull = "src.tui.app:main"
 
 [build-system]
 requires = ["setuptools>=64"]
