@@ -529,6 +529,37 @@ _RULES: list[LookupRule] = [
         trigger_terms=("emergency release system", "emergency release systems", "sistem rilis darurat", "emergency release", "rilis darurat", "activation", "setelah diaktifkan", "after activation", "three seconds", "3 detik", "three seconds after"),
         context_note="Sec 27 C.6.2.4 p632: emergency release within max three seconds after activation.",
     ),
+    # --- Build 45 safety-net topics (sql/038). ---
+    LookupRule(
+        topic="lubricating_oil_circulating_tank_shell", parameter=None,
+        value_text="Tangki sirkulasi minyak lumas harus dipisahkan dari kulit lambung kapal dengan jarak sekurang-kurangnya 500 mm.",
+        value_text_en="The lubricating oil circulating tanks are to be separated from the shell by at least 500 mm.",
+        value_text_id="Tangki sirkulasi minyak lumas harus dipisahkan dari kulit lambung kapal dengan jarak sekurang-kurangnya 500 mm.",
+        value_num=500.0, unit="mm", section_no=8, paragraph_id="B.5.2.2", page_no=212,
+        source_quote="The lubricating oil circulating tanks are to be separated from the shell by at least 500 mm.",
+        trigger_terms=("lubricating oil circulating tank", "lubricating oil circulating tanks", "circulating tanks", "circulating tank", "tangki sirkulasi minyak lumas", "tangki sirkulasi", "sirkulasi minyak lumas", "separated from the shell", "dipisahkan dari kulit lambung", "kulit lambung", "500 mm", "500"),
+        context_note="Sec 8 B.5.2.2 p212: lubricating oil circulating tanks separated from the shell by at least 500 mm.",
+    ),
+    LookupRule(
+        topic="indonesian_flag_cofferdam_accommodation", parameter=None,
+        value_text="Untuk kapal berbendera Indonesia, cofferdam juga wajib disediakan untuk memisahkan antara ruang akomodasi dan tangki-tangki minyak.",
+        value_text_en="For Indonesian flag ships, cofferdams are also required between accommodation spaces and oil tanks.",
+        value_text_id="Untuk kapal berbendera Indonesia, cofferdam juga wajib disediakan untuk memisahkan antara ruang akomodasi dan tangki-tangki minyak.",
+        value_num=None, unit=None, section_no=12, paragraph_id="A.5.2.1", page_no=258,
+        source_quote="For Indonesian flag ship, the cofferdams are also required between accommodation spaces and oil tanks.",
+        trigger_terms=("indonesian flag", "indonesian flag ship", "indonesian-flagged", "berbendera indonesia", "bendera indonesia", "kapal berbendera indonesia", "cofferdam", "cofferdams", "sekat pembatas ganda", "akomodasi", "accommodation", "oil tanks", "tangki minyak"),
+        context_note="Sec 12 A.5.2.1 footnote p258: Indonesian-flag ships also require cofferdams between accommodation spaces and oil tanks.",
+    ),
+    LookupRule(
+        topic="wheel_house_top_min_load", parameter=None,
+        value_text="Beban desain minimum untuk area atap ruang kemudi yang terbuka tidak boleh diambil kurang dari 2,5 kN/m².",
+        value_text_en="For exposed wheel house tops the load is not to be taken less than p = 2,5 kN/m2.",
+        value_text_id="Beban desain minimum untuk area atap ruang kemudi yang terbuka tidak boleh diambil kurang dari 2,5 kN/m².",
+        value_num=2.5, unit="kN/m2", section_no=4, paragraph_id="C.5.2", page_no=126,
+        source_quote="For exposed wheel house tops the load is not to be taken less than p = 2,5 [kN/m2].",
+        trigger_terms=("wheel house top", "wheel house tops", "atap ruang kemudi", "exposed wheel house", "exposed wheel house tops", "beban desain minimum", "minimum design load", "2.5", "2,5", "kN/m2"),
+        context_note="Sec 4 C.5.2 p126: minimum design load for exposed wheel house tops is 2,5 kN/m2.",
+    ),
 ]
 
 
@@ -1936,6 +1967,108 @@ def test_cargo_pump_room_skylight_fires():
     print("PASS: test_cargo_pump_room_skylight_fires")
 
 
+# --- Build 45 safety-net lookup tests (sql/038) ---
+
+
+def test_lubricating_oil_circulating_tank_shell_fires_id():
+    match = match_lookup(
+        query_id="Berapa jarak minimum pemisahan tangki sirkulasi minyak lumas dari kulit lambung kapal?",
+        query_en="What is the minimum separation distance of lubricating oil circulating tanks from the ship shell?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "lubricating_oil_circulating_tank_shell"
+    assert match.rule.section_no == 8
+    assert match.rule.value_num == 500.0
+    print("PASS: test_lubricating_oil_circulating_tank_shell_fires_id")
+
+
+def test_lubricating_oil_circulating_tank_shell_fires_en():
+    match = match_lookup(
+        query_id="",
+        query_en="How far must lubricating oil circulating tanks be separated from the shell?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "lubricating_oil_circulating_tank_shell"
+    print("PASS: test_lubricating_oil_circulating_tank_shell_fires_en")
+
+
+def test_lubricating_oil_circulating_tank_rejects_cofferdam_query():
+    match = match_lookup(
+        query_id="Di mana cofferdam harus dipasang untuk memisahkan tangki bahan bakar minyak dari tangki cairan lain?",
+        query_en="Where must cofferdams be fitted to separate fuel oil tanks from other liquid tanks?",
+        rules=_RULES,
+    )
+    assert match is None
+
+
+def test_indonesian_flag_cofferdam_accommodation_fires_id():
+    match = match_lookup(
+        query_id="Untuk kapal berbendera Indonesia, di area mana lagi sekat pembatas ganda wajib disediakan selain pemisahan tangki bahan bakar minyak dengan tangki cairan lainnya?",
+        query_en="For Indonesian-flagged vessels, where else are double bulkheads (cofferdams) required besides between fuel oil tanks and other liquid tanks?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "indonesian_flag_cofferdam_accommodation"
+    assert match.rule.section_no == 12
+    assert match.rule.paragraph_id == "A.5.2.1"
+    print("PASS: test_indonesian_flag_cofferdam_accommodation_fires_id")
+
+
+def test_indonesian_flag_cofferdam_accommodation_fires_en():
+    match = match_lookup(
+        query_id="",
+        query_en="For Indonesian flag ships, where are cofferdams also required besides separating fuel oil tanks from other liquids?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "indonesian_flag_cofferdam_accommodation"
+    print("PASS: test_indonesian_flag_cofferdam_accommodation_fires_en")
+
+
+def test_indonesian_flag_cofferdam_rejects_tanker_cargo_query():
+    match = match_lookup(
+        query_id="Di mana cofferdam harus dipasang antara tangki kargo kapal tanker dan ruang mesin?",
+        query_en="Where must cofferdams be fitted between the cargo tanks of a tanker and the machinery space?",
+        rules=_RULES,
+    )
+    assert match is None
+
+
+def test_wheel_house_top_min_load_fires_id():
+    match = match_lookup(
+        query_id="Berapakah beban desain minimum yang ditentukan untuk area atap ruang kemudi yang terbuka (exposed wheel house tops)?",
+        query_en="What is the minimum design load determined for exposed wheel house tops?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "wheel_house_top_min_load"
+    assert match.rule.section_no == 4
+    assert match.rule.value_num == 2.5
+    print("PASS: test_wheel_house_top_min_load_fires_id")
+
+
+def test_wheel_house_top_min_load_fires_en():
+    match = match_lookup(
+        query_id="",
+        query_en="What is the minimum design load for exposed wheel house tops?",
+        rules=_RULES,
+    )
+    assert match is not None
+    assert match.rule.topic == "wheel_house_top_min_load"
+    print("PASS: test_wheel_house_top_min_load_fires_en")
+
+
+def test_wheel_house_top_min_load_rejects_hatch_query():
+    match = match_lookup(
+        query_id="Berapa beban desain minimum untuk tutup palka cuaca?",
+        query_en="What is the minimum design load for weather deck hatch covers?",
+        rules=_RULES,
+    )
+    assert match is None
+
+
 def test_mooring_winch_brake_holding_fires():
     match = match_lookup(
         query_id="Pada derek tambat, rem derek harus memiliki kapasitas penahanan yang cukup untuk mencegah terulurnya tali ketika tegangan mencapai berapa persen dari beban putus minimum?",
@@ -2100,5 +2233,15 @@ if __name__ == "__main__":
     test_rudder_paraphrase_anti_misfire_horn_shear()
     test_fatigue_c_paraphrase_id_fires()
     test_fatigue_c_paraphrase_en_fires()
+    # Build 45 safety-net lookup topics
+    test_lubricating_oil_circulating_tank_shell_fires_id()
+    test_lubricating_oil_circulating_tank_shell_fires_en()
+    test_lubricating_oil_circulating_tank_rejects_cofferdam_query()
+    test_indonesian_flag_cofferdam_accommodation_fires_id()
+    test_indonesian_flag_cofferdam_accommodation_fires_en()
+    test_indonesian_flag_cofferdam_rejects_tanker_cargo_query()
+    test_wheel_house_top_min_load_fires_id()
+    test_wheel_house_top_min_load_fires_en()
+    test_wheel_house_top_min_load_rejects_hatch_query()
     print("\nAll 100 tests passed!")
 

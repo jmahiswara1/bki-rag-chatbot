@@ -1,0 +1,71 @@
+# notebookLM 5-QA regression set (Build 45) — RAG-strengthening batch.
+# Every value is PDF-verified against data/bki_hull_2026.pdf.
+#
+# These 5 questions previously failed (wrong section citation) or passed only
+# by luck in the pure-RAG path. After Build 45 they are covered by:
+#   - glossary expansion (src/llm/glossary.py)
+#   - lexical-anchor boost (src/retrieval/lexical_boost.py)
+#   - safety-net lookup rules (sql/038)
+- id: nb_circulating_tank_shell_500mm
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapa jarak minimum pemisahan tangki sirkulasi minyak lumas (lubricating oil circulating tanks) dari kulit lambung kapal?
+  expected_sources:
+  - section_no: 8
+  must_include:
+  - "500"
+  - "mm"
+  must_not_contain:
+  - "Sec 12"
+  - "A.6.2"
+
+- id: nb_indonesian_flag_cofferdam
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Untuk kapal berbendera Indonesia, di area mana lagi sekat pembatas ganda (cofferdams) wajib disediakan selain pemisahan tangki bahan bakar minyak dengan tangki cairan lainnya?
+  expected_sources:
+  - section_no: 12
+  must_include:
+  - "akomodasi"
+  - "minyak"
+  - "Indonesia"
+  - "cofferdam"
+  must_not_contain:
+  - "keamanan dan ruang kontrol"
+
+- id: nb_wheel_house_top_min_load
+  lang: id
+  category: rules_qa
+  expect_lookup: true
+  question: Berapakah beban desain minimum yang ditentukan untuk area atap ruang kemudi yang terbuka (exposed wheel house tops)?
+  expected_sources:
+  - section_no: 4
+  must_include:
+  - "2,5"
+  - "kN/m"
+  must_not_contain:
+  - "Sec 17"
+  - "Table 17.2"
+
+- id: nb_fire_door_gap_12mm
+  lang: id
+  category: rules_qa
+  question: Berapa batas maksimum celah (gap) di bawah pintu kebakaran (yang disetujui tanpa ambang pintu sebagai bagian dari rangka) yang dipasang pada atau setelah 1 Juli 2010?
+  expected_sources:
+  - section_no: 22
+  must_include:
+  - "12"
+  - "mm"
+
+- id: nb_brittle_crack_thick_plates
+  lang: id
+  category: rules_qa
+  question: Untuk aplikasi pelat baja yang sangat tebal (extremely thick steel plates) di kapal kontainer, pada rentang ketebalan berapakah langkah-langkah pencegahan inisiasi dan perambatan retak getas (brittle crack initiation and propagation) wajib diterapkan?
+  expected_sources:
+  - section_no: 39
+  must_include:
+  - "50"
+  - "100"
+  - "mm"

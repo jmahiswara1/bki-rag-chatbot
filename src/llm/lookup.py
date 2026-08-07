@@ -739,6 +739,27 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
         "emergency release",
         "rilis darurat",
     ),
+    # --- Build 45 safety-net topics (sql/038) ---
+    # lubricating oil circulating tank vs shell separation (Sec 8 p212).
+    "lubricating_oil_circulating_tank_shell": (
+        "circulating tank",
+        "circulating tanks",
+        "tangki sirkulasi",
+        "sirkulasi minyak lumas",
+    ),
+    # Indonesian-flag cofferdam between accommodation and oil tanks (Sec 12 p258).
+    "indonesian_flag_cofferdam_accommodation": (
+        "indonesian flag",
+        "indonesian-flagged",
+        "bendera indonesia",
+        "berbendera indonesia",
+    ),
+    # exposed wheel house top minimum design load (Sec 4 p126 5.2).
+    "wheel_house_top_min_load": (
+        "wheel house top",
+        "wheel house tops",
+        "atap ruang kemudi",
+    ),
 }
 
 # Per-topic EXCLUDE_TERMS: if the query carries any of these phrases,
@@ -1017,6 +1038,30 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
         "capacity", "kapasitas",
         "drum", "diameter",
         "brake", "rem",
+    ),
+    # --- Build 45 safety-net topics (sql/038) ---
+    # lubricating oil circulating tank: block on forepeak/flammable-oil and
+    # oil-fuel-separation aspects that belong to other rules.
+    "lubricating_oil_circulating_tank_shell": (
+        "forepeak",
+        "ceruk haluan",
+        "cofferdam",
+        "sekat pembatas",
+    ),
+    # indonesian flag cofferdam: block on cargo-tank / tanker cofferdam
+    # narratives (Sec 24) which the RAG path should answer instead.
+    "indonesian_flag_cofferdam_accommodation": (
+        "cargo tank",
+        "tangki kargo",
+    ),
+    # wheel house top minimum load: block on hatchway / cargo-deck load
+    # tables (Sec 17) that also carry 2,5 kN/m2 values. Those belong to RAG.
+    "wheel_house_top_min_load": (
+        "hatch cover",
+        "tutup palka",
+        "cargo hatch",
+        "palka kargo",
+        "weather deck hatch",
     ),
 }
 # ---------------------------------------------------------------------------

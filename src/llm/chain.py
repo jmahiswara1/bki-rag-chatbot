@@ -18,6 +18,7 @@ from src.llm.intent import classify, classify_with_llm
 from src.llm.language import detect_language
 from src.llm.modes import MODES
 from src.retrieval.domain_scorer import apply_domain_scores, detect_ship_type
+from src.retrieval.lexical_boost import apply_lexical_boosts
 from src.retrieval.query import retrieve_context
 from src.retrieval.table_selector import select_table_row
 from src.retrieval.contradiction_detect import build_conflict_annotation
@@ -848,6 +849,16 @@ def _pre_answer_pipeline(
                 candidates = apply_domain_scores(candidates, ship_type)
         timings["domain_score"] = time.time() - t
 
+        # 6.2. lexical-anchor boost (Build 45): promote the chunk carrying the
+        # exact verbatim phrase the query requests when rerank promoted a
+        # near-miss narrative instead (e.g. the "For Indonesian flag ship"
+        # cofferdam footnote vs Sec 24 tanker cofferdam narratives). Deterministic,
+        # both modes, runs after domain scoring so boosts stack on top.
+        t = time.time()
+        if retrieval_query and candidates:
+            candidates = apply_lexical_boosts(candidates, query, retrieval_query)
+        timings["lexical_boost"] = time.time() - t
+
         # 6.5. deterministic table-row selection
         table_evidence = ""
         if retrieval_query and candidates:
@@ -1342,6 +1353,24 @@ _LOOKUP_DESC: dict[str, dict[str | None, tuple[str, str]]] = {
         None: (
             "sistem rilis darurat (emergency release system) pada derek tunda harus berfungsi secepat yang wajar dan dalam waktu maksimum",
             "the emergency release system is to function as quickly as is reasonably practicable and within a maximum of",
+        ),
+    },
+    "wheel_house_top_min_load": {
+        None: (
+            "beban desain minimum untuk area atap ruang kemudi yang terbuka adalah",
+            "the minimum design load for exposed wheel house tops is",
+        ),
+    },
+    "lubricating_oil_circulating_tank_shell": {
+        None: (
+            "jarak minimum pemisahan tangki sirkulasi minyak lumas dari kulit lambung adalah",
+            "the minimum separation of the lubricating oil circulating tanks from the shell is",
+        ),
+    },
+    "indonesian_flag_cofferdam_accommodation": {
+        None: (
+            "untuk kapal berbendera Indonesia, cofferdam juga wajib disediakan untuk memisahkan",
+            "for Indonesian flag ships, cofferdams are also required to separate",
         ),
     },
 }

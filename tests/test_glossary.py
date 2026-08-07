@@ -335,6 +335,60 @@ def test_bare_depan_not_mapped():
     assert "depan" in out
 
 
+# --- Build 45: notebookLM 5-Q vocabulary ---
+
+def test_kapal_berbendera_indonesia_to_indonesian_flag_ship():
+    out = apply_glossary("kapal berbendera Indonesia").lower()
+    assert "indonesian flag ship" in out
+
+def test_berbendera_indonesia_to_indonesian_flag():
+    out = apply_glossary("kapal yang berbendera Indonesia").lower()
+    assert "indonesian flag" in out
+
+def test_bendera_indonesia_to_indonesian_flag():
+    out = apply_glossary("kapal bendera Indonesia").lower()
+    assert "indonesian flag" in out
+
+def test_tangki_sirkulasi_minyak_lumas():
+    out = apply_glossary("tangki sirkulasi minyak lumas").lower()
+    assert "lubricating oil circulating tank" in out
+
+def test_atap_ruang_kemudi_to_wheel_house_top():
+    out = apply_glossary("atap ruang kemudi yang terbuka").lower()
+    assert "wheel house top" in out
+    assert "wheel house top yang terbuka" in out or "wheel house top terbuka" in out
+
+def test_retak_getas_to_brittle_crack():
+    out = apply_glossary("pencegahan retak getas").lower()
+    assert "brittle crack" in out
+
+def test_pelat_sangat_tebal_to_extremely_thick():
+    out = apply_glossary("pelat baja sangat tebal di kapal kontainer").lower()
+    assert "extremely thick steel plate" in out
+
+def test_lapisan_kering_to_dry_film():
+    out = apply_glossary("berat dalam lapisan kering").lower()
+    assert "dry film" in out
+
+def test_celah_bawah_pintu_to_gap_under_the_door():
+    out = apply_glossary("celah bawah pintu kebakaran").lower()
+    assert "gap under the door" in out
+
+def test_ambang_pintu_to_sill():
+    out = apply_glossary("tanpa ambang pintu sebagai bagian dari rangka").lower()
+    assert "sill" in out
+
+def test_membuka_kembali_to_re_open():
+    out = apply_glossary("membuka kembali ketika menyentuh objek").lower()
+    assert "re-open" in out
+
+def test_build45_no_crossfire_on_unrelated():
+    out = apply_glossary("berapa tebal pelat geladak untuk kapal curah?").lower()
+    assert "brittle crack" not in out
+    assert "indonesian flag" not in out
+    assert "wheel house top" not in out
+
+
 # ---------- Runner ----------
 
 if __name__ == "__main__":
@@ -394,5 +448,17 @@ if __name__ == "__main__":
     test_hantaman_to_slamming()
     test_hantaman_dasar_to_bottom_slamming()
     test_hentaman_to_slamming()
+    test_kapal_berbendera_indonesia_to_indonesian_flag_ship()
+    test_berbendera_indonesia_to_indonesian_flag()
+    test_bendera_indonesia_to_indonesian_flag()
+    test_tangki_sirkulasi_minyak_lumas()
+    test_atap_ruang_kemudi_to_wheel_house_top()
+    test_retak_getas_to_brittle_crack()
+    test_pelat_sangat_tebal_to_extremely_thick()
+    test_lapisan_kering_to_dry_film()
+    test_celah_bawah_pintu_to_gap_under_the_door()
+    test_ambang_pintu_to_sill()
+    test_membuka_kembali_to_re_open()
+    test_build45_no_crossfire_on_unrelated()
     all_count = len([f for f in dir() if f.startswith("test_")])
     print(f"\nAll {all_count} tests passed!")

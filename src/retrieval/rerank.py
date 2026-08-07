@@ -2,6 +2,8 @@ import os
 os.environ.setdefault("USE_TF", "0")
 os.environ['TF_USE_LEGACY_KERAS'] = '1'
 
+from transformers import AutoModelForSequenceClassification
+
 from FlagEmbedding import FlagReranker
 from src.core.config import settings
 from src.core.models import RetrievedChunk
@@ -9,11 +11,35 @@ from src.core.models import RetrievedChunk
 _reranker = None
 
 
+def _build_reranker() -> FlagReranker:
+    """Construct FlagReranker, forcing low_cpu_mem_usage for the weight load.
+
+    FlagReranker loads the model via AutoModelForSequenceClassification.
+    from_pretrained with the DEFAULT safetensors mmap path, which crashed with
+    a Windows access violation (0xC0000005) when loading the ~2.2 GB weights
+    on a low-disk box. Loading with low_cpu_mem_usage=True uses a non-mmap
+    path that does not crash (verified locally). The patch is transient: it is
+    restored right after construction so no other transformers call site is
+    affected.
+    """
+    original = AutoModelForSequenceClassification.from_pretrained
+
+    def _patched(cls, *args, **kwargs):
+        kwargs.setdefault("low_cpu_mem_usage", True)
+        return original(cls, *args, **kwargs)
+
+    AutoModelForSequenceClassification.from_pretrained = _patched
+    try:
+        return FlagReranker(settings.reranker_model, use_fp16=False)
+    finally:
+        AutoModelForSequenceClassification.from_pretrained = original
+
+
 def get_reranker() -> FlagReranker:
     global _reranker
     if _reranker is None:
         # Lazy load BAAI/bge-reranker-v2-m3 globally on CPU
-        _reranker = FlagReranker(settings.reranker_model, use_fp16=False)
+        _reranker = _build_reranker()
     return _reranker
 
 
