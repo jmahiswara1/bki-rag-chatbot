@@ -396,6 +396,70 @@ def validate_en_query_fidelity(original_query: str, en_query: str) -> tuple[bool
     return True, "ok"
 
 
+def _build_en_fallback(query: str, history: list[dict] | None) -> str:
+    """Deterministic English fallback when the 3B condense model fails to
+    translate a follow-up question (e.g. 'Kalau L=150 m ...').
+
+    Builds a compact English query from:
+      - ship_type + numeric facts extracted from history, and
+      - glossary-stabilized terms of the current query.
+    This is not a full translation, but it carries the discriminating EN
+    tokens (ship type, structural term, numeric parameters) needed by FTS
+    and the cross-lingual vector branch.
+    """
+    parts: list[str] = []
+
+    facts = _extract_history_facts(history, query)
+    if facts:
+        for fact in facts.split(", "):
+            key, _, value = fact.partition("=")
+            if key == "ship_type" and value:
+                parts.append(value)
+            elif key and value and any(ch.isdigit() for ch in value):
+                parts.append(f"{key}={value}")
+
+    # Prefer the FIRST user turn for structural terms: it is the full
+    # self-contained question that introduced the topic (e.g. bulk carrier
+    # plate floor spacing). Glossary-stabilize it to extract EN terms.
+    subject_source = query
+    if history:
+        first_user = next(
+            (h.get("content", "") for h in history if h.get("role") == "user"),
+            "",
+        )
+        if first_user:
+            subject_source = first_user + " " + query
+
+    glossary = apply_glossary(subject_source)
+    # Keep meaningful EN tokens (length>=4) from the glossary-stabilized text,
+    # but drop pure function words and common Indonesian remains.
+    _drop = {
+        "kalau", "apakah", "kemungkinan", "berubah", "dengan", "untuk",
+        "pada", "yang", "antara", "bagaimanakah", "bagaimana", "kapal",
+        "pelatnya", "panjang", "jarak", "ini", "itu", "harus", "akan",
+        "dan", "atau", "dari", "menggunakan", "baja", "standar",
+        "sistem", "rangka", "maksimum", "saja", "yang",
+        "berapakah", "berapa", "adakah", "apakah", "kapalnya", "wrangnya",
+        "pelat", "perubahan", "jarak", "antar", "adanya", "perlu",
+        "seri", "diizinkan", "digunakan", "struktur", "lambung", "saja",
+        "aturan", "ketentuan", "menurut", "kepada", "maka", "tersebut",
+        "dengan", "untuk", "pada", "dan", "atau", "dari", "yang",
+    }
+    tokens = [t for t in re.findall(r"[A-Za-z]{4,}", glossary)
+              if t.casefold() not in _drop]
+    seen: set[str] = set()
+    for t in tokens:
+        t = t.casefold()
+        if t in seen:
+            continue
+        seen.add(t)
+        parts.append(t)
+
+    if not parts:
+        return glossary
+    return " ".join(parts)
+
+
 def _validated_condensed_query(
     original_query: str,
     candidate: str,
@@ -610,6 +674,22 @@ def _pre_answer_pipeline(
     # importantly, guarantees retrieval and lookup never consume a drifted
     # query from an earlier turn.
     en_query, _condense_reason = _validated_condensed_query(query, en_query)
+    # Fase 8/44: the 3B condense model sometimes returns the query still in
+    # Indonesian (especially short follow-ups like 'Kalau L=150 m ...'). The
+    # fidelity check passes because lexical tokens overlap, but the FTS/vector
+    # branch needs English. Detect the resulting language; if it is still ID
+    # for an originally-ID query, replace it with a deterministic EN fallback.
+    if lang == "id":
+        try:
+            from src.llm.language import detect_language as _dl
+            if _dl(en_query)[0] == "id":
+                # Use condense_history (already filtered for standalone queries),
+                # never the raw history, so a prior topic cannot leak in.
+                fallback = _build_en_fallback(query, condense_history)
+                diagnostics["condense_reason"] = f"lang_fallback:{_condense_reason}"
+                en_query = fallback
+        except Exception:
+            pass
     diagnostics["en_query"] = en_query
     diagnostics["condense_reason"] = _condense_reason
     diagnostics["condense_valid"] = not _condense_reason.startswith("fallback:")

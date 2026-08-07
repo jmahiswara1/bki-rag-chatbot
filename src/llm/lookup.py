@@ -164,6 +164,11 @@ REQUIRED_CONTEXT_TERMS: dict[str, tuple[str, ...]] = {
     "supply_bulwark_plating_thickness": (
         "supply vessel", "supply vessels", "kapal suplai",
     ),
+    # Dredgers operating while aground are governed by the stricter H.2.6.1
+    # rule (1,8 m), NOT the general 3,6 m rule (H.2.1).
+    "dredger_bottom_transverse_spacing_aground": (
+        "aground", "kandas",
+    ),
 }
 
 ASPECT_TERMS: dict[str, tuple[str, ...]] = {
@@ -195,6 +200,7 @@ LOOKUP_ASPECTS: dict[str, frozenset[str]] = {
     "collision_bulkhead_position": frozenset({"position"}),
     "forepeak_stringer_spacing": frozenset({"spacing"}),
     "dredger_bottom_transverse_spacing": frozenset({"spacing"}),
+    "dredger_bottom_transverse_spacing_aground": frozenset({"spacing"}),
     "supply_bulwark_plating_thickness": frozenset({"thickness"}),
     "mooring_winch_brake_holding": frozenset({"holding_capacity"}),
     "towing_winch_holding_capacity": frozenset({"holding_capacity"}),
@@ -510,6 +516,11 @@ ANCHOR_TERMS: dict[str, tuple[str, ...]] = {
     "dredger_bottom_transverse_spacing": (
         "dredger", "dredgers", "bottom transverses",
         "transverses dasar", "single bottom", "dasar tunggal",
+    ),
+    "dredger_bottom_transverse_spacing_aground": (
+        "dredger", "dredgers", "bottom transverses",
+        "transverses dasar", "single bottom", "dasar tunggal",
+        "aground", "kandas",
     ),
     "bottom_shell_formula_l_less_90": (
         "bottom shell plating", "bottom plating", "bottom shell",
@@ -937,11 +948,16 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     # aluminium_helideck_fire_protection: block on coating, paint,
     # aluminium content, and non-fire queries. These need Sec 24 or
     # other sections, not Sec 22 aluminium fire protection.
+    # Also block questions about which ALUMINIUM ALLOY SERIES are permitted
+    # for the hull structure (these belong to Sec 2 D materials), so a bare
+    # "aluminium alloy" mention does not fire the helideck fire rule.
     "aluminium_helideck_fire_protection": (
         "cat", "pelapis", "coating", "tangki kargo",
         "faktor utilitas", "utility factor", "tunda",
         "load case", "beban roda", "skid",
         "terikat", "lash",
+        "seri", "series", "struktur lambung", "hull structure",
+        "diizinkan", "permitted", "digunakan",
     ),
     # restricted_service_modulus_reduction: prevent over-fire on min thickness
     "restricted_service_modulus_reduction": (
@@ -992,6 +1008,9 @@ EXCLUDE_TERMS: dict[str, tuple[str, ...]] = {
     ),
     "cargo_pump_room_skylight": (
         "coaming", "ventilator",
+    ),
+    "dredger_bottom_transverse_spacing": (
+        "aground", "kandas",
     ),
     "emergency_release_activation_time": (
         "holding", "hold",

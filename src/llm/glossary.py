@@ -290,6 +290,13 @@ GLOSSARY = (
     ("kapal niaga", "merchant ship"),
     ("sumur bilga", "bilge well"),
     ("dasar tunggal", "single bottom"),
+    # Follow-up spacing phrases (Build 44): pin the structural term so the
+    # condense/fallback path produces an English discriminator instead of a
+    # literal 'jarak antar ...' token that FTS cannot match.
+    ("jarak antar wrang", "floor spacing"),
+    ("jarak antar gading", "frame spacing"),
+    ("jarak antar penegar", "stiffener spacing"),
+    ("jarak antar", "spacing"),
     # ── Direction / position terms (Build 41) ──
     # These pin fore/aft direction so the 3B condense step cannot swap
     # 'buritan' (aft) to 'bow' or 'bagian haluan' (forward) to 'stern'.
