@@ -20,6 +20,7 @@
     - question: Kalau panjang kapal L=150 m, apakah kemungkinan batas jarak antar wrang pelatnya berubah?
       expected_sources:
       - section_no: 23
+      - section_no: 8
       en_query_contains:
       - "150"
     - question: "Kalau ini kapal penumpang, bagaimanakah?"

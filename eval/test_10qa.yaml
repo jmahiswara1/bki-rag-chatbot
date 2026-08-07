@@ -115,6 +115,6 @@
   expected_sources:
   - section_no: 32
   must_include:
-  - "3,6"
+  - "1,8"
   must_include_any_groups:
-  - ["meter", "m", "3,6 m"]
+  - ["meter", "m", "1,8 m"]

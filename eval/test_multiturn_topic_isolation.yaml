@@ -1,0 +1,100 @@
+# Multi-turn topic isolation regression (Fase 8).
+#
+# Different from test_multiturn.yaml (which tests follow-up condense like
+# L=150): here every subsequent turn is a NEW, self-contained question. The
+# bug this locks against is the condense step echoing an earlier topic into
+# the current en_query (e.g. emergency release leaking into an aluminium
+# question), which then contaminates lookup + retrieval.
+#
+# Per turn:
+#   - en_query_contains: the CURRENT topic must survive into en_query.
+#   - must_not_contain: the PREVIOUS topic must NOT appear in the answer.
+# Entry passes only if EVERY turn passes (run_eval._eval_multi_turn).
+
+- id: iso_emergency_then_aluminium_then_skylight
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Berapa waktu maksimum yang diizinkan untuk berfungsinya sistem rilis darurat (emergency release system) pada derek tunda setelah diaktifkan?
+      expected_sources:
+      - section_no: 27
+      en_query_contains:
+      - "emergency release"
+      must_include:
+      - "3"
+    - question: Seri paduan aluminium apa saja yang diizinkan untuk digunakan pada struktur lambung kapal?
+      expected_sources:
+      - section_no: 2
+      en_query_contains:
+      - "aluminium"
+      must_not_contain:
+      - "emergency"
+      - "rilis darurat"
+    - question: Bagaimana ketentuan desain untuk jendela atap (skylights) pada kamar pompa kargo kapal tanker terkait material dan kaca?
+      expected_sources:
+      - section_no: 22
+      en_query_contains:
+      - "skylight"
+      must_not_contain:
+      - "aluminium"
+      - "emergency"
+
+- id: iso_bulwark_supply_then_generic
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Berapakah ketebalan minimum pelat kubu-kubu (bulwark plating) kapal suplai?
+      expected_sources:
+      - section_no: 34
+      en_query_contains:
+      - "supply"
+      must_include:
+      - "7,5"
+    - question: Berapakah ketebalan minimum pelat kubu-kubu (bulwark plating)?
+      expected_sources:
+      - section_no: 6
+      en_query_contains:
+      - "bulwark"
+      must_not_contain:
+      - "supply vessel"
+      - "kapal suplai"
+
+- id: iso_collision_barge_then_frame_spacing
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Di manakah posisi sekat tubrukan pada tongkang (barge)?
+      expected_sources:
+      - section_no: 31
+      en_query_contains:
+      - "barge"
+    - question: Berapakah jarak gading maksimum di depan sekat tubrukan?
+      expected_sources:
+      - section_no: 9
+      - section_no: 11
+      en_query_contains:
+      - "spacing"
+      must_not_contain:
+      - "barge"
+      - "0,05Lcon"
+
+- id: iso_cargo_hold_then_dredger
+  lang: id
+  category: multi_turn
+  turns:
+    - question: Berapakah ketebalan pelat minimum mutlak yang disyaratkan untuk sekat ruang muat kargo (cargo hold bulkheads) pada kapal curah?
+      expected_sources:
+      - section_no: 23
+      must_include:
+      - "9,0"
+    - question: Pada kapal keruk (dredgers) yang dirancang atau diperkirakan akan beroperasi dalam kondisi kandas (aground), berapakah spasi maksimum yang diizinkan untuk bottom transverses?
+      expected_sources:
+      - section_no: 32
+      en_query_contains:
+      - "dredger"
+      - "aground"
+      must_include:
+      - "1,8"
+      must_not_contain:
+      - "sekat ruang muat"
+      - "cargo hold"
